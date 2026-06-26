@@ -73,11 +73,25 @@ export interface ProviderProfileRecord {
   savedAt: string;
 }
 
+export interface PlatformUploadRecord {
+  id: string;
+  userId: string;
+  type: "document" | "gallery";
+  documentKey?: string;
+  label: string;
+  fileName: string;
+  contentType: string;
+  size: number;
+  path: string;
+  createdAt: string;
+}
+
 export interface PlatformStore {
   users: PlatformUser[];
   sessions: PlatformSession[];
   parentProfiles: Record<string, ParentProfileRecord>;
   providerProfiles: Record<string, ProviderProfileRecord>;
+  uploads: PlatformUploadRecord[];
   conversations: Conversation[];
   verifications: {
     pendingProviders: PendingVerification[];
@@ -89,6 +103,9 @@ export interface PlatformStore {
 const storePath =
   process.env.PLATFORM_STORE_PATH ??
   path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "platform-store.json");
+export const uploadRootPath =
+  process.env.PLATFORM_UPLOADS_DIR ??
+  path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "uploads");
 const scrypt = promisify(scryptCallback);
 
 function createInitialStore(): PlatformStore {
@@ -97,6 +114,7 @@ function createInitialStore(): PlatformStore {
     sessions: [],
     parentProfiles: {},
     providerProfiles: {},
+    uploads: [],
     conversations: CONVERSATIONS,
     verifications: {
       pendingProviders: PENDING_VERIFICATIONS,
@@ -118,6 +136,7 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
     sessions: store.sessions ?? initial.sessions,
     parentProfiles: store.parentProfiles ?? initial.parentProfiles,
     providerProfiles: store.providerProfiles ?? initial.providerProfiles,
+    uploads: store.uploads ?? initial.uploads,
     conversations: store.conversations ?? initial.conversations,
     verifications: {
       pendingProviders:
@@ -312,6 +331,44 @@ export async function saveProviderProfile(
     };
     store.providerProfiles[userId] = record;
     return record;
+  });
+}
+
+export async function listUploads(userId: string, type?: PlatformUploadRecord["type"]) {
+  const store = await readStore();
+  return store.uploads
+    .filter((upload) => upload.userId === userId && (!type || upload.type === type))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function getUploadForUser(id: string, userId: string) {
+  const store = await readStore();
+  return store.uploads.find((upload) => upload.id === id && upload.userId === userId) ?? null;
+}
+
+export async function recordUpload(upload: PlatformUploadRecord) {
+  return updateStore((store) => {
+    store.uploads = [
+      upload,
+      ...store.uploads.filter(
+        (item) =>
+          !(
+            upload.type === "document" &&
+            item.userId === upload.userId &&
+            item.documentKey === upload.documentKey
+          )
+      ),
+    ];
+    return upload;
+  });
+}
+
+export async function removeUpload(id: string, userId: string) {
+  return updateStore((store) => {
+    const upload = store.uploads.find((item) => item.id === id && item.userId === userId);
+    if (!upload) return null;
+    store.uploads = store.uploads.filter((item) => item.id !== id);
+    return upload;
   });
 }
 

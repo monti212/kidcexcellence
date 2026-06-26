@@ -14,6 +14,7 @@ Kidcexcellence is a Botswana childcare marketplace for parents and care provider
 - Admin verification APIs protected by an admin session and `ADMIN_EMAILS` allowlist
 - Basic in-memory rate limiting on auth, profile updates, message sends, and admin verification APIs
 - Same-origin mutation checks for cookie-backed API writes
+- Provider document and gallery uploads stored under the configured runtime uploads directory
 - Baseline security headers configured through Next
 
 The JSON store is suitable for local development and early demos. For production traffic, replace it with a managed database adapter while keeping the current API contracts stable.
@@ -39,7 +40,7 @@ Use `npm run build` before deploying, then run `npm run start` for a production-
 
 ## Runtime Data
 
-The app writes runtime data to `PLATFORM_STORE_PATH`.
+The app writes runtime data to `PLATFORM_STORE_PATH` and uploaded provider files to `PLATFORM_UPLOADS_DIR`.
 
 Default:
 
@@ -51,9 +52,10 @@ For production hosts, set `PLATFORM_STORE_PATH` to a writable mounted path, for 
 
 ```bash
 PLATFORM_STORE_PATH=/var/lib/kidcexcellence/platform-store.json
+PLATFORM_UPLOADS_DIR=/var/lib/kidcexcellence/uploads
 ```
 
-Do not rely on the repository working directory as durable storage on serverless platforms. Use a mounted volume or migrate `lib/platform-store.ts` to a real database.
+Do not rely on the repository working directory as durable storage on serverless platforms. Use a mounted volume or migrate `lib/platform-store.ts` to a real database and object storage.
 
 ## Admin Access
 
@@ -75,6 +77,10 @@ Set `ADMIN_EMAILS` to a comma-separated list of emails allowed to create or use 
 - `POST /api/profiles/parent`
 - `GET /api/profiles/provider`
 - `POST /api/profiles/provider`
+- `GET /api/uploads`
+- `POST /api/uploads`
+- `GET /api/uploads/:id`
+- `DELETE /api/uploads/:id`
 
 ## Production Readiness Notes
 
@@ -82,6 +88,6 @@ Before the platform is considered fully production complete:
 
 - Replace the JSON store with a database-backed adapter.
 - Harden authentication with password reset, email verification, CSRF protection, finer-grained admin permissions, and distributed rate limiting.
-- Add durable file uploads for provider documents and gallery media.
+- Move provider uploads from local disk to durable object storage for serverless production.
 - Add automated end-to-end tests for auth, search, compare, messaging, profile saving, and admin verification.
 - Configure a deployment target with a writable data layer or managed database.

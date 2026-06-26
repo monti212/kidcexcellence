@@ -22,6 +22,7 @@
 
 # runtime data
 /data/*.json
+/data/uploads/
 !/data/.gitkeep
 
 # misc

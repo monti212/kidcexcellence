@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +41,18 @@ interface StoredProviderProfile {
   savedAt?: string;
 }
 
+interface ProviderUpload {
+  id: string;
+  type: "document" | "gallery";
+  documentKey?: string;
+  label: string;
+  fileName: string;
+  contentType: string;
+  size: number;
+  createdAt: string;
+  url: string;
+}
+
 const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
   category: "schools",
   liveIn: false,
@@ -50,6 +62,21 @@ const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
     { grade: "Nursery", termly: "3200", annually: "9600" },
   ],
 };
+
+const SENSITIVE_DOCUMENTS = [
+  { key: "national-id", label: "National ID / Passport", hint: "High-res scan of valid ID" },
+];
+
+const SUPPORTING_DOCUMENTS = [
+  { key: "cv", label: "CV / Resume", hint: "PDF or Word document" },
+  { key: "references", label: "References", hint: "Letters from previous employers" },
+  { key: "proof-of-residence", label: "Proof of Residence", hint: "Utility bill or bank statement" },
+  { key: "certified-id", label: "Certified ID Copy", hint: "Certified copy from commissioner" },
+];
+
+const SCHOOL_DOCUMENTS = [
+  { key: "school-prospectus", label: "School Prospectus", hint: "PDF brochure or curriculum overview" },
+];
 
 export default function ProviderProfilePage() {
   const { user, session, loading } = usePlatformSession();
@@ -67,15 +94,39 @@ export default function ProviderProfilePage() {
   const [liveIn, setLiveIn] = useState(storedProfile.liveIn);
   const [verified] = useState(true);
   const [saveMessage, setSaveMessage] = useState("");
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [uploads, setUploads] = useState<ProviderUpload[]>([]);
   const [feeRows, setFeeRows] = useState<FeeRow[]>(storedProfile.feeRows);
-  const [galleryImages] = useState([
-    "https://picsum.photos/200?random=g1",
-    "https://picsum.photos/200?random=g2",
-    "https://picsum.photos/200?random=g3",
-  ]);
 
   const isSchool = ["schools", "nurseries"].includes(category);
   const isNanny = ["nannies", "babysitters"].includes(category);
+  const documentUploads = uploads.filter((upload) => upload.type === "document");
+  const galleryUploads = uploads.filter((upload) => upload.type === "gallery");
+  const documents = isSchool
+    ? [...SUPPORTING_DOCUMENTS, ...SCHOOL_DOCUMENTS]
+    : SUPPORTING_DOCUMENTS;
+
+  const refreshUploads = useCallback(async () => {
+    if (!session) {
+      setUploads([]);
+      return;
+    }
+
+    const response = await fetch("/api/uploads", {
+      credentials: "same-origin",
+      cache: "no-store",
+    }).catch(() => null);
+    if (!response?.ok) return;
+    const payload = await response.json();
+    setUploads(payload.uploads ?? []);
+  }, [session]);
+
+  useEffect(() => {
+    const refreshTimer = window.setTimeout(() => {
+      refreshUploads();
+    }, 0);
+    return () => window.clearTimeout(refreshTimer);
+  }, [refreshUploads]);
 
   const saveProviderProfile = async () => {
     if (!session) {
@@ -114,6 +165,66 @@ export default function ProviderProfilePage() {
 
   const removeFeeRow = (idx: number) => {
     setFeeRows((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const uploadFile = async (
+    file: File | undefined,
+    type: "document" | "gallery",
+    label: string,
+    documentKey?: string
+  ) => {
+    if (!file) return;
+    if (!session) {
+      setUploadMessage("Sign in with a provider account to upload files.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("file", file);
+    formData.set("type", type);
+    formData.set("label", label);
+    if (documentKey) formData.set("documentKey", documentKey);
+
+    const response = await fetch("/api/uploads", {
+      method: "POST",
+      credentials: "same-origin",
+      body: formData,
+    }).catch(() => null);
+
+    if (!response?.ok) {
+      const payload = await response?.json().catch(() => null);
+      setUploadMessage(payload?.error ?? "Could not upload file.");
+      return;
+    }
+
+    const payload = await response.json();
+    setUploads((prev) => [
+      payload.upload,
+      ...prev.filter(
+        (upload) =>
+          !(
+            payload.upload.type === "document" &&
+            upload.documentKey === payload.upload.documentKey
+          ) && upload.id !== payload.upload.id
+      ),
+    ]);
+    setUploadMessage(`${label} uploaded.`);
+    window.setTimeout(() => setUploadMessage(""), 3000);
+  };
+
+  const deleteUpload = async (uploadId: string) => {
+    const response = await fetch(`/api/uploads/${uploadId}`, {
+      method: "DELETE",
+      credentials: "same-origin",
+    }).catch(() => null);
+
+    if (!response?.ok) {
+      const payload = await response?.json().catch(() => null);
+      setUploadMessage(payload?.error ?? "Could not remove upload.");
+      return;
+    }
+
+    setUploads((prev) => prev.filter((upload) => upload.id !== uploadId));
   };
 
   return (
@@ -295,30 +406,45 @@ export default function ProviderProfilePage() {
                   <Badge className="rounded-full text-xs bg-red-50 text-red-600 border-red-200">Sensitive</Badge>
                 </div>
 
-                {[
-                  { label: "National ID / Passport", hint: "High-res scan of valid ID" },
-                ].map((doc) => (
+                {SENSITIVE_DOCUMENTS.map((doc) => {
+                  const uploaded = documentUploads.find((upload) => upload.documentKey === doc.key);
+                  return (
                   <div key={doc.label} className="border border-red-100 rounded-lg p-4 bg-red-50/30">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium text-[var(--brand-ink)] text-sm">{doc.label}</div>
                         <div className="text-gray-400 text-xs mt-0.5">{doc.hint}</div>
                       </div>
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-gray-200/70 rounded-lg z-10 flex items-center justify-center">
-                          <Lock className="w-4 h-4 text-[var(--brand-muted)]" />
-                        </div>
-                        <Button size="sm" variant="outline" className="rounded-lg text-xs border-[var(--brand-line)] opacity-50 pointer-events-none">
-                          <Upload className="w-3.5 h-3.5 mr-1" />
-                          Upload
-                        </Button>
-                      </div>
+                      <label className="inline-flex cursor-pointer items-center rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50">
+                        <input
+                          type="file"
+                          className="sr-only"
+                          accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp"
+                          onChange={(event) => uploadFile(event.target.files?.[0], "document", doc.label, doc.key)}
+                          disabled={loading}
+                        />
+                        <Lock className="mr-1 h-3.5 w-3.5" />
+                        <Upload className="mr-1 h-3.5 w-3.5" />
+                        Upload
+                      </label>
                     </div>
-                    <div className="mt-3 h-10 bg-gray-200/60 rounded-lg flex items-center px-3">
-                      <span className="text-xs text-gray-400">🔒 Visible to admin only</span>
+                    <div className="mt-3 flex min-h-10 items-center justify-between rounded-lg bg-gray-200/60 px-3">
+                      <span className="text-xs text-gray-500">
+                        {uploaded ? `${uploaded.fileName} · visible to admin only` : "Visible to admin only"}
+                      </span>
+                      {uploaded && (
+                        <button
+                          onClick={() => deleteUpload(uploaded.id)}
+                          className="text-gray-400 hover:text-red-500"
+                          aria-label={`Remove ${doc.label}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
-                ))}
+                );
+                })}
               </div>
 
               <Separator />
@@ -326,30 +452,48 @@ export default function ProviderProfilePage() {
               {/* Standard documents */}
               <div className="space-y-4">
                 <h4 className="font-semibold text-[var(--brand-ink)] text-sm">Supporting Documents</h4>
-                {[
-                  { label: "CV / Resume", hint: "PDF or Word document" },
-                  { label: "References", hint: "Letters from previous employers" },
-                  { label: "Proof of Residence", hint: "Utility bill or bank statement" },
-                  { label: "Certified ID Copy", hint: "Certified copy from commissioner" },
-                  ...(isSchool ? [{ label: "School Prospectus", hint: "PDF brochure or curriculum overview" }] : []),
-                ].map((doc) => (
+                {documents.map((doc) => {
+                  const uploaded = documentUploads.find((upload) => upload.documentKey === doc.key);
+                  return (
                   <div key={doc.label} className="border border-[var(--brand-line)] rounded-lg p-4 hover:border-[var(--brand-line)] transition-colors">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium text-[var(--brand-ink)] text-sm">{doc.label}</div>
                         <div className="text-gray-400 text-xs mt-0.5">{doc.hint}</div>
                       </div>
-                      <Button size="sm" variant="outline" className="rounded-lg text-xs border-[var(--brand-line)] text-[var(--brand-leaf)] hover:bg-[var(--brand-ivory)]">
+                      <label className="inline-flex cursor-pointer items-center rounded-lg border border-[var(--brand-line)] px-3 py-2 text-xs font-bold text-[var(--brand-leaf)] hover:bg-[var(--brand-ivory)]">
+                        <input
+                          type="file"
+                          className="sr-only"
+                          accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp"
+                          onChange={(event) => uploadFile(event.target.files?.[0], "document", doc.label, doc.key)}
+                          disabled={loading}
+                        />
                         <Upload className="w-3.5 h-3.5 mr-1" />
                         Upload
-                      </Button>
+                      </label>
                     </div>
-                    <div className="mt-3 h-8 bg-gray-50 rounded-lg flex items-center px-3 border border-dashed border-[var(--brand-line)]">
-                      <span className="text-xs text-gray-400">No file uploaded</span>
+                    <div className="mt-3 flex min-h-8 items-center justify-between rounded-lg border border-dashed border-[var(--brand-line)] bg-gray-50 px-3">
+                      <span className="text-xs text-gray-400">{uploaded ? uploaded.fileName : "No file uploaded"}</span>
+                      {uploaded && (
+                        <button
+                          onClick={() => deleteUpload(uploaded.id)}
+                          className="text-gray-400 hover:text-red-500"
+                          aria-label={`Remove ${doc.label}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
-                ))}
+                );
+                })}
               </div>
+              {uploadMessage && (
+                <div className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-3 text-sm font-bold text-[var(--brand-leaf)]">
+                  {uploadMessage}
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -464,35 +608,61 @@ export default function ProviderProfilePage() {
                   <h3 className="font-bold text-[var(--brand-ink)]">Photo Gallery</h3>
                   <p className="text-gray-400 text-xs mt-0.5">Upload photos to showcase your facility</p>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="rounded-lg text-xs border-[var(--brand-line)] text-[var(--brand-leaf)] hover:bg-[var(--brand-ivory)] flex items-center gap-1"
-                >
+                <label className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--brand-line)] px-3 py-2 text-xs font-bold text-[var(--brand-leaf)] hover:bg-[var(--brand-ivory)]">
+                  <input
+                    type="file"
+                    className="sr-only"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(event) => uploadFile(event.target.files?.[0], "gallery", "Gallery photo")}
+                    disabled={loading}
+                  />
                   <ImagePlus className="w-3.5 h-3.5" />
                   Add Photos
-                </Button>
+                </label>
               </div>
 
-              <div className="border-2 border-dashed border-[var(--brand-line)] rounded-lg p-8 text-center mb-4 hover:border-[var(--brand-leaf)] transition-colors cursor-pointer">
+              <label className="mb-4 block cursor-pointer rounded-lg border-2 border-dashed border-[var(--brand-line)] p-8 text-center transition-colors hover:border-[var(--brand-leaf)]">
+                <input
+                  type="file"
+                  className="sr-only"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) => uploadFile(event.target.files?.[0], "gallery", "Gallery photo")}
+                  disabled={loading}
+                />
                 <ImagePlus className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                 <p className="text-gray-400 text-sm">Drag and drop images here, or click to browse</p>
                 <p className="text-gray-300 text-xs mt-1">JPG, PNG up to 5MB each</p>
-              </div>
+              </label>
 
-              <div className="grid grid-cols-3 gap-3">
-                {galleryImages.map((img, i) => (
-                  <div key={i} className="relative aspect-square rounded-lg overflow-hidden group">
+              {uploadMessage && (
+                <div className="mb-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-3 text-sm font-bold text-[var(--brand-leaf)]">
+                  {uploadMessage}
+                </div>
+              )}
+
+              {galleryUploads.length ? (
+                <div className="grid grid-cols-3 gap-3">
+                  {galleryUploads.map((upload) => (
+                  <div key={upload.id} className="relative aspect-square rounded-lg overflow-hidden group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
+                    <img src={upload.url} alt={upload.label} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button className="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center">
+                      <button
+                        onClick={() => deleteUpload(upload.id)}
+                        className="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center"
+                        aria-label={`Remove ${upload.fileName}`}
+                      >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-[var(--brand-line)] bg-gray-50 px-4 py-8 text-center text-sm text-gray-400">
+                  No gallery photos uploaded yet.
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
