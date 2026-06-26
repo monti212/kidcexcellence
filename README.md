@@ -33,10 +33,12 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
 npm run lint
+npm test
 npm run build
 ```
 
 Use `npm run build` before deploying, then run `npm run start` for a production-like local server.
+The integration test starts a temporary Next dev server, uses isolated runtime data paths, and exercises the auth, profile, messaging, admin verification, and upload APIs.
 
 ## Runtime Data
 
@@ -90,4 +92,5 @@ Before the platform is considered fully production complete:
 - Harden authentication with password reset, email verification, CSRF protection, finer-grained admin permissions, and distributed rate limiting.
 - Move provider uploads from local disk to durable object storage for serverless production.
 - Add automated end-to-end tests for auth, search, compare, messaging, profile saving, and admin verification.
+- Expand automated browser coverage for search, compare, provider profile editing, and responsive UI flows.
 - Configure a deployment target with a writable data layer or managed database.
