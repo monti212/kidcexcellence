@@ -26,6 +26,7 @@ import {
   ToggleRight,
 } from "lucide-react";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
+import { usePlatformSession } from "@/lib/use-platform-session";
 
 interface FeeRow {
   grade: string;
@@ -51,6 +52,7 @@ const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
 };
 
 export default function ProviderProfilePage() {
+  const { user, session, loading } = usePlatformSession();
   const [storedProfile, setStoredProfile] = useLocalStorageState<StoredProviderProfile>(
     "kidcexcellence.provider.profile",
     DEFAULT_PROVIDER_PROFILE,
@@ -64,7 +66,7 @@ export default function ProviderProfilePage() {
   const [category, setCategory] = useState(storedProfile.category);
   const [liveIn, setLiveIn] = useState(storedProfile.liveIn);
   const [verified] = useState(true);
-  const [saved, setSaved] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
   const [feeRows, setFeeRows] = useState<FeeRow[]>(storedProfile.feeRows);
   const [galleryImages] = useState([
     "https://picsum.photos/200?random=g1",
@@ -75,19 +77,29 @@ export default function ProviderProfilePage() {
   const isSchool = ["schools", "nurseries"].includes(category);
   const isNanny = ["nannies", "babysitters"].includes(category);
 
-  const saveProviderProfile = () => {
+  const saveProviderProfile = async () => {
+    if (!session) {
+      setSaveMessage("Sign in to save your provider profile.");
+      return;
+    }
+
     const nextProfile = { category, liveIn, feeRows, savedAt: new Date().toISOString() };
-    const rawSession = window.localStorage.getItem("kidcexcellence.session");
-    const session = rawSession ? JSON.parse(rawSession) : null;
-    const userId = session?.userId ?? "local-provider";
-    setStoredProfile(nextProfile);
-    fetch("/api/profiles/provider", {
+    const response = await fetch("/api/profiles/provider", {
       method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, profile: nextProfile }),
-    }).catch(() => undefined);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+      body: JSON.stringify({ userId: session.userId, profile: nextProfile }),
+    }).catch(() => null);
+
+    if (!response?.ok) {
+      const payload = await response?.json().catch(() => null);
+      setSaveMessage(payload?.error ?? "Could not save profile.");
+      return;
+    }
+
+    setStoredProfile(nextProfile);
+    setSaveMessage("Saved!");
+    setTimeout(() => setSaveMessage(""), 3000);
   };
 
   const updateFeeRow = (idx: number, field: keyof FeeRow, value: string) => {
@@ -134,8 +146,10 @@ export default function ProviderProfilePage() {
             </div>
             <div className="flex items-center gap-3">
               <div>
-                <h2 className="text-lg font-bold text-[var(--brand-ink)]">Sunshine Early Learning Centre</h2>
-                <p className="text-[var(--brand-muted)] text-sm">Phakalane, Gaborone</p>
+                <h2 className="text-lg font-bold text-[var(--brand-ink)]">{user?.name ?? "Provider profile"}</h2>
+                <p className="text-[var(--brand-muted)] text-sm">
+                  {user ? user.location ?? "Botswana" : "Sign in to sync this listing"}
+                </p>
               </div>
               {verified && (
                 <Badge className="rounded-full bg-green-50 text-green-700 border border-green-200 flex items-center gap-1">
@@ -179,7 +193,7 @@ export default function ProviderProfilePage() {
                 <>
                   <div>
                     <Label className="text-sm font-medium text-[var(--brand-ink)]">School Name</Label>
-                    <Input defaultValue="Sunshine Early Learning Centre" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+                    <Input defaultValue={user?.name ?? ""} placeholder="Sunshine Early Learning Centre" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-[var(--brand-ink)]">Curriculum Type</Label>
@@ -260,7 +274,7 @@ export default function ProviderProfilePage() {
                 </div>
                 <div className="sm:col-span-2">
                   <Label className="text-sm font-medium text-[var(--brand-ink)]">Email Address</Label>
-                  <Input type="email" defaultValue="info@sunshineelc.co.bw" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+                  <Input type="email" defaultValue={user?.email ?? ""} placeholder="info@sunshineelc.co.bw" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
                 </div>
               </div>
             </div>
@@ -490,12 +504,18 @@ export default function ProviderProfilePage() {
           </Button>
           <Button
             onClick={saveProviderProfile}
+            disabled={loading}
             className="rounded-lg text-white font-semibold px-8"
             style={{ background: "var(--brand-leaf)" }}
           >
-            {saved ? "Saved!" : "Save Changes"}
+            {saveMessage === "Saved!" ? "Saved!" : "Save Changes"}
           </Button>
         </div>
+        {saveMessage && saveMessage !== "Saved!" && (
+          <div className="mt-4 rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3 text-sm font-bold text-[var(--brand-coral)]">
+            {saveMessage}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -16,26 +16,40 @@ import {
 } from "@/components/ui/select";
 import { BrandMark } from "@/components/BrandMark";
 import { Eye, EyeOff, Baby, Briefcase } from "lucide-react";
+import { clearLegacyPlatformSession, notifyPlatformSessionChanged } from "@/lib/use-platform-session";
 
 export default function AuthPage() {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(false);
+  const [parentLocation, setParentLocation] = useState("");
+  const [providerCategory, setProviderCategory] = useState("");
+  const [providerLocation, setProviderLocation] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
   const completeAuth = async (role: "parent" | "provider" | "login", formData: FormData) => {
+    const password = String(formData.get("password") ?? "");
+    const confirmPassword = String(formData.get("confirmPassword") ?? "");
+    if (role !== "login" && password !== confirmPassword) {
+      setStatusMessage("Passwords do not match.");
+      return;
+    }
+
+    const nextRole = role === "login" ? "parent" : role;
     const response = await fetch("/api/auth", {
       method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mode: role === "login" ? "login" : "signup",
-        role: role === "login" ? "parent" : role,
+        role: nextRole,
         name: formData.get("name"),
         email: formData.get("email"),
+        password,
         phone: formData.get("phone"),
-        location: formData.get("location"),
-        category: formData.get("category"),
+        location: nextRole === "provider" ? providerLocation : parentLocation,
+        category: nextRole === "provider" ? providerCategory : undefined,
       }),
     });
     const payload = await response.json();
@@ -45,7 +59,8 @@ export default function AuthPage() {
     }
 
     const session = payload.session;
-    window.localStorage.setItem("kidcexcellence.session", JSON.stringify(session));
+    clearLegacyPlatformSession();
+    notifyPlatformSessionChanged();
     setStatusMessage(
       session.role === "provider"
         ? "Provider account created. Opening your listing workspace..."
@@ -104,6 +119,12 @@ export default function AuthPage() {
             />
           ) : (
             <SignupForm
+              parentLocation={parentLocation}
+              setParentLocation={setParentLocation}
+              providerCategory={providerCategory}
+              setProviderCategory={setProviderCategory}
+              providerLocation={providerLocation}
+              setProviderLocation={setProviderLocation}
               showPassword={showPassword}
               setShowPassword={setShowPassword}
               showConfirmPassword={showConfirmPassword}
@@ -226,12 +247,24 @@ function LoginForm({
 }
 
 function SignupForm({
+  parentLocation,
+  setParentLocation,
+  providerCategory,
+  setProviderCategory,
+  providerLocation,
+  setProviderLocation,
   showPassword,
   setShowPassword,
   showConfirmPassword,
   setShowConfirmPassword,
   onComplete,
 }: {
+  parentLocation: string;
+  setParentLocation: (value: string) => void;
+  providerCategory: string;
+  setProviderCategory: (value: string) => void;
+  providerLocation: string;
+  setProviderLocation: (value: string) => void;
   showPassword: boolean;
   setShowPassword: (v: boolean) => void;
   showConfirmPassword: boolean;
@@ -267,7 +300,7 @@ function SignupForm({
           </div>
           <div>
             <Label className="text-[var(--brand-ink)] font-medium text-sm">Location</Label>
-            <Select name="location">
+            <Select value={parentLocation} onValueChange={(value) => setParentLocation(value ?? "")}>
               <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
                 <SelectValue placeholder="Select your city" />
               </SelectTrigger>
@@ -299,6 +332,7 @@ function SignupForm({
             <Label className="text-[var(--brand-ink)] font-medium text-sm">Confirm Password</Label>
             <div className="relative mt-1">
               <Input
+                name="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Repeat password"
                 className="rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)] pr-10"
@@ -322,7 +356,7 @@ function SignupForm({
           </div>
           <div>
             <Label className="text-[var(--brand-ink)] font-medium text-sm">Category</Label>
-            <Select name="category">
+            <Select value={providerCategory} onValueChange={(value) => setProviderCategory(value ?? "")}>
               <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -346,7 +380,7 @@ function SignupForm({
           </div>
           <div>
             <Label className="text-[var(--brand-ink)] font-medium text-sm">Location</Label>
-            <Select name="location">
+            <Select value={providerLocation} onValueChange={(value) => setProviderLocation(value ?? "")}>
               <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
                 <SelectValue placeholder="Select your city" />
               </SelectTrigger>

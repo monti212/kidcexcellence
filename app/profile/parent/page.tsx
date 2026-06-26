@@ -15,6 +15,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Camera, Plus, Trash2, User } from "lucide-react";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
+import { usePlatformSession } from "@/lib/use-platform-session";
 
 interface Child {
   id: string;
@@ -24,12 +25,13 @@ interface Child {
 }
 
 export default function ParentProfilePage() {
+  const { user, session, loading } = usePlatformSession();
   const [children, setChildren] = useLocalStorageState<Child[]>(
     "kidcexcellence.parent.children",
     [{ id: "c1", name: "Lebo Dlamini", dob: "2022-06-15", specialNeeds: "" }],
     (value): value is Child[] => Array.isArray(value)
   );
-  const [saved, setSaved] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
 
   const addChild = () => {
     setChildren((prev) => [
@@ -48,17 +50,27 @@ export default function ParentProfilePage() {
     );
   };
 
-  const handleSave = () => {
-    const rawSession = window.localStorage.getItem("kidcexcellence.session");
-    const session = rawSession ? JSON.parse(rawSession) : null;
-    const userId = session?.userId ?? "local-parent";
-    fetch("/api/profiles/parent", {
+  const handleSave = async () => {
+    if (!session) {
+      setSaveMessage("Sign in to save your family profile.");
+      return;
+    }
+
+    const response = await fetch("/api/profiles/parent", {
       method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, children }),
-    }).catch(() => undefined);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+      body: JSON.stringify({ userId: session.userId, children }),
+    }).catch(() => null);
+
+    if (!response?.ok) {
+      const payload = await response?.json().catch(() => null);
+      setSaveMessage(payload?.error ?? "Could not save profile.");
+      return;
+    }
+
+    setSaveMessage("Saved!");
+    setTimeout(() => setSaveMessage(""), 3000);
   };
 
   return (
@@ -89,8 +101,10 @@ export default function ParentProfilePage() {
                 <Camera className="w-3.5 h-3.5 text-[var(--brand-muted)]" />
               </button>
             </div>
-            <h2 className="text-lg font-bold text-[var(--brand-ink)]">Mpho Dlamini</h2>
-            <p className="text-[var(--brand-muted)] text-sm">Parent · Phakalane, Gaborone</p>
+            <h2 className="text-lg font-bold text-[var(--brand-ink)]">{user?.name ?? "Parent profile"}</h2>
+            <p className="text-[var(--brand-muted)] text-sm">
+              {user ? `Parent · ${user.location ?? "Botswana"}` : "Sign in to sync this profile"}
+            </p>
           </div>
         </div>
 
@@ -100,7 +114,7 @@ export default function ParentProfilePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label className="text-sm font-medium text-[var(--brand-ink)]">Full Name</Label>
-              <Input defaultValue="Mpho Dlamini" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+              <Input defaultValue={user?.name ?? ""} placeholder="Mpho Dlamini" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
             </div>
             <div>
               <Label className="text-sm font-medium text-[var(--brand-ink)]">Date of Birth</Label>
@@ -127,11 +141,11 @@ export default function ParentProfilePage() {
             </div>
             <div>
               <Label className="text-sm font-medium text-[var(--brand-ink)]">Phone Number</Label>
-              <Input defaultValue="+267 71 234 567" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+              <Input defaultValue={user?.phone ?? ""} placeholder="+267 71 234 567" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
             </div>
             <div>
               <Label className="text-sm font-medium text-[var(--brand-ink)]">Email Address</Label>
-              <Input type="email" defaultValue="mpho.dlamini@gmail.com" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+              <Input type="email" defaultValue={user?.email ?? ""} placeholder="parent@example.com" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
             </div>
           </div>
           <div className="mt-4">
@@ -226,12 +240,18 @@ export default function ParentProfilePage() {
           </Button>
           <Button
             onClick={handleSave}
+            disabled={loading}
             className="rounded-lg text-white font-semibold px-8"
             style={{ background: "var(--brand-leaf)" }}
           >
-            {saved ? "Saved!" : "Save Changes"}
+            {saveMessage === "Saved!" ? "Saved!" : "Save Changes"}
           </Button>
         </div>
+        {saveMessage && saveMessage !== "Saved!" && (
+          <div className="mt-4 rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3 text-sm font-bold text-[var(--brand-coral)]">
+            {saveMessage}
+          </div>
+        )}
       </div>
     </div>
   );

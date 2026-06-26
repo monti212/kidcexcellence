@@ -88,7 +88,7 @@ export interface PlatformStore {
 
 const storePath =
   process.env.PLATFORM_STORE_PATH ??
-  path.join("data", "platform-store.json");
+  path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "platform-store.json");
 const scrypt = promisify(scryptCallback);
 
 function createInitialStore(): PlatformStore {

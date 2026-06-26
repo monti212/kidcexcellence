@@ -6,8 +6,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { BrandMark } from "@/components/BrandMark";
+import { usePlatformSession } from "@/lib/use-platform-session";
 import { clsx } from "clsx";
-import { Menu, ShieldCheck } from "lucide-react";
+import { LogOut, Menu, ShieldCheck, UserCircle } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -19,6 +20,18 @@ const navLinks = [
 export default function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { user, loading, logout } = usePlatformSession();
+  const profileHref =
+    user?.role === "provider"
+      ? "/profile/provider"
+      : user?.role === "admin"
+        ? "/admin"
+        : "/profile/parent";
+
+  const handleLogout = async () => {
+    await logout();
+    setOpen(false);
+  };
 
   return (
     <nav className="sticky top-0 z-50 border-b border-[var(--brand-line)] bg-[rgba(255,248,236,0.92)] backdrop-blur-xl">
@@ -49,17 +62,36 @@ export default function Navbar() {
           </div>
 
           <div className="hidden items-center gap-2 md:flex">
-            <Link href="/admin?admin=true">
+            <Link href="/admin">
               <Button variant="ghost" className="h-10 rounded-lg text-[var(--brand-muted)] hover:text-[var(--brand-ink)]">
                 <ShieldCheck className="mr-2 h-4 w-4" />
                 Verify
               </Button>
             </Link>
-            <Link href="/auth">
-              <Button className="h-10 rounded-lg bg-[var(--brand-leaf)] px-4 font-extrabold text-white hover:bg-[var(--brand-ink)]">
-                Join the network
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Link href={profileHref}>
+                  <Button variant="outline" className="h-10 rounded-lg border-[var(--brand-line)] bg-white px-3 font-extrabold text-[var(--brand-ink)] hover:bg-[var(--brand-ivory)]">
+                    <UserCircle className="mr-2 h-4 w-4" />
+                    {user.name}
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  onClick={handleLogout}
+                  className="h-10 rounded-lg px-3 text-[var(--brand-muted)] hover:text-[var(--brand-ink)]"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <Link href="/auth">
+                <Button className="h-10 rounded-lg bg-[var(--brand-leaf)] px-4 font-extrabold text-white hover:bg-[var(--brand-ink)]" disabled={loading}>
+                  Join the network
+                </Button>
+              </Link>
+            )}
           </div>
 
           <Sheet open={open} onOpenChange={setOpen}>
@@ -96,16 +128,29 @@ export default function Navbar() {
                 })}
               </div>
               <div className="mt-8 grid gap-3">
-                <Link href="/admin?admin=true" onClick={() => setOpen(false)}>
+                <Link href="/admin" onClick={() => setOpen(false)}>
                   <Button variant="outline" className="w-full rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
                     Verification desk
                   </Button>
                 </Link>
-                <Link href="/auth" onClick={() => setOpen(false)}>
-                  <Button className="w-full rounded-lg bg-[var(--brand-leaf)] font-extrabold text-white hover:bg-[var(--brand-ink)]">
-                    Join the network
-                  </Button>
-                </Link>
+                {user ? (
+                  <>
+                    <Link href={profileHref} onClick={() => setOpen(false)}>
+                      <Button variant="outline" className="w-full rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
+                        {user.name}
+                      </Button>
+                    </Link>
+                    <Button onClick={handleLogout} variant="ghost" className="w-full rounded-lg text-[var(--brand-muted)]">
+                      Sign out
+                    </Button>
+                  </>
+                ) : (
+                  <Link href="/auth" onClick={() => setOpen(false)}>
+                    <Button className="w-full rounded-lg bg-[var(--brand-leaf)] font-extrabold text-white hover:bg-[var(--brand-ink)]" disabled={loading}>
+                      Join the network
+                    </Button>
+                  </Link>
+                )}
               </div>
             </SheetContent>
           </Sheet>

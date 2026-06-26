@@ -13,6 +13,7 @@ import {
   getProviderByName,
 } from "@/lib/platform-service";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
+import { usePlatformSession } from "@/lib/use-platform-session";
 import { Send, ArrowLeft, MessageSquare } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -29,8 +30,10 @@ function ConversationAvatar({ name }: { name: string }) {
 
 function MessagesPageContent() {
   const searchParams = useSearchParams();
+  const { session, loading } = usePlatformSession();
   const providerId = searchParams.get("provider");
   const [newMessage, setNewMessage] = useState("");
+  const [sendError, setSendError] = useState("");
   const provider = providerId ? getProviderById(providerId) : undefined;
   const initialConversationId = provider ? `provider-${provider.id}` : null;
   const initialConversations = useMemo(() => {
@@ -63,10 +66,16 @@ function MessagesPageContent() {
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeConversationId) return;
+    if (!session) {
+      setSendError("Sign in to send messages to providers.");
+      return;
+    }
     const messageText = newMessage;
     setNewMessage("");
+    setSendError("");
     const response = await fetch("/api/messages", {
       method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         conversationId: activeConversationId,
@@ -74,14 +83,15 @@ function MessagesPageContent() {
         text: messageText,
       }),
     }).catch(() => null);
-    const payload = response?.ok ? await response.json() : null;
-    const message = payload?.message ?? {
-      id: `new-${Date.now()}`,
-      senderId: "parent",
-      text: messageText,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      isOwn: true,
-    };
+    if (!response?.ok) {
+      const payload = await response?.json().catch(() => null);
+      setNewMessage(messageText);
+      setSendError(payload?.error ?? "Could not send message.");
+      return;
+    }
+
+    const payload = await response.json();
+    const message = payload.message;
 
     setConversations((prev) =>
       (prev.some((conversation) => conversation.id === activeConversationId)
@@ -234,11 +244,16 @@ function MessagesPageContent() {
                 <Button
                   onClick={sendMessage}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-leaf)] p-0 text-white hover:bg-[var(--brand-ink)]"
-                  disabled={!newMessage.trim()}
+                  disabled={!newMessage.trim() || loading}
                 >
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
+              {sendError && (
+                <div className="mt-3 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-3 py-2 text-xs font-bold text-[var(--brand-coral)]">
+                  {sendError}
+                </div>
+              )}
             </div>
           </>
         ) : (
