@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +58,33 @@ function MessagesPageContent() {
     const existing = effectiveConversations.find((conversation) => conversation.participant === provider.name);
     return existing?.id ?? initialConversationId;
   });
+
+  const refreshConversations = useCallback(async () => {
+    const params = provider?.id ? `?provider=${encodeURIComponent(provider.id)}` : "";
+    const response = await fetch(`/api/messages${params}`, {
+      credentials: "same-origin",
+      cache: "no-store",
+    }).catch(() => null);
+    if (!response?.ok) return;
+
+    const payload = await response.json();
+    if (!Array.isArray(payload.conversations)) return;
+
+    setConversations(payload.conversations);
+    if (provider) {
+      const providerConversation = payload.conversations.find(
+        (conversation: Conversation) => conversation.participant === provider.name
+      );
+      setActiveConversationId(providerConversation?.id ?? initialConversationId);
+    }
+  }, [initialConversationId, provider, setConversations]);
+
+  useEffect(() => {
+    const refreshTimer = window.setTimeout(() => {
+      refreshConversations();
+    }, 0);
+    return () => window.clearTimeout(refreshTimer);
+  }, [refreshConversations]);
 
   const activeConv = useMemo(
     () => effectiveConversations.find((c) => c.id === activeConversationId),

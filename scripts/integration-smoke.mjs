@@ -128,6 +128,12 @@ describe("Kidcexcellence platform APIs", () => {
     assert.equal(profile.status, 200);
     assert.equal((await json(profile)).profile.children[0].name, "Test Child");
 
+    const savedProfile = await request("/api/profiles/parent", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(savedProfile.status, 200);
+    assert.equal((await json(savedProfile)).profile.children[0].name, "Test Child");
+
     const message = await request("/api/messages", {
       method: "POST",
       headers: {
@@ -139,6 +145,13 @@ describe("Kidcexcellence platform APIs", () => {
     });
     assert.equal(message.status, 200);
     assert.equal((await json(message)).message.text, "Integration hello");
+
+    const conversations = await request("/api/messages", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(conversations.status, 200);
+    const conversationsPayload = await json(conversations);
+    assert.equal(conversationsPayload.conversations[0].lastMessage, "Integration hello");
 
     const logout = await request("/api/auth", {
       method: "DELETE",
@@ -224,6 +237,31 @@ describe("Kidcexcellence platform APIs", () => {
     });
     assert.equal(signup.status, 200);
     const cookie = cookieFrom(signup);
+
+    const profile = await request("/api/profiles/provider", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        profile: {
+          category: "nurseries",
+          liveIn: true,
+          feeRows: [{ grade: "Reception", termly: "4200", annually: "12600" }],
+        },
+      }),
+    });
+    assert.equal(profile.status, 200);
+
+    const savedProfile = await request("/api/profiles/provider", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(savedProfile.status, 200);
+    const savedProfilePayload = await json(savedProfile);
+    assert.equal(savedProfilePayload.profile.category, "nurseries");
+    assert.equal(savedProfilePayload.profile.feeRows[0].grade, "Reception");
 
     const form = new FormData();
     form.set("type", "document");

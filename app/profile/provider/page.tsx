@@ -121,12 +121,42 @@ export default function ProviderProfilePage() {
     setUploads(payload.uploads ?? []);
   }, [session]);
 
+  const refreshProviderProfile = useCallback(async () => {
+    if (!session) return;
+
+    const response = await fetch("/api/profiles/provider", {
+      credentials: "same-origin",
+      cache: "no-store",
+    }).catch(() => null);
+    if (!response?.ok) return;
+
+    const payload = await response.json();
+    if (!payload.profile) return;
+
+    setCategory(payload.profile.category ?? DEFAULT_PROVIDER_PROFILE.category);
+    setLiveIn(Boolean(payload.profile.liveIn));
+    setFeeRows(Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows);
+    setStoredProfile({
+      category: payload.profile.category ?? DEFAULT_PROVIDER_PROFILE.category,
+      liveIn: Boolean(payload.profile.liveIn),
+      feeRows: Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows,
+      savedAt: payload.profile.savedAt,
+    });
+  }, [session, setStoredProfile]);
+
   useEffect(() => {
     const refreshTimer = window.setTimeout(() => {
       refreshUploads();
     }, 0);
     return () => window.clearTimeout(refreshTimer);
   }, [refreshUploads]);
+
+  useEffect(() => {
+    const refreshTimer = window.setTimeout(() => {
+      refreshProviderProfile();
+    }, 0);
+    return () => window.clearTimeout(refreshTimer);
+  }, [refreshProviderProfile]);
 
   const saveProviderProfile = async () => {
     if (!session) {

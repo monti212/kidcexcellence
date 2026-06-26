@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +32,28 @@ export default function ParentProfilePage() {
     (value): value is Child[] => Array.isArray(value)
   );
   const [saveMessage, setSaveMessage] = useState("");
+
+  const refreshProfile = useCallback(async () => {
+    if (!session) return;
+
+    const response = await fetch("/api/profiles/parent", {
+      credentials: "same-origin",
+      cache: "no-store",
+    }).catch(() => null);
+    if (!response?.ok) return;
+
+    const payload = await response.json();
+    if (payload.profile?.children) {
+      setChildren(payload.profile.children);
+    }
+  }, [session, setChildren]);
+
+  useEffect(() => {
+    const refreshTimer = window.setTimeout(() => {
+      refreshProfile();
+    }, 0);
+    return () => window.clearTimeout(refreshTimer);
+  }, [refreshProfile]);
 
   const addChild = () => {
     setChildren((prev) => [
