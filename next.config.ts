@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   // backslash-laden Windows paths into the traced server bundle and breaks the
   // Netlify Linux function at runtime (ERR_MODULE_NOT_FOUND).
   outputFileTracingRoot: __dirname,
+  outputFileTracingExcludes: {
+    "/*": ["./data/*.json"],
+  },
   turbopack: {
     root: __dirname,
   },
@@ -20,6 +23,22 @@ const nextConfig: NextConfig = {
         hostname: "picsum.photos",
       },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+    ];
   },
 };
 

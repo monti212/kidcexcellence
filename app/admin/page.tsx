@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -51,8 +51,19 @@ function AdminDashboard() {
   const { pendingProviders, approvedProviders, rejectedCount } = adminState;
   const [showSensitive, setShowSensitive] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [actionError, setActionError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/admin/verifications")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (payload) setAdminState(payload);
+      })
+      .catch(() => undefined);
+  }, [setAdminState]);
 
   const approveProvider = async (id: string) => {
+    setActionError("");
     const response = await fetch("/api/admin/verifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -62,25 +73,11 @@ function AdminDashboard() {
       setAdminState(await response.json());
       return;
     }
-    const provider = pendingProviders.find((item) => item.id === id);
-    if (!provider) return;
-    setAdminState({
-      pendingProviders: pendingProviders.filter((p) => p.id !== id),
-      approvedProviders: [
-        {
-          id: `approved-${provider.id}`,
-          name: provider.name,
-          category: provider.category,
-          verified: true,
-          date: new Date().toISOString().slice(0, 10),
-        },
-        ...approvedProviders,
-      ],
-      rejectedCount,
-    });
+    setActionError("Admin session required. Please sign in again.");
   };
 
   const rejectProvider = async (id: string) => {
+    setActionError("");
     const response = await fetch("/api/admin/verifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -90,11 +87,7 @@ function AdminDashboard() {
       setAdminState(await response.json());
       return;
     }
-    setAdminState({
-      pendingProviders: pendingProviders.filter((p) => p.id !== id),
-      approvedProviders,
-      rejectedCount: rejectedCount + 1,
-    });
+    setActionError("Admin session required. Please sign in again.");
   };
 
   const categoryIcon = (category: string) =>
@@ -157,6 +150,12 @@ function AdminDashboard() {
               )}
             </div>
           </div>
+
+          {actionError && (
+            <div className="mb-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+              {actionError}
+            </div>
+          )}
 
           {pendingProviders.length === 0 ? (
             <div className="text-center py-10">
@@ -296,9 +295,33 @@ function AdminDashboard() {
 
 function AdminGate() {
   const searchParams = useSearchParams();
-  const isAdmin = searchParams.get("admin") === "true";
+  const initialEmail = searchParams.get("email") ?? "";
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
-  const [authenticated, setAuthenticated] = useState(isAdmin);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [error, setError] = useState("");
+
+  const login = async () => {
+    setError("");
+    const response = await fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "login",
+        role: "admin",
+        email,
+        password,
+      }),
+    }).catch(() => null);
+
+    if (response?.ok) {
+      setAuthenticated(true);
+      return;
+    }
+
+    const payload = response ? await response.json().catch(() => null) : null;
+    setError(payload?.error ?? "Admin sign-in failed.");
+  };
 
   if (authenticated) return <AdminDashboard />;
 
@@ -313,25 +336,38 @@ function AdminGate() {
             <Shield className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-extrabold text-[var(--brand-ink)] mb-1">Admin Access</h1>
-          <p className="text-[var(--brand-muted)] text-sm mb-6">Enter your admin password to continue</p>
+          <p className="text-[var(--brand-muted)] text-sm mb-6">Sign in with an allowed admin account</p>
           <Separator className="mb-5" />
           <div className="space-y-3">
+            <Input
+              type="email"
+              placeholder="admin@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="rounded-lg border-[var(--brand-line)] focus-visible:ring-emerald-600"
+            />
             <Input
               type="password"
               placeholder="Admin password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && login()}
               className="rounded-lg border-[var(--brand-line)] focus-visible:ring-emerald-600"
             />
+            {error && (
+              <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-left text-xs font-bold text-red-700">
+                {error}
+              </div>
+            )}
             <Button
               className="w-full rounded-lg text-white font-black h-11"
               style={{ background: "var(--brand-leaf)" }}
-              onClick={() => setAuthenticated(password === "admin123" || password.length > 0)}
+              onClick={login}
             >
               Login
             </Button>
           </div>
-          <p className="text-gray-400 text-xs mt-4">Or access via: /admin?admin=true</p>
+          <p className="text-gray-400 text-xs mt-4">Admin emails must be listed in ADMIN_EMAILS.</p>
         </div>
       </div>
     </div>

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import {
   appendConversationMessage,
+  getSessionFromRequest,
   getStoredConversations,
 } from "@/lib/platform-store";
+import { consumeRateLimit, requestIp } from "@/lib/rate-limit";
+import { isSameOriginMutation } from "@/lib/request-guard";
 
 export const runtime = "nodejs";
 
@@ -14,6 +17,27 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
+  }
+
+  const auth = await getSessionFromRequest(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  const rateLimit = consumeRateLimit({
+    key: `messages:${auth.session.userId}:${requestIp(request)}`,
+    limit: 30,
+    windowMs: 60 * 1000,
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: "Too many messages. Please slow down." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfter) } }
+    );
+  }
+
   const body = await request.json().catch(() => null);
 
   if (!body?.conversationId || !body?.text) {
