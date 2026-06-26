@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,85 +14,123 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Star, Eye, EyeOff, Baby, Briefcase } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
+import { Eye, EyeOff, Baby, Briefcase } from "lucide-react";
 
 export default function AuthPage() {
+  const router = useRouter();
   const [isLogin, setIsLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+
+  const completeAuth = async (role: "parent" | "provider" | "login", formData: FormData) => {
+    const response = await fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: role === "login" ? "login" : "signup",
+        role: role === "login" ? "parent" : role,
+        name: formData.get("name"),
+        email: formData.get("email"),
+        phone: formData.get("phone"),
+        location: formData.get("location"),
+        category: formData.get("category"),
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      setStatusMessage(payload.error ?? "Could not complete authentication.");
+      return;
+    }
+
+    const session = payload.session;
+    window.localStorage.setItem("kidcexcellence.session", JSON.stringify(session));
+    setStatusMessage(
+      session.role === "provider"
+        ? "Provider account created. Opening your listing workspace..."
+        : role === "parent"
+          ? "Parent account created. Opening your family profile..."
+          : "Welcome back. Opening your parent workspace..."
+    );
+    window.setTimeout(() => {
+      router.push(session.role === "provider" ? "/profile/provider" : "/profile/parent");
+    }, 600);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center py-12 px-4">
+    <div className="brand-page flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div
-              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm"
-              style={{ background: "linear-gradient(135deg, #7C3AED, #F9A8D4)" }}
-            >
-              <Star className="w-5 h-5 text-white fill-white" />
-            </div>
-            <span className="text-2xl font-extrabold" style={{ color: "#7C3AED" }}>
-              Kidcexcellence
-            </span>
+          <Link href="/" className="inline-flex justify-center">
+            <BrandMark />
           </Link>
-          <p className="text-gray-500 text-sm mt-2">
-            Trusted childcare across Botswana
+          <p className="mt-3 text-sm font-bold text-[var(--brand-muted)]">
+            Join the childcare network trusted across Botswana
           </p>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8">
+        <div className="brand-card p-8">
           {/* Auth Mode Toggle */}
           <div className="flex items-center justify-center gap-2 mb-6">
             <button
               onClick={() => setIsLogin(false)}
-              className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${
+              className={`px-5 py-2 rounded-lg text-sm font-black transition-all ${
                 !isLogin
-                  ? "text-white shadow-sm"
-                  : "text-gray-500 hover:text-purple-700"
+                  ? "bg-[var(--brand-leaf)] text-white shadow-sm"
+                  : "text-[var(--brand-muted)] hover:text-[var(--brand-ink)]"
               }`}
-              style={!isLogin ? { background: "#7C3AED" } : {}}
             >
               Create Account
             </button>
             <button
               onClick={() => setIsLogin(true)}
-              className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${
+              className={`px-5 py-2 rounded-lg text-sm font-black transition-all ${
                 isLogin
-                  ? "text-white shadow-sm"
-                  : "text-gray-500 hover:text-purple-700"
+                  ? "bg-[var(--brand-leaf)] text-white shadow-sm"
+                  : "text-[var(--brand-muted)] hover:text-[var(--brand-ink)]"
               }`}
-              style={isLogin ? { background: "#7C3AED" } : {}}
             >
               Login
             </button>
           </div>
 
           {isLogin ? (
-            <LoginForm showPassword={showPassword} setShowPassword={setShowPassword} />
+            <LoginForm
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+              onComplete={(formData) => completeAuth("login", formData)}
+            />
           ) : (
             <SignupForm
               showPassword={showPassword}
               setShowPassword={setShowPassword}
               showConfirmPassword={showConfirmPassword}
               setShowConfirmPassword={setShowConfirmPassword}
+              onComplete={completeAuth}
             />
+          )}
+
+          {statusMessage && (
+            <div className="mt-5 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-3 text-sm font-bold text-[var(--brand-leaf)]">
+              {statusMessage}
+            </div>
           )}
 
           {/* Social Login */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
+                <div className="w-full border-t border-[var(--brand-line)]" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-white text-gray-500">or continue with</span>
+                <span className="bg-white px-3 text-[var(--brand-muted)]">or continue with</span>
               </div>
             </div>
             <Button
               variant="outline"
-              className="w-full mt-4 rounded-xl border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+              className="mt-4 flex w-full items-center gap-3 rounded-lg border-[var(--brand-line)] text-[var(--brand-ink)] hover:bg-[var(--brand-ivory)]"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -115,12 +154,11 @@ export default function AuthPage() {
             </Button>
           </div>
 
-          <p className="text-center text-gray-500 text-sm mt-5">
+          <p className="mt-5 text-center text-sm text-[var(--brand-muted)]">
             {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button
               onClick={() => setIsLogin(!isLogin)}
-              className="font-semibold hover:underline"
-              style={{ color: "#7C3AED" }}
+              className="font-black text-[var(--brand-leaf)] hover:underline"
             >
               {isLogin ? "Sign up" : "Login"}
             </button>
@@ -134,29 +172,33 @@ export default function AuthPage() {
 function LoginForm({
   showPassword,
   setShowPassword,
+  onComplete,
 }: {
   showPassword: boolean;
   setShowPassword: (v: boolean) => void;
+  onComplete: (formData: FormData) => void;
 }) {
   return (
-    <form className="space-y-4">
+    <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); onComplete(new FormData(event.currentTarget)); }}>
       <div>
-        <Label htmlFor="email" className="text-gray-700 font-medium text-sm">Email</Label>
+        <Label htmlFor="email" className="text-[var(--brand-ink)] font-medium text-sm">Email</Label>
         <Input
           id="email"
+          name="email"
           type="email"
           placeholder="your@email.com"
-          className="mt-1 rounded-xl border-gray-200 focus-visible:ring-purple-500"
+          className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
         />
       </div>
       <div>
-        <Label htmlFor="password" className="text-gray-700 font-medium text-sm">Password</Label>
+        <Label htmlFor="password" className="text-[var(--brand-ink)] font-medium text-sm">Password</Label>
         <div className="relative mt-1">
           <Input
             id="password"
+            name="password"
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            className="rounded-xl border-gray-200 focus-visible:ring-purple-500 pr-10"
+            className="rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)] pr-10"
           />
           <button
             type="button"
@@ -167,15 +209,15 @@ function LoginForm({
           </button>
         </div>
         <div className="text-right mt-1">
-          <button type="button" className="text-xs text-purple-600 hover:underline">
+          <button type="button" className="text-xs text-[var(--brand-leaf)] hover:underline">
             Forgot password?
           </button>
         </div>
       </div>
       <Button
         type="submit"
-        className="w-full rounded-xl text-white font-semibold h-11 mt-2"
-        style={{ background: "#7C3AED" }}
+        className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)]"
+         
       >
         Login
       </Button>
@@ -188,43 +230,45 @@ function SignupForm({
   setShowPassword,
   showConfirmPassword,
   setShowConfirmPassword,
+  onComplete,
 }: {
   showPassword: boolean;
   setShowPassword: (v: boolean) => void;
   showConfirmPassword: boolean;
   setShowConfirmPassword: (v: boolean) => void;
+  onComplete: (role: "parent" | "provider", formData: FormData) => void;
 }) {
   return (
     <Tabs defaultValue="parent">
-      <TabsList className="grid w-full grid-cols-2 mb-6 rounded-xl bg-gray-100">
-        <TabsTrigger value="parent" className="rounded-xl flex items-center gap-2 data-[state=active]:bg-white">
+      <TabsList className="grid w-full grid-cols-2 mb-6 rounded-lg bg-[var(--brand-ivory)]">
+        <TabsTrigger value="parent" className="rounded-lg flex items-center gap-2 data-[state=active]:bg-white">
           <Baby className="w-4 h-4" />
           I&apos;m a Parent
         </TabsTrigger>
-        <TabsTrigger value="provider" className="rounded-xl flex items-center gap-2 data-[state=active]:bg-white">
+        <TabsTrigger value="provider" className="rounded-lg flex items-center gap-2 data-[state=active]:bg-white">
           <Briefcase className="w-4 h-4" />
           I&apos;m a Provider
         </TabsTrigger>
       </TabsList>
 
       <TabsContent value="parent">
-        <form className="space-y-3">
+        <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); onComplete("parent", new FormData(event.currentTarget)); }}>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Full Name</Label>
-            <Input placeholder="Mpho Dlamini" className="mt-1 rounded-xl border-gray-200 focus-visible:ring-purple-500" />
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Full Name</Label>
+            <Input name="name" placeholder="Mpho Dlamini" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
           </div>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Email</Label>
-            <Input type="email" placeholder="your@email.com" className="mt-1 rounded-xl border-gray-200 focus-visible:ring-purple-500" />
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Email</Label>
+            <Input name="email" type="email" placeholder="your@email.com" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
           </div>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Phone Number</Label>
-            <Input placeholder="+267 71 234 567" className="mt-1 rounded-xl border-gray-200 focus-visible:ring-purple-500" />
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Phone Number</Label>
+            <Input name="phone" placeholder="+267 71 234 567" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
           </div>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Location</Label>
-            <Select>
-              <SelectTrigger className="mt-1 rounded-xl border-gray-200">
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Location</Label>
+            <Select name="location">
+              <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
                 <SelectValue placeholder="Select your city" />
               </SelectTrigger>
               <SelectContent>
@@ -238,12 +282,13 @@ function SignupForm({
             </Select>
           </div>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Password</Label>
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Password</Label>
             <div className="relative mt-1">
               <Input
+                name="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Min. 8 characters"
-                className="rounded-xl border-gray-200 focus-visible:ring-purple-500 pr-10"
+                className="rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)] pr-10"
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -251,34 +296,34 @@ function SignupForm({
             </div>
           </div>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Confirm Password</Label>
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Confirm Password</Label>
             <div className="relative mt-1">
               <Input
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Repeat password"
-                className="rounded-xl border-gray-200 focus-visible:ring-purple-500 pr-10"
+                className="rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)] pr-10"
               />
               <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                 {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
-          <Button type="submit" className="w-full rounded-xl text-white font-semibold h-11 mt-2" style={{ background: "#7C3AED" }}>
+          <Button type="submit" className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)]"  >
             Create Parent Account
           </Button>
         </form>
       </TabsContent>
 
       <TabsContent value="provider">
-        <form className="space-y-3">
+        <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); onComplete("provider", new FormData(event.currentTarget)); }}>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Business / Full Name</Label>
-            <Input placeholder="Sunshine ELC or Your Name" className="mt-1 rounded-xl border-gray-200 focus-visible:ring-purple-500" />
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Business / Full Name</Label>
+            <Input name="name" placeholder="Sunshine ELC or Your Name" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
           </div>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Category</Label>
-            <Select>
-              <SelectTrigger className="mt-1 rounded-xl border-gray-200">
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Category</Label>
+            <Select name="category">
+              <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
@@ -292,17 +337,17 @@ function SignupForm({
             </Select>
           </div>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Email</Label>
-            <Input type="email" placeholder="your@email.com" className="mt-1 rounded-xl border-gray-200 focus-visible:ring-purple-500" />
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Email</Label>
+            <Input name="email" type="email" placeholder="your@email.com" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
           </div>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Phone / WhatsApp</Label>
-            <Input placeholder="+267 71 234 567" className="mt-1 rounded-xl border-gray-200 focus-visible:ring-purple-500" />
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Phone / WhatsApp</Label>
+            <Input name="phone" placeholder="+267 71 234 567" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
           </div>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Location</Label>
-            <Select>
-              <SelectTrigger className="mt-1 rounded-xl border-gray-200">
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Location</Label>
+            <Select name="location">
+              <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
                 <SelectValue placeholder="Select your city" />
               </SelectTrigger>
               <SelectContent>
@@ -313,19 +358,20 @@ function SignupForm({
             </Select>
           </div>
           <div>
-            <Label className="text-gray-700 font-medium text-sm">Password</Label>
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Password</Label>
             <div className="relative mt-1">
               <Input
+                name="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Min. 8 characters"
-                className="rounded-xl border-gray-200 focus-visible:ring-purple-500 pr-10"
+                className="rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)] pr-10"
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
-          <Button type="submit" className="w-full rounded-xl text-white font-semibold h-11 mt-2" style={{ background: "#7C3AED" }}>
+          <Button type="submit" className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)]"  >
             Create Provider Account
           </Button>
         </form>

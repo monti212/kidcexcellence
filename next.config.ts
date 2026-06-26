@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 const nextConfig: NextConfig = {
   // Pin the workspace/tracing root to this project. Stray lockfiles in parent

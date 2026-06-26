@@ -48,44 +48,57 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 
   /* Custom Kidcexcellence colors */
-  --color-brand-purple: #7C3AED;
-  --color-brand-pink: #F9A8D4;
-  --color-brand-warm: #FAFAF9;
+  --color-brand-ink: #10231f;
+  --color-brand-leaf: #2f7d5a;
+  --color-brand-gold: #f2b84b;
+  --color-brand-coral: #dc6f5a;
+  --color-brand-ivory: #fff8ec;
+  --color-brand-lilac: #8d6ccf;
 }
 
 :root {
-  --background: #FAFAF9;
-  --foreground: oklch(0.145 0 0);
+  --background: #fff8ec;
+  --foreground: #10231f;
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: #10231f;
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #7C3AED;
+  --popover-foreground: #10231f;
+  --primary: #2f7d5a;
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: #F9A8D4;
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: #f6ead6;
+  --secondary-foreground: #10231f;
+  --muted: #f6ead6;
+  --muted-foreground: #6d766f;
+  --accent: #f2b84b;
+  --accent-foreground: #10231f;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: #7C3AED;
+  --border: #eadbc4;
+  --input: #eadbc4;
+  --ring: #2f7d5a;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.75rem;
+  --radius: 0.5rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #7C3AED;
+  --sidebar-primary: #2f7d5a;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: #7C3AED;
+  --sidebar-ring: #2f7d5a;
+
+  --brand-ink: #10231f;
+  --brand-leaf: #2f7d5a;
+  --brand-gold: #f2b84b;
+  --brand-coral: #dc6f5a;
+  --brand-ivory: #fff8ec;
+  --brand-lilac: #8d6ccf;
+  --brand-line: #eadbc4;
+  --brand-paper: #ffffff;
+  --brand-muted: #6d766f;
 }
 
 @layer base {
@@ -94,8 +107,41 @@
   }
   body {
     @apply bg-background text-foreground;
+    text-rendering: optimizeLegibility;
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  .brand-page {
+    background:
+      linear-gradient(180deg, rgba(255, 248, 236, 0.98), rgba(255, 248, 236, 1)),
+      radial-gradient(circle at 20% 10%, rgba(242, 184, 75, 0.18), transparent 32%),
+      radial-gradient(circle at 85% 18%, rgba(47, 125, 90, 0.13), transparent 28%);
+  }
+
+  .brand-card {
+    @apply border bg-white shadow-sm;
+    border-color: var(--brand-line);
+    border-radius: 8px;
+  }
+
+  .brand-button {
+    @apply inline-flex items-center justify-center rounded-lg bg-[var(--brand-leaf)] px-4 py-2 text-sm font-extrabold text-white shadow-sm transition-colors hover:bg-[var(--brand-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .brand-button-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border bg-white px-4 py-2 text-sm font-extrabold text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-ivory)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)] focus-visible:ring-offset-2;
+    border-color: var(--brand-line);
+  }
+
+  .brand-label {
+    @apply text-xs font-black uppercase tracking-[0.16em] text-[var(--brand-leaf)];
+  }
+
+  .brand-muted {
+    color: var(--brand-muted);
   }
 }

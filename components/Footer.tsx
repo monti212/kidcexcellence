@@ -1,64 +1,73 @@
 import Link from "next/link";
-import { Star, Globe, Share2, Camera } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
+import { Camera, Globe, Share2 } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-300 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
-          <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #7C3AED, #F9A8D4)" }}>
-                <Star className="w-4 h-4 text-white fill-white" />
-              </div>
-              <span className="text-xl font-bold text-white">Kidcexcellence</span>
+    <footer className="mt-auto border-t border-[var(--brand-line)] bg-[var(--brand-ink)] text-white">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+          <div>
+            <div className="[&_*]:text-white">
+              <BrandMark />
             </div>
-            <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-              Connecting Botswana families with trusted, verified childcare services. Your child deserves the very best.
+            <p className="mt-4 max-w-sm text-sm leading-6 text-white/68">
+              A Botswana-first childcare marketplace for discovering, comparing,
+              messaging, and verifying trusted care providers.
             </p>
-            <div className="flex gap-3 mt-4">
-              <a href="#" className="w-9 h-9 rounded-xl bg-gray-800 flex items-center justify-center hover:bg-purple-600 transition-colors">
-                <Globe className="w-4 h-4" />
-              </a>
-              <a href="#" className="w-9 h-9 rounded-xl bg-gray-800 flex items-center justify-center hover:bg-purple-600 transition-colors">
-                <Share2 className="w-4 h-4" />
-              </a>
-              <a href="#" className="w-9 h-9 rounded-xl bg-gray-800 flex items-center justify-center hover:bg-purple-600 transition-colors">
-                <Camera className="w-4 h-4" />
-              </a>
+            <div className="mt-5 flex gap-2">
+              {[Globe, Share2, Camera].map((Icon, index) => (
+                <a
+                  key={index}
+                  href="#"
+                  className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white/75 transition-colors hover:bg-[var(--brand-gold)] hover:text-[var(--brand-ink)]"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Company</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="#" className="hover:text-purple-400 transition-colors">About Us</Link></li>
-              <li><Link href="#" className="hover:text-purple-400 transition-colors">How It Works</Link></li>
-              <li><Link href="#" className="hover:text-purple-400 transition-colors">For Providers</Link></li>
-              <li><Link href="/admin?admin=true" className="hover:text-purple-400 transition-colors">Admin</Link></li>
+            <h4 className="mb-4 text-sm font-black uppercase tracking-[0.16em] text-[var(--brand-gold)]">
+              Marketplace
+            </h4>
+            <ul className="space-y-2 text-sm text-white/72">
+              <li><Link href="/search" className="hover:text-white">Browse providers</Link></li>
+              <li><Link href="/compare" className="hover:text-white">Compare options</Link></li>
+              <li><Link href="/messages" className="hover:text-white">Messages</Link></li>
+              <li><Link href="/auth" className="hover:text-white">Create account</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4">Support</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="#" className="hover:text-purple-400 transition-colors">Privacy Policy</Link></li>
-              <li><Link href="#" className="hover:text-purple-400 transition-colors">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-purple-400 transition-colors">Contact Us</Link></li>
-              <li><Link href="#" className="hover:text-purple-400 transition-colors">Help Centre</Link></li>
+            <h4 className="mb-4 text-sm font-black uppercase tracking-[0.16em] text-[var(--brand-gold)]">
+              Providers
+            </h4>
+            <ul className="space-y-2 text-sm text-white/72">
+              <li><Link href="/auth" className="hover:text-white">List a service</Link></li>
+              <li><Link href="/admin?admin=true" className="hover:text-white">Verification desk</Link></li>
+              <li><Link href="/search?category=schools" className="hover:text-white">Schools</Link></li>
+              <li><Link href="/search?category=nannies" className="hover:text-white">Nannies</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="mb-4 text-sm font-black uppercase tracking-[0.16em] text-[var(--brand-gold)]">
+              Trust
+            </h4>
+            <ul className="space-y-2 text-sm text-white/72">
+              <li><a href="#" className="hover:text-white">Safety checks</a></li>
+              <li><a href="#" className="hover:text-white">Privacy policy</a></li>
+              <li><a href="#" className="hover:text-white">Terms of service</a></li>
+              <li><a href="#" className="hover:text-white">Help centre</a></li>
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-gray-500 text-sm">
-            © 2025 Kidcexcellence. All rights reserved.
-          </p>
-          <p className="text-gray-500 text-sm">
-            Made with ❤️ for Botswana families
-          </p>
+        <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-sm text-white/55 sm:flex-row sm:items-center sm:justify-between">
+          <p>© 2026 Kidcexcellence. All rights reserved.</p>
+          <p>Built for Botswana families and trusted local providers.</p>
         </div>
       </div>
     </footer>

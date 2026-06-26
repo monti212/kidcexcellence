@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { Fragment, Suspense, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PROVIDERS } from "@/lib/mock-data";
+import type { Provider } from "@/lib/mock-data";
+import {
+  getCategoryIcon,
+  getCategoryLabel,
+  getProvidersByIds,
+} from "@/lib/platform-service";
+import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import {
   CheckCircle2,
   X,
@@ -18,57 +24,53 @@ import {
 // Default to first 3 verified providers for demo
 const defaultCompareIds = ["1", "2", "9"];
 
-const categoryLabels: Record<string, string> = {
-  schools: "School",
-  nurseries: "Nursery",
-  nannies: "Nanny",
-  babysitters: "Babysitter",
-  "pediatric-clinics": "Pediatric Clinic",
-  tutors: "Tutor",
-};
+function ComparePageContent() {
+  const searchParams = useSearchParams();
+  const queryIds = searchParams.get("ids");
+  const [storedCompareIds, setCompareIds] = useLocalStorageState<string[]>(
+    "kidcexcellence.compareIds",
+    defaultCompareIds,
+    (value): value is string[] => Array.isArray(value)
+  );
+  const compareIds = queryIds ? queryIds.split(",").filter(Boolean).slice(0, 3) : storedCompareIds;
 
-export default function ComparePage() {
-  const [compareIds, setCompareIds] = useState<string[]>(defaultCompareIds);
-
-  const providers = compareIds
-    .map((id) => PROVIDERS.find((p) => p.id === id))
-    .filter(Boolean) as typeof PROVIDERS;
+  const providers = useMemo(() => getProvidersByIds(compareIds), [compareIds]);
 
   const removeProvider = (id: string) => {
     setCompareIds((prev) => prev.filter((c) => c !== id));
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] py-10 px-4 sm:px-6 lg:px-8">
+    <div className="brand-page min-h-screen px-4 py-10 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Heading */}
         <div className="flex items-center gap-3 mb-8">
           <div
-            className="w-10 h-10 rounded-2xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #7C3AED, #F9A8D4)" }}
+            className="w-10 h-10 rounded-lg flex items-center justify-center"
+            style={{ background: "var(--brand-ink)" }}
           >
-            <BarChart2 className="w-5 h-5 text-white" />
+            <BarChart2 className="w-5 h-5 text-[var(--brand-gold)]" />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900">Compare Providers</h1>
-            <p className="text-gray-500 text-sm">Side-by-side comparison to help you choose</p>
+            <h1 className="text-3xl font-black text-[var(--brand-ink)]">Compare Providers</h1>
+            <p className="text-sm text-[var(--brand-muted)]">Side-by-side comparison to help you choose</p>
           </div>
         </div>
 
         {providers.length < 2 ? (
           <div className="text-center py-20">
             <div className="text-6xl mb-6">⚖️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            <h2 className="text-2xl font-bold text-[var(--brand-ink)] mb-3">
               Select at least 2 providers to compare
             </h2>
-            <p className="text-gray-500 mb-8 max-w-md mx-auto">
+            <p className="text-[var(--brand-muted)] mb-8 max-w-md mx-auto">
               Browse our provider listing, then use the &quot;Compare&quot; button on each card to add them here.
             </p>
             <Link href="/search">
               <Button
                 size="lg"
-                className="rounded-2xl text-white font-semibold px-8"
-                style={{ background: "#7C3AED" }}
+                className="rounded-lg text-white font-semibold px-8"
+                style={{ background: "var(--brand-leaf)" }}
               >
                 Browse Providers
               </Button>
@@ -85,19 +87,19 @@ export default function ComparePage() {
                 {/* Header Row — photos */}
                 <div className="bg-transparent" />
                 {providers.map((p) => (
-                  <div key={p.id} className="bg-white rounded-t-2xl border border-gray-100 border-b-0 p-5 text-center relative mx-1">
+                  <div key={p.id} className="bg-white rounded-t-2xl border border-[var(--brand-line)] border-b-0 p-5 text-center relative mx-1">
                     <button
                       onClick={() => removeProvider(p.id)}
                       className="absolute top-3 right-3 w-7 h-7 rounded-full bg-gray-100 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-colors"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-purple-50 mx-auto mb-3 border border-gray-100">
-                      <Image src={p.image} alt={p.name} width={64} height={64} className="w-full h-full object-cover" />
+                    <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] text-3xl">
+                      {getCategoryIcon(p.category)}
                     </div>
-                    <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1">{p.name}</h3>
-                    <Badge className="rounded-full bg-purple-100 text-purple-700 border-0 text-xs">
-                      {categoryLabels[p.category]}
+                    <h3 className="font-bold text-[var(--brand-ink)] text-sm leading-tight mb-1">{p.name}</h3>
+                    <Badge className="rounded-md border-0 bg-[var(--brand-ivory)] text-xs text-[var(--brand-leaf)]">
+                      {getCategoryLabel(p.category)}
                     </Badge>
                   </div>
                 ))}
@@ -106,27 +108,27 @@ export default function ComparePage() {
                 {[
                   {
                     label: "Location",
-                    render: (p: typeof PROVIDERS[0]) => (
-                      <span className="flex items-center gap-1 text-gray-700 text-sm">
-                        <MapPin className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                    render: (p: Provider) => (
+                      <span className="flex items-center gap-1 text-[var(--brand-ink)] text-sm">
+                        <MapPin className="w-3.5 h-3.5 text-[var(--brand-leaf)] shrink-0" />
                         {p.location}
                       </span>
                     ),
                   },
                   {
                     label: "Rating",
-                    render: (p: typeof PROVIDERS[0]) => (
+                    render: (p: Provider) => (
                       <span className="flex items-center gap-1">
                         <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span className="font-semibold text-gray-900">{p.rating}</span>
+                        <span className="font-semibold text-[var(--brand-ink)]">{p.rating}</span>
                         <span className="text-gray-400 text-xs">({p.reviewCount})</span>
                       </span>
                     ),
                   },
                   {
                     label: "Price",
-                    render: (p: typeof PROVIDERS[0]) => (
-                      <span className="font-bold text-gray-900">
+                    render: (p: Provider) => (
+                      <span className="font-bold text-[var(--brand-ink)]">
                         P {p.price.toLocaleString()}{" "}
                         <span className="font-normal text-gray-400 text-xs">/{p.priceUnit}</span>
                       </span>
@@ -134,7 +136,7 @@ export default function ComparePage() {
                   },
                   {
                     label: "Verified",
-                    render: (p: typeof PROVIDERS[0]) =>
+                    render: (p: Provider) =>
                       p.verified ? (
                         <span className="flex items-center gap-1 text-green-600 font-medium text-sm">
                           <CheckCircle2 className="w-4 h-4" /> Verified
@@ -145,22 +147,22 @@ export default function ComparePage() {
                   },
                   {
                     label: "Experience",
-                    render: (p: typeof PROVIDERS[0]) => (
-                      <span className="text-gray-700 text-sm">{p.experience}</span>
+                    render: (p: Provider) => (
+                      <span className="text-[var(--brand-ink)] text-sm">{p.experience}</span>
                     ),
                   },
                   {
                     label: "Availability",
-                    render: (p: typeof PROVIDERS[0]) => (
-                      <span className="text-gray-700 text-sm">{p.availability}</span>
+                    render: (p: Provider) => (
+                      <span className="text-[var(--brand-ink)] text-sm">{p.availability}</span>
                     ),
                   },
                   {
                     label: "Services",
-                    render: (p: typeof PROVIDERS[0]) => (
+                    render: (p: Provider) => (
                       <div className="flex flex-wrap gap-1">
                         {p.services.slice(0, 3).map((s) => (
-                          <span key={s} className="bg-purple-50 text-purple-700 rounded-full px-2 py-0.5 text-xs">
+                          <span key={s} className="bg-[var(--brand-ivory)] text-[var(--brand-leaf)] rounded-full px-2 py-0.5 text-xs">
                             {s}
                           </span>
                         ))}
@@ -171,38 +173,38 @@ export default function ComparePage() {
                     ),
                   },
                 ].map((row) => (
-                  <>
+                <Fragment key={row.label}>
                     <div
                       key={`label-${row.label}`}
-                      className="bg-gray-50 border-y border-l border-gray-100 px-4 py-4 flex items-center font-semibold text-gray-700 text-sm"
+                      className="flex items-center border-y border-l border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-4 text-sm font-black text-[var(--brand-ink)]"
                     >
                       {row.label}
                     </div>
                     {providers.map((p) => (
                       <div
                         key={`${p.id}-${row.label}`}
-                        className="bg-white border-y border-r border-gray-100 px-5 py-4 flex items-center mx-1"
+                        className="mx-1 flex items-center border-y border-r border-[var(--brand-line)] bg-white px-5 py-4"
                       >
                         {row.render(p)}
                       </div>
                     ))}
-                  </>
+                </Fragment>
                 ))}
 
                 {/* Fees comparison (schools only) */}
                 {providers.some((p) => p.fees) && (
                   <>
-                    <div className="bg-purple-50 border-y border-l border-purple-100 px-4 py-4 flex items-center font-semibold text-purple-700 text-sm">
+                    <div className="flex items-center border-y border-l border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-4 text-sm font-black text-[var(--brand-leaf)]">
                       Fee Structure
                     </div>
                     {providers.map((p) => (
-                      <div key={`fees-${p.id}`} className="bg-purple-50/30 border-y border-r border-purple-100 px-5 py-4 mx-1">
+                      <div key={`fees-${p.id}`} className="mx-1 border-y border-r border-[var(--brand-line)] bg-white px-5 py-4">
                         {p.fees ? (
                           <div className="text-xs space-y-1">
                             {p.fees.slice(0, 3).map((fee) => (
                               <div key={fee.grade} className="flex justify-between gap-2">
-                                <span className="text-gray-600">{fee.grade}</span>
-                                <span className="font-semibold text-gray-900">P {fee.termly.toLocaleString()}/term</span>
+                                <span className="text-[var(--brand-muted)]">{fee.grade}</span>
+                                <span className="font-semibold text-[var(--brand-ink)]">P {fee.termly.toLocaleString()}/term</span>
                               </div>
                             ))}
                           </div>
@@ -217,9 +219,9 @@ export default function ComparePage() {
                 {/* Action row */}
                 <div className="bg-transparent" />
                 {providers.map((p) => (
-                  <div key={`action-${p.id}`} className="bg-white rounded-b-2xl border border-gray-100 border-t-0 p-4 mx-1">
+                  <div key={`action-${p.id}`} className="bg-white rounded-b-2xl border border-[var(--brand-line)] border-t-0 p-4 mx-1">
                     <Link href={`/provider/${p.id}`}>
-                      <Button className="w-full rounded-xl text-white text-sm font-semibold" style={{ background: "#7C3AED" }}>
+                      <Button className="w-full rounded-lg bg-[var(--brand-leaf)] text-sm font-black text-white hover:bg-[var(--brand-ink)]">
                         View Profile
                       </Button>
                     </Link>
@@ -230,18 +232,33 @@ export default function ComparePage() {
 
             {/* Add Another */}
             {providers.length < 3 && (
-              <div className="mt-6 text-center">
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <Link href="/search">
-                  <Button variant="outline" className="rounded-xl border-purple-200 text-purple-700 hover:bg-purple-50 flex items-center gap-2 mx-auto">
+                  <Button variant="outline" className="mx-auto flex items-center gap-2 rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-ink)] hover:bg-[var(--brand-ivory)]">
                     <Plus className="w-4 h-4" />
                     Add Another Provider
                   </Button>
                 </Link>
+                <Button
+                  variant="outline"
+                  className="rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-muted)] hover:bg-[var(--brand-ivory)]"
+                  onClick={() => setCompareIds(defaultCompareIds)}
+                >
+                  Reset demo comparison
+                </Button>
               </div>
             )}
           </>
         )}
       </div>
     </div>
+  );
+}
+
+export default function ComparePage() {
+  return (
+    <Suspense fallback={<div className="brand-page min-h-screen p-8 text-[var(--brand-muted)]">Loading comparison...</div>}>
+      <ComparePageContent />
+    </Suspense>
   );
 }
