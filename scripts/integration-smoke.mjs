@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -80,6 +80,23 @@ after(async () => {
 });
 
 describe("Kidcexcellence platform APIs", () => {
+  it("renders complete first-party account access flows", async () => {
+    const authPage = await request("/auth");
+    assert.equal(authPage.status, 200);
+    const authMarkup = await authPage.text();
+    assert.equal(authMarkup.includes("Continue with Google"), false);
+    const authSource = await readFile(path.join(process.cwd(), "app", "auth", "page.tsx"), "utf8");
+    assert.equal(authSource.match(/Confirm Password/g)?.length, 2);
+
+    const resetPage = await request("/auth/reset-password?token=development-token");
+    assert.equal(resetPage.status, 200);
+    assert.match(await resetPage.text(), /Choose a new password/);
+
+    const verificationPage = await request("/auth/verify-email?token=development-token");
+    assert.equal(verificationPage.status, 200);
+    assert.match(await verificationPage.text(), /Verify your email/);
+  });
+
   it("creates a parent session, protects profile writes, sends messages, and logs out", async () => {
     const email = `parent-${Date.now()}@example.com`;
     const signup = await request("/api/auth", {
