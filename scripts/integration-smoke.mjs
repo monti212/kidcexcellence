@@ -217,6 +217,98 @@ describe("Kidcexcellence platform APIs", () => {
     assert.equal((await json(decision)).pendingProviders.length, queuePayload.pendingProviders.length - 1);
   });
 
+  it("supports email verification and password reset lifecycle", async () => {
+    const email = `lifecycle-${Date.now()}@example.com`;
+    const signup = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "parent",
+        name: "Lifecycle Parent",
+        email,
+        password: "password123",
+        location: "gaborone",
+      }),
+    });
+    assert.equal(signup.status, 200);
+    const cookie = cookieFrom(signup);
+    assert.equal((await json(signup)).user.emailVerifiedAt, undefined);
+
+    const verification = await request("/api/auth/verify-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(verification.status, 200);
+    const verificationPayload = await json(verification);
+    assert.ok(verificationPayload.delivery.token);
+
+    const verified = await request("/api/auth/verify-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ token: verificationPayload.delivery.token }),
+    });
+    assert.equal(verified.status, 200);
+    assert.ok((await json(verified)).user.emailVerifiedAt);
+
+    const reset = await request("/api/auth/reset-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ email }),
+    });
+    assert.equal(reset.status, 200);
+    const resetPayload = await json(reset);
+    assert.ok(resetPayload.delivery.token);
+
+    const applied = await request("/api/auth/reset-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ token: resetPayload.delivery.token, password: "newpassword123" }),
+    });
+    assert.equal(applied.status, 200);
+    assert.equal((await json(applied)).reset, true);
+
+    const oldPassword = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ mode: "login", role: "parent", email, password: "password123" }),
+    });
+    assert.equal(oldPassword.status, 400);
+
+    const newPassword = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ mode: "login", role: "parent", email, password: "newpassword123" }),
+    });
+    assert.equal(newPassword.status, 200);
+
+    const oldSession = await request("/api/auth", { headers: { Cookie: cookie } });
+    assert.equal(oldSession.status, 401);
+  });
+
   it("supports provider document and gallery uploads with owner-only access", async () => {
     const email = `provider-${Date.now()}@example.com`;
     const signup = await request("/api/auth", {

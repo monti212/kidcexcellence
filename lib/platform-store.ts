@@ -24,6 +24,7 @@ export interface PlatformUser {
   location?: string;
   category?: string;
   passwordHash: string;
+  emailVerifiedAt?: string;
   createdAt: string;
   lastLoginAt?: string;
 }
@@ -36,6 +37,7 @@ export interface PublicPlatformUser {
   phone?: string;
   location?: string;
   category?: string;
+  emailVerifiedAt?: string;
   createdAt: string;
   lastLoginAt?: string;
 }
@@ -46,6 +48,15 @@ export interface PlatformSession {
   role: UserRole;
   createdAt: string;
   expiresAt: string;
+}
+
+export interface AccountTokenRecord {
+  token: string;
+  userId: string;
+  type: "email-verification" | "password-reset";
+  createdAt: string;
+  expiresAt: string;
+  usedAt?: string;
 }
 
 export interface ChildProfile {
@@ -89,6 +100,7 @@ export interface PlatformUploadRecord {
 export interface PlatformStore {
   users: PlatformUser[];
   sessions: PlatformSession[];
+  accountTokens: AccountTokenRecord[];
   parentProfiles: Record<string, ParentProfileRecord>;
   providerProfiles: Record<string, ProviderProfileRecord>;
   uploads: PlatformUploadRecord[];
@@ -112,6 +124,7 @@ function createInitialStore(): PlatformStore {
   return {
     users: [],
     sessions: [],
+    accountTokens: [],
     parentProfiles: {},
     providerProfiles: {},
     uploads: [],
@@ -134,6 +147,7 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
   return {
     users: store.users ?? initial.users,
     sessions: store.sessions ?? initial.sessions,
+    accountTokens: store.accountTokens ?? initial.accountTokens,
     parentProfiles: store.parentProfiles ?? initial.parentProfiles,
     providerProfiles: store.providerProfiles ?? initial.providerProfiles,
     uploads: store.uploads ?? initial.uploads,
@@ -177,6 +191,7 @@ function publicUser(user: PlatformUser): PublicPlatformUser {
     phone: user.phone,
     location: user.location,
     category: user.category,
+    emailVerifiedAt: user.emailVerifiedAt,
     createdAt: user.createdAt,
     lastLoginAt: user.lastLoginAt,
   };
@@ -262,6 +277,89 @@ export async function createOrLoginUser(input: {
     const session = createSession(user);
     store.sessions.push(session);
     return { user: publicUser(user), session };
+  });
+}
+
+function createAccountToken(userId: string, type: AccountTokenRecord["type"]) {
+  const createdAt = new Date();
+  const expiresAt = new Date(createdAt);
+  expiresAt.setHours(expiresAt.getHours() + (type === "password-reset" ? 1 : 24));
+
+  return {
+    token: randomBytes(32).toString("hex"),
+    userId,
+    type,
+    createdAt: createdAt.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+  };
+}
+
+export async function requestEmailVerification(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  return updateStore((store) => {
+    const user = store.users.find((item) => item.email === normalizedEmail);
+    if (!user) return null;
+    if (user.emailVerifiedAt) return { token: null, alreadyVerified: true };
+
+    const token = createAccountToken(user.id, "email-verification");
+    store.accountTokens = store.accountTokens
+      .filter((item) => !(item.userId === user.id && item.type === "email-verification" && !item.usedAt))
+      .concat(token);
+    return { token: token.token, alreadyVerified: false };
+  });
+}
+
+export async function verifyEmailToken(token: string) {
+  return updateStore((store) => {
+    const accountToken = store.accountTokens.find(
+      (item) => item.token === token && item.type === "email-verification"
+    );
+    if (!accountToken || accountToken.usedAt || new Date(accountToken.expiresAt).getTime() <= Date.now()) {
+      return null;
+    }
+
+    const user = store.users.find((item) => item.id === accountToken.userId);
+    if (!user) return null;
+
+    const now = new Date().toISOString();
+    user.emailVerifiedAt = now;
+    accountToken.usedAt = now;
+    return publicUser(user);
+  });
+}
+
+export async function requestPasswordReset(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  return updateStore((store) => {
+    const user = store.users.find((item) => item.email === normalizedEmail);
+    if (!user) return null;
+
+    const token = createAccountToken(user.id, "password-reset");
+    store.accountTokens = store.accountTokens
+      .filter((item) => !(item.userId === user.id && item.type === "password-reset" && !item.usedAt))
+      .concat(token);
+    return { token: token.token };
+  });
+}
+
+export async function resetPasswordWithToken(token: string, password: string) {
+  const passwordHash = await hashPassword(password);
+  return updateStore((store) => {
+    const accountToken = store.accountTokens.find(
+      (item) => item.token === token && item.type === "password-reset"
+    );
+    if (!accountToken || accountToken.usedAt || new Date(accountToken.expiresAt).getTime() <= Date.now()) {
+      return null;
+    }
+
+    const user = store.users.find((item) => item.id === accountToken.userId);
+    if (!user) return null;
+
+    const now = new Date().toISOString();
+    user.passwordHash = passwordHash;
+    accountToken.usedAt = now;
+    store.sessions = store.sessions.filter((session) => session.userId !== user.id);
+    return publicUser(user);
   });
 }
 

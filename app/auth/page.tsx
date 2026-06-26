@@ -27,6 +27,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [lifecycleMessage, setLifecycleMessage] = useState("");
 
   const completeAuth = async (role: "parent" | "provider" | "login", formData: FormData) => {
     const password = String(formData.get("password") ?? "");
@@ -73,6 +74,54 @@ export default function AuthPage() {
     }, 600);
   };
 
+  const requestPasswordReset = async (formData: FormData) => {
+    const email = String(formData.get("email") ?? "");
+    if (!email.includes("@")) {
+      setLifecycleMessage("Enter your email first, then request a password reset.");
+      return;
+    }
+
+    const response = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      setLifecycleMessage(payload.error ?? "Could not start password reset.");
+      return;
+    }
+
+    setLifecycleMessage(
+      payload.delivery?.token
+        ? `Development reset token: ${payload.delivery.token}`
+        : "If an account exists for that email, reset instructions are ready."
+    );
+  };
+
+  const requestEmailVerification = async () => {
+    const response = await fetch("/api/auth/verify-email", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      setLifecycleMessage(payload.error ?? "Could not start email verification.");
+      return;
+    }
+
+    setLifecycleMessage(
+      payload.alreadyVerified
+        ? "Your email is already verified."
+        : payload.delivery?.token
+          ? `Development verification token: ${payload.delivery.token}`
+          : "Verification instructions are ready."
+    );
+  };
+
   return (
     <div className="brand-page flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
@@ -116,6 +165,7 @@ export default function AuthPage() {
               showPassword={showPassword}
               setShowPassword={setShowPassword}
               onComplete={(formData) => completeAuth("login", formData)}
+              onPasswordReset={requestPasswordReset}
             />
           ) : (
             <SignupForm
@@ -138,6 +188,21 @@ export default function AuthPage() {
               {statusMessage}
             </div>
           )}
+
+          {lifecycleMessage && (
+            <div className="mt-5 break-words rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3 text-xs font-bold text-[var(--brand-muted)]">
+              {lifecycleMessage}
+            </div>
+          )}
+
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={requestEmailVerification}
+            className="mt-4 w-full rounded-lg text-xs font-black text-[var(--brand-leaf)] hover:bg-[var(--brand-ivory)]"
+          >
+            Send email verification
+          </Button>
 
           {/* Social Login */}
           <div className="mt-6">
@@ -194,10 +259,12 @@ function LoginForm({
   showPassword,
   setShowPassword,
   onComplete,
+  onPasswordReset,
 }: {
   showPassword: boolean;
   setShowPassword: (v: boolean) => void;
   onComplete: (formData: FormData) => void;
+  onPasswordReset: (formData: FormData) => void;
 }) {
   return (
     <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); onComplete(new FormData(event.currentTarget)); }}>
@@ -230,7 +297,11 @@ function LoginForm({
           </button>
         </div>
         <div className="text-right mt-1">
-          <button type="button" className="text-xs text-[var(--brand-leaf)] hover:underline">
+          <button
+            type="button"
+            onClick={(event) => onPasswordReset(new FormData(event.currentTarget.form ?? undefined))}
+            className="text-xs text-[var(--brand-leaf)] hover:underline"
+          >
             Forgot password?
           </button>
         </div>

@@ -75,6 +75,8 @@ Set `ADMIN_EMAILS` to a comma-separated list of emails allowed to create or use 
 - `GET /api/auth`
 - `POST /api/auth`
 - `DELETE /api/auth`
+- `POST /api/auth/verify-email`
+- `POST /api/auth/reset-password`
 - `GET /api/profiles/parent`
 - `POST /api/profiles/parent`
 - `GET /api/profiles/provider`
@@ -89,7 +91,7 @@ Set `ADMIN_EMAILS` to a comma-separated list of emails allowed to create or use 
 Before the platform is considered fully production complete:
 
 - Replace the JSON store with a database-backed adapter.
-- Harden authentication with password reset, email verification, CSRF protection, finer-grained admin permissions, and distributed rate limiting.
+- Connect password reset and email verification to a production email provider, then add CSRF token rotation, finer-grained admin permissions, and distributed rate limiting.
 - Move provider uploads from local disk to durable object storage for serverless production.
 - Add automated end-to-end tests for auth, search, compare, messaging, profile saving, and admin verification.
 - Expand automated browser coverage for search, compare, provider profile editing, and responsive UI flows.
