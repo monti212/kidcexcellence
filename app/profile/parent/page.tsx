@@ -13,8 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Camera, Plus, Trash2, User } from "lucide-react";
-import { useLocalStorageState } from "@/lib/use-local-storage-state";
+import { Plus, Trash2, User } from "lucide-react";
 import { usePlatformSession } from "@/lib/use-platform-session";
 
 interface Child {
@@ -24,14 +23,32 @@ interface Child {
   specialNeeds: string;
 }
 
+interface ParentFormState {
+  fullName: string;
+  dateOfBirth: string;
+  nationality: string;
+  location: string;
+  phone: string;
+  bio: string;
+  children: Child[];
+}
+
+const EMPTY_PROFILE: ParentFormState = {
+  fullName: "",
+  dateOfBirth: "",
+  nationality: "",
+  location: "",
+  phone: "",
+  bio: "",
+  children: [],
+};
+
 export default function ParentProfilePage() {
-  const { user, session, loading } = usePlatformSession();
-  const [children, setChildren] = useLocalStorageState<Child[]>(
-    "kidcexcellence.parent.children",
-    [{ id: "c1", name: "Lebo Dlamini", dob: "2022-06-15", specialNeeds: "" }],
-    (value): value is Child[] => Array.isArray(value)
-  );
+  const { user, session, loading, refresh: refreshSession } = usePlatformSession();
+  const [profile, setProfile] = useState<ParentFormState>(EMPTY_PROFILE);
+  const [savedProfile, setSavedProfile] = useState<ParentFormState>(EMPTY_PROFILE);
   const [saveMessage, setSaveMessage] = useState("");
+  const children = profile.children;
 
   const refreshProfile = useCallback(async () => {
     if (!session) return;
@@ -43,10 +60,18 @@ export default function ParentProfilePage() {
     if (!response?.ok) return;
 
     const payload = await response.json();
-    if (payload.profile?.children) {
-      setChildren(payload.profile.children);
-    }
-  }, [session, setChildren]);
+    const nextProfile: ParentFormState = {
+      fullName: payload.profile?.fullName ?? payload.user?.name ?? "",
+      dateOfBirth: payload.profile?.dateOfBirth ?? "",
+      nationality: payload.profile?.nationality ?? "",
+      location: payload.profile?.location ?? payload.user?.location ?? "",
+      phone: payload.profile?.phone ?? payload.user?.phone ?? "",
+      bio: payload.profile?.bio ?? "",
+      children: Array.isArray(payload.profile?.children) ? payload.profile.children : [],
+    };
+    setProfile(nextProfile);
+    setSavedProfile(nextProfile);
+  }, [session]);
 
   useEffect(() => {
     const refreshTimer = window.setTimeout(() => {
@@ -56,20 +81,29 @@ export default function ParentProfilePage() {
   }, [refreshProfile]);
 
   const addChild = () => {
-    setChildren((prev) => [
-      ...prev,
-      { id: `c${Date.now()}`, name: "", dob: "", specialNeeds: "" },
-    ]);
+    setProfile((current) => ({
+      ...current,
+      children: [
+        ...current.children,
+        { id: crypto.randomUUID(), name: "", dob: "", specialNeeds: "" },
+      ],
+    }));
   };
 
   const removeChild = (id: string) => {
-    setChildren((prev) => prev.filter((c) => c.id !== id));
+    setProfile((current) => ({
+      ...current,
+      children: current.children.filter((child) => child.id !== id),
+    }));
   };
 
   const updateChild = (id: string, field: keyof Child, value: string) => {
-    setChildren((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, [field]: value } : c))
-    );
+    setProfile((current) => ({
+      ...current,
+      children: current.children.map((child) =>
+        child.id === id ? { ...child, [field]: value } : child
+      ),
+    }));
   };
 
   const handleSave = async () => {
@@ -82,7 +116,7 @@ export default function ParentProfilePage() {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: session.userId, children }),
+      body: JSON.stringify({ userId: session.userId, profile }),
     }).catch(() => null);
 
     if (!response?.ok) {
@@ -91,6 +125,11 @@ export default function ParentProfilePage() {
       return;
     }
 
+    const payload = await response.json();
+    const nextProfile = { ...profile, ...payload.profile };
+    setProfile(nextProfile);
+    setSavedProfile(nextProfile);
+    await refreshSession();
     setSaveMessage("Saved!");
     setTimeout(() => setSaveMessage(""), 3000);
   };
@@ -108,20 +147,12 @@ export default function ParentProfilePage() {
           <div
             className="h-32 relative"
             style={{ background: "linear-gradient(135deg, var(--brand-leaf), var(--brand-gold))" }}
-          >
-            <button className="absolute bottom-3 right-3 bg-white/80 backdrop-blur-sm rounded-full px-3 py-1.5 text-xs font-medium text-[var(--brand-ink)] flex items-center gap-1 hover:bg-white transition-colors shadow-sm">
-              <Camera className="w-3.5 h-3.5" />
-              Change Cover
-            </button>
-          </div>
+          />
           <div className="px-6 pb-6">
             <div className="relative -mt-12 mb-4 w-fit">
               <div className="w-20 h-20 rounded-lg bg-[var(--brand-ivory)] border-4 border-white shadow-md flex items-center justify-center">
                 <User className="w-10 h-10 text-[var(--brand-leaf)]" />
               </div>
-              <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border border-[var(--brand-line)] shadow-sm flex items-center justify-center hover:bg-gray-50">
-                <Camera className="w-3.5 h-3.5 text-[var(--brand-muted)]" />
-              </button>
             </div>
             <h2 className="text-lg font-bold text-[var(--brand-ink)]">{user?.name ?? "Parent profile"}</h2>
             <p className="text-[var(--brand-muted)] text-sm">
@@ -136,21 +167,21 @@ export default function ParentProfilePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label className="text-sm font-medium text-[var(--brand-ink)]">Full Name</Label>
-              <Input defaultValue={user?.name ?? ""} placeholder="Mpho Dlamini" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+              <Input value={profile.fullName} onChange={(event) => setProfile((current) => ({ ...current, fullName: event.target.value }))} placeholder="Mpho Dlamini" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
             </div>
             <div>
               <Label className="text-sm font-medium text-[var(--brand-ink)]">Date of Birth</Label>
-              <Input type="date" defaultValue="1990-03-22" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+              <Input type="date" value={profile.dateOfBirth} onChange={(event) => setProfile((current) => ({ ...current, dateOfBirth: event.target.value }))} className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
             </div>
             <div>
               <Label className="text-sm font-medium text-[var(--brand-ink)]">Nationality</Label>
-              <Input defaultValue="Motswana" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+              <Input value={profile.nationality} onChange={(event) => setProfile((current) => ({ ...current, nationality: event.target.value }))} placeholder="Motswana" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
             </div>
             <div>
               <Label className="text-sm font-medium text-[var(--brand-ink)]">Location</Label>
-              <Select defaultValue="gaborone">
+              <Select value={profile.location} onValueChange={(value) => setProfile((current) => ({ ...current, location: value ?? "" }))}>
                 <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
-                  <SelectValue />
+                  <SelectValue placeholder="Select your city" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="gaborone">Gaborone</SelectItem>
@@ -163,17 +194,19 @@ export default function ParentProfilePage() {
             </div>
             <div>
               <Label className="text-sm font-medium text-[var(--brand-ink)]">Phone Number</Label>
-              <Input defaultValue={user?.phone ?? ""} placeholder="+267 71 234 567" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+              <Input value={profile.phone} onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))} placeholder="+267 71 234 567" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
             </div>
             <div>
               <Label className="text-sm font-medium text-[var(--brand-ink)]">Email Address</Label>
-              <Input type="email" defaultValue={user?.email ?? ""} placeholder="parent@example.com" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+              <Input type="email" value={user?.email ?? ""} readOnly className="mt-1 rounded-lg border-[var(--brand-line)] bg-[var(--brand-ivory)]" />
             </div>
           </div>
           <div className="mt-4">
             <Label className="text-sm font-medium text-[var(--brand-ink)]">About Me</Label>
             <Textarea
-              defaultValue="Loving parent of two young children based in Phakalane, Gaborone. Looking for excellent childcare and educational opportunities."
+              value={profile.bio}
+              onChange={(event) => setProfile((current) => ({ ...current, bio: event.target.value }))}
+              placeholder="Share anything useful for providers supporting your family."
               className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)] resize-none"
               rows={3}
             />
@@ -196,6 +229,11 @@ export default function ParentProfilePage() {
           </div>
 
           <div className="space-y-5">
+            {children.length === 0 && (
+              <div className="rounded-lg border border-dashed border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-8 text-center text-sm text-[var(--brand-muted)]">
+                No children added yet.
+              </div>
+            )}
             {children.map((child, idx) => (
               <div key={child.id}>
                 {idx > 0 && <Separator className="mb-5" />}
@@ -209,14 +247,13 @@ export default function ParentProfilePage() {
                     </div>
                     <span className="font-semibold text-[var(--brand-ink)] text-sm">Child {idx + 1}</span>
                   </div>
-                  {children.length > 1 && (
-                    <button
-                      onClick={() => removeChild(child.id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => removeChild(child.id)}
+                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                    aria-label={`Remove ${child.name || `child ${idx + 1}`}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -257,7 +294,14 @@ export default function ParentProfilePage() {
 
         {/* Save */}
         <div className="flex justify-end gap-3">
-          <Button variant="outline" className="rounded-lg border-[var(--brand-line)] text-[var(--brand-muted)]">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setProfile(savedProfile);
+              setSaveMessage("");
+            }}
+            className="rounded-lg border-[var(--brand-line)] text-[var(--brand-muted)]"
+          >
             Cancel
           </Button>
           <Button

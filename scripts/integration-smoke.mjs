@@ -160,17 +160,42 @@ describe("Kidcexcellence platform APIs", () => {
         Origin: baseUrl,
       },
       body: JSON.stringify({
-        children: [{ id: "child-1", name: "Test Child", dob: "2022-06-15", specialNeeds: "" }],
+        profile: {
+          fullName: "Updated Integration Parent",
+          dateOfBirth: "1990-03-22",
+          nationality: "Motswana",
+          location: "maun",
+          phone: "+267 71 234 567",
+          bio: "Looking for trusted childcare.",
+          email: "attacker@example.com",
+          children: [
+            { id: "child-1", name: "Test Child", dob: "2022-06-15", specialNeeds: "" },
+          ],
+        },
       }),
     });
     assert.equal(profile.status, 200);
-    assert.equal((await json(profile)).profile.children[0].name, "Test Child");
+    const profilePayload = await json(profile);
+    assert.equal(profilePayload.profile.children[0].name, "Test Child");
+    assert.equal(profilePayload.user.name, "Updated Integration Parent");
+    assert.equal(profilePayload.user.email, email);
 
     const savedProfile = await request("/api/profiles/parent", {
       headers: { Cookie: cookie },
     });
     assert.equal(savedProfile.status, 200);
-    assert.equal((await json(savedProfile)).profile.children[0].name, "Test Child");
+    const savedProfilePayload = await json(savedProfile);
+    assert.equal(savedProfilePayload.profile.children[0].name, "Test Child");
+    assert.equal(savedProfilePayload.profile.location, "maun");
+    assert.equal(savedProfilePayload.profile.bio, "Looking for trusted childcare.");
+
+    const updatedSession = await request("/api/auth", {
+      headers: { Cookie: cookie },
+    });
+    const updatedSessionPayload = await json(updatedSession);
+    assert.equal(updatedSessionPayload.user.name, "Updated Integration Parent");
+    assert.equal(updatedSessionPayload.user.phone, "+267 71 234 567");
+    assert.equal(updatedSessionPayload.user.email, email);
 
     const message = await request("/api/messages", {
       method: "POST",

@@ -69,6 +69,12 @@ export interface ChildProfile {
 
 export interface ParentProfileRecord {
   userId: string;
+  fullName: string;
+  dateOfBirth: string;
+  nationality: string;
+  location: string;
+  phone: string;
+  bio: string;
   children: ChildProfile[];
   savedAt: string;
 }
@@ -182,7 +188,22 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
     users: store.users ?? initial.users,
     sessions: store.sessions ?? initial.sessions,
     accountTokens: store.accountTokens ?? initial.accountTokens,
-    parentProfiles: store.parentProfiles ?? initial.parentProfiles,
+    parentProfiles: Object.fromEntries(
+      Object.entries(store.parentProfiles ?? {}).map(([userId, profile]) => [
+        userId,
+        {
+          ...profile,
+          userId,
+          fullName: profile.fullName ?? "",
+          dateOfBirth: profile.dateOfBirth ?? "",
+          nationality: profile.nationality ?? "",
+          location: profile.location ?? "",
+          phone: profile.phone ?? "",
+          bio: profile.bio ?? "",
+          children: profile.children ?? [],
+        },
+      ])
+    ),
     providerProfiles,
     uploads: store.uploads ?? initial.uploads,
     conversations: store.conversations ?? initial.conversations,
@@ -439,15 +460,24 @@ export function isAdminEmail(email: string) {
     .includes(email.trim().toLowerCase());
 }
 
-export async function saveParentProfile(userId: string, children: ChildProfile[]) {
+export async function saveParentProfile(
+  userId: string,
+  input: Omit<ParentProfileRecord, "userId" | "savedAt">
+) {
   return updateStore((store) => {
+    const user = store.users.find((item) => item.id === userId && item.role === "parent");
+    if (!user) throw new Error("Parent account not found.");
+
     const profile = {
       userId,
-      children,
+      ...input,
       savedAt: new Date().toISOString(),
     };
+    user.name = input.fullName;
+    user.phone = input.phone;
+    user.location = input.location;
     store.parentProfiles[userId] = profile;
-    return profile;
+    return { profile, user: publicUser(user) };
   });
 }
 
