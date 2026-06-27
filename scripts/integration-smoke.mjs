@@ -97,6 +97,27 @@ describe("Kidcexcellence platform APIs", () => {
     assert.match(await verificationPage.text(), /Verify your email/);
   });
 
+  it("renders public trust and support routes without placeholder links", async () => {
+    const routes = [
+      ["/safety", "Make every care decision carefully"],
+      ["/privacy", "Your information should serve a clear purpose"],
+      ["/terms", "Clear responsibilities build a trusted marketplace"],
+      ["/help", "Find the right next step"],
+    ];
+
+    for (const [pathname, heading] of routes) {
+      const response = await request(pathname);
+      assert.equal(response.status, 200);
+      assert.match(await response.text(), new RegExp(heading));
+    }
+
+    const home = await request("/");
+    const homeMarkup = await home.text();
+    assert.equal(homeMarkup.includes('href="#"'), false);
+    assert.match(homeMarkup, /href="\/privacy"/);
+    assert.match(homeMarkup, /href="\/terms"/);
+  });
+
   it("creates a parent session, protects profile writes, sends messages, and logs out", async () => {
     const email = `parent-${Date.now()}@example.com`;
     const signup = await request("/api/auth", {

@@ -62,10 +62,10 @@ export default function Navbar() {
           </div>
 
           <div className="hidden items-center gap-2 md:flex">
-            <Link href="/admin">
+            <Link href="/safety">
               <Button variant="ghost" className="h-10 rounded-lg text-[var(--brand-muted)] hover:text-[var(--brand-ink)]">
                 <ShieldCheck className="mr-2 h-4 w-4" />
-                Verify
+                Safety
               </Button>
             </Link>
             {user ? (
@@ -128,11 +128,18 @@ export default function Navbar() {
                 })}
               </div>
               <div className="mt-8 grid gap-3">
-                <Link href="/admin" onClick={() => setOpen(false)}>
+                <Link href="/safety" onClick={() => setOpen(false)}>
                   <Button variant="outline" className="w-full rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
-                    Verification desk
+                    Safety guidance
                   </Button>
                 </Link>
+                {user?.role === "admin" && (
+                  <Link href="/admin" onClick={() => setOpen(false)}>
+                    <Button variant="outline" className="w-full rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
+                      Verification desk
+                    </Button>
+                  </Link>
+                )}
                 {user ? (
                   <>
                     <Link href={profileHref} onClick={() => setOpen(false)}>

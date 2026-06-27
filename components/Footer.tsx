@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
-import { Camera, Globe, Share2 } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -15,17 +14,6 @@ export default function Footer() {
               A Botswana-first childcare marketplace for discovering, comparing,
               messaging, and verifying trusted care providers.
             </p>
-            <div className="mt-5 flex gap-2">
-              {[Globe, Share2, Camera].map((Icon, index) => (
-                <a
-                  key={index}
-                  href="#"
-                  className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white/75 transition-colors hover:bg-[var(--brand-gold)] hover:text-[var(--brand-ink)]"
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              ))}
-            </div>
           </div>
 
           <div>
@@ -46,7 +34,7 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2 text-sm text-white/72">
               <li><Link href="/auth" className="hover:text-white">List a service</Link></li>
-              <li><Link href="/admin?admin=true" className="hover:text-white">Verification desk</Link></li>
+              <li><Link href="/safety" className="hover:text-white">Verification standard</Link></li>
               <li><Link href="/search?category=schools" className="hover:text-white">Schools</Link></li>
               <li><Link href="/search?category=nannies" className="hover:text-white">Nannies</Link></li>
             </ul>
@@ -57,10 +45,10 @@ export default function Footer() {
               Trust
             </h4>
             <ul className="space-y-2 text-sm text-white/72">
-              <li><a href="#" className="hover:text-white">Safety checks</a></li>
-              <li><a href="#" className="hover:text-white">Privacy policy</a></li>
-              <li><a href="#" className="hover:text-white">Terms of service</a></li>
-              <li><a href="#" className="hover:text-white">Help centre</a></li>
+              <li><Link href="/safety" className="hover:text-white">Safety checks</Link></li>
+              <li><Link href="/privacy" className="hover:text-white">Privacy policy</Link></li>
+              <li><Link href="/terms" className="hover:text-white">Terms of service</Link></li>
+              <li><Link href="/help" className="hover:text-white">Help centre</Link></li>
             </ul>
           </div>
         </div>
