@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import {
-  filterProviders,
+  allProvidersFromStore,
+  filterProviderList,
   getCategories,
   type ProviderSort,
 } from "@/lib/platform-service";
+import { readStore } from "@/lib/platform-store";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -11,10 +13,11 @@ export async function GET(request: Request) {
   const sortBy = searchParams.get("sort") as ProviderSort | null;
   const maxPriceParam = searchParams.get("maxPrice");
   const maxPrice = maxPriceParam ? Number(maxPriceParam) : undefined;
+  const store = await readStore();
 
   return NextResponse.json({
     categories: getCategories(),
-    providers: filterProviders({
+    providers: filterProviderList(allProvidersFromStore(store), {
       q: searchParams.get("q") ?? undefined,
       categories,
       location: searchParams.get("location") ?? undefined,

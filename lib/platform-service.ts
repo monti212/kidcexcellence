@@ -5,6 +5,11 @@ import {
   type Conversation,
   type Provider,
 } from "@/lib/mock-data";
+import type {
+  PlatformUploadRecord,
+  PlatformUser,
+  ProviderProfileRecord,
+} from "@/lib/platform-store";
 
 export type ProviderSort = "rating" | "price_asc" | "price_desc" | "reviews";
 
@@ -118,6 +123,13 @@ export function getProvidersByIds(ids: string[]) {
 }
 
 export function filterProviders(filters: ProviderFilters = {}) {
+  return filterProviderList(PROVIDERS, filters);
+}
+
+export function filterProviderList(
+  providers: Provider[],
+  filters: ProviderFilters = {}
+) {
   const {
     q,
     categories = [],
@@ -126,7 +138,7 @@ export function filterProviders(filters: ProviderFilters = {}) {
     verifiedOnly = false,
     sortBy = "rating",
   } = filters;
-  let result = [...PROVIDERS];
+  let result = [...providers];
 
   const normalizedQuery = q?.trim().toLowerCase();
   if (normalizedQuery) {
@@ -156,6 +168,93 @@ export function filterProviders(filters: ProviderFilters = {}) {
   result = result.filter((provider) => provider.price <= maxPrice);
 
   return sortProviders(result, sortBy);
+}
+
+export function buildAccountProvider(
+  user: PlatformUser,
+  profile: ProviderProfileRecord,
+  uploads: PlatformUploadRecord[] = [],
+  verified = false
+): Provider {
+  const fees = profile.feeRows
+    .filter((row) => row.grade.trim())
+    .map((row) => ({
+      grade: row.grade.trim(),
+      termly: Number(row.termly) || 0,
+      annually: Number(row.annually) || 0,
+    }));
+  const prices = fees.map((fee) => fee.termly).filter((price) => price > 0);
+  const gallery = uploads
+    .filter((upload) => upload.userId === user.id && upload.type === "gallery")
+    .map((upload) => `/api/uploads/${upload.id}`);
+  const profilePrice = Number(profile.price) || 0;
+
+  return {
+    id: `account-${user.id}`,
+    name: profile.displayName || user.name,
+    category: profile.category,
+    location: profile.location || user.location || "Botswana",
+    price: profilePrice || (prices.length ? Math.min(...prices) : 0),
+    priceUnit: profile.priceUnit,
+    rating: 0,
+    reviewCount: 0,
+    verified,
+    bio: profile.bio,
+    image: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+      profile.displayName || user.name
+    )}`,
+    services: profile.services,
+    experience: profile.experience,
+    availability: profile.availability,
+    gallery,
+    fees,
+    phone: profile.phone || user.phone || "",
+    email: user.email,
+    whatsapp: profile.whatsapp || profile.phone || user.phone || "",
+  };
+}
+
+export function accountProvidersFromStore(store: {
+  users: PlatformUser[];
+  providerProfiles: Record<string, ProviderProfileRecord>;
+  uploads: PlatformUploadRecord[];
+  verifications: {
+    approvedProviders: ApprovedVerification[];
+  };
+}) {
+  return store.users.flatMap((user) => {
+    const profile = store.providerProfiles[user.id];
+    if (user.role !== "provider" || !profile?.published) return [];
+    return [
+      buildAccountProvider(
+        user,
+        profile,
+        store.uploads,
+        providerIsApproved(store.verifications.approvedProviders, profile.displayName || user.name)
+      ),
+    ];
+  });
+}
+
+export function allProvidersFromStore(store: {
+  users: PlatformUser[];
+  providerProfiles: Record<string, ProviderProfileRecord>;
+  uploads: PlatformUploadRecord[];
+  verifications: {
+    approvedProviders: ApprovedVerification[];
+  };
+}) {
+  return [...accountProvidersFromStore(store), ...PROVIDERS];
+}
+
+export function providerIsApproved(
+  approvedProviders: ApprovedVerification[],
+  displayName: string
+) {
+  const normalizedName = displayName.trim().toLowerCase();
+  return approvedProviders.some(
+    (provider) => provider.name.trim().toLowerCase() === normalizedName
+  );
 }
 
 export function sortProviders(providers: Provider[], sortBy: ProviderSort = "rating") {

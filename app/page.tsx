@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ProviderCard from "@/components/ProviderCard";
-import { CATEGORIES, PROVIDERS } from "@/lib/mock-data";
+import { CATEGORIES, PROVIDERS, type Provider } from "@/lib/mock-data";
 import {
   ArrowRight,
   CheckCircle2,
@@ -27,11 +27,28 @@ import {
 } from "lucide-react";
 
 const LOCATIONS = ["Gaborone", "Francistown", "Maun", "Kasane", "Lobatse", "Serowe"];
-const featuredProviders = PROVIDERS.filter((provider) => provider.verified).slice(0, 6);
+const INITIAL_FEATURED_PROVIDERS = PROVIDERS.filter((provider) => provider.verified).slice(0, 6);
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
+  const [featuredProviders, setFeaturedProviders] = useState<Provider[]>(
+    INITIAL_FEATURED_PROVIDERS
+  );
+
+  useEffect(() => {
+    const loadFeaturedProviders = async () => {
+      const response = await fetch("/api/providers?verified=true", {
+        cache: "no-store",
+      }).catch(() => null);
+      if (!response?.ok) return;
+      const payload = await response.json();
+      if (Array.isArray(payload.providers)) {
+        setFeaturedProviders(payload.providers.slice(0, 6));
+      }
+    };
+    void loadFeaturedProviders();
+  }, []);
 
   return (
     <div className="brand-page">

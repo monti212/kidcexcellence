@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, Suspense, useMemo } from "react";
+import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,6 @@ import type { Provider } from "@/lib/mock-data";
 import {
   getCategoryIcon,
   getCategoryLabel,
-  getProvidersByIds,
 } from "@/lib/platform-service";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import {
@@ -32,9 +31,25 @@ function ComparePageContent() {
     defaultCompareIds,
     (value): value is string[] => Array.isArray(value)
   );
-  const compareIds = queryIds ? queryIds.split(",").filter(Boolean).slice(0, 3) : storedCompareIds;
+  const compareIds = useMemo(
+    () => (queryIds ? queryIds.split(",").filter(Boolean).slice(0, 3) : storedCompareIds),
+    [queryIds, storedCompareIds]
+  );
 
-  const providers = useMemo(() => getProvidersByIds(compareIds), [compareIds]);
+  const [providers, setProviders] = useState<Provider[]>([]);
+
+  useEffect(() => {
+    const loadProviders = async () => {
+      const response = await fetch(
+        `/api/compare?ids=${encodeURIComponent(compareIds.join(","))}`,
+        { cache: "no-store" }
+      ).catch(() => null);
+      if (!response?.ok) return;
+      const payload = await response.json();
+      if (Array.isArray(payload.providers)) setProviders(payload.providers);
+    };
+    void loadProviders();
+  }, [compareIds]);
 
   const removeProvider = (id: string) => {
     setCompareIds((prev) => prev.filter((c) => c !== id));

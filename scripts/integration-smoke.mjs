@@ -347,6 +347,19 @@ describe("Kidcexcellence platform APIs", () => {
     assert.equal(signup.status, 200);
     const cookie = cookieFrom(signup);
 
+    const incompletePublish = await request("/api/profiles/provider", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        profile: { category: "nurseries", published: true },
+      }),
+    });
+    assert.equal(incompletePublish.status, 400);
+
     const profile = await request("/api/profiles/provider", {
       method: "POST",
       headers: {
@@ -356,13 +369,24 @@ describe("Kidcexcellence platform APIs", () => {
       },
       body: JSON.stringify({
         profile: {
+          displayName: "Integration Nursery",
           category: "nurseries",
+          location: "Gaborone",
+          bio: "A nurturing early learning programme for growing families.",
+          phone: "+267 71 000 111",
+          whatsapp: "+26771000111",
+          services: ["Reception", "Aftercare"],
+          experience: "Ten years serving families",
+          availability: "Monday to Friday",
+          published: true,
           liveIn: true,
           feeRows: [{ grade: "Reception", termly: "4200", annually: "12600" }],
         },
       }),
     });
     assert.equal(profile.status, 200);
+    const profilePayload = await json(profile);
+    assert.ok(profilePayload.publicId);
 
     const savedProfile = await request("/api/profiles/provider", {
       headers: { Cookie: cookie },
@@ -371,6 +395,23 @@ describe("Kidcexcellence platform APIs", () => {
     const savedProfilePayload = await json(savedProfile);
     assert.equal(savedProfilePayload.profile.category, "nurseries");
     assert.equal(savedProfilePayload.profile.feeRows[0].grade, "Reception");
+    assert.equal(savedProfilePayload.profile.published, true);
+
+    const discovery = await request("/api/providers?q=Integration%20Nursery");
+    assert.equal(discovery.status, 200);
+    const discoveryPayload = await json(discovery);
+    assert.equal(discoveryPayload.providers.length, 1);
+    assert.equal(discoveryPayload.providers[0].id, profilePayload.publicId);
+
+    const publicProvider = await request(`/api/providers/${profilePayload.publicId}`);
+    assert.equal(publicProvider.status, 200);
+    const publicProviderPayload = await json(publicProvider);
+    assert.equal(publicProviderPayload.provider.name, "Integration Nursery");
+    assert.equal(publicProviderPayload.provider.price, 4200);
+
+    const publicPage = await request(`/provider/${profilePayload.publicId}`);
+    assert.equal(publicPage.status, 200);
+    assert.match(await publicPage.text(), /Integration Nursery/);
 
     const form = new FormData();
     form.set("type", "document");
@@ -413,5 +454,22 @@ describe("Kidcexcellence platform APIs", () => {
       headers: { Cookie: cookie },
     });
     assert.equal(afterDelete.status, 404);
+
+    const unpublish = await request("/api/profiles/provider", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        profile: { ...savedProfilePayload.profile, published: false },
+      }),
+    });
+    assert.equal(unpublish.status, 200);
+    assert.equal((await json(unpublish)).publicId, null);
+
+    const hiddenProvider = await request(`/api/providers/${profilePayload.publicId}`);
+    assert.equal(hiddenProvider.status, 404);
   });
 });

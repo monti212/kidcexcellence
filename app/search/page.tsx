@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import ProviderCard from "@/components/ProviderCard";
-import { filterProviders, getCategories } from "@/lib/platform-service";
+import type { Provider } from "@/lib/mock-data";
+import { filterProviderList, getCategories } from "@/lib/platform-service";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import { CheckCircle2, Map, Search, SlidersHorizontal } from "lucide-react";
 
@@ -58,6 +59,17 @@ function SearchPageContent() {
     (value): value is string[] => Array.isArray(value)
   );
   const [showMap, setShowMap] = useState(false);
+  const [providers, setProviders] = useState<Provider[]>([]);
+
+  useEffect(() => {
+    const loadProviders = async () => {
+      const response = await fetch("/api/providers", { cache: "no-store" }).catch(() => null);
+      if (!response?.ok) return;
+      const payload = await response.json();
+      if (Array.isArray(payload.providers)) setProviders(payload.providers);
+    };
+    void loadProviders();
+  }, []);
 
   const toggleCategory = (id: string) => {
     setSelectedCategories((prev) =>
@@ -78,7 +90,7 @@ function SearchPageContent() {
     (maxPrice < 10000 ? 1 : 0);
 
   const filteredProviders = useMemo(() => {
-    return filterProviders({
+    return filterProviderList(providers, {
       q: searchQuery,
       categories: selectedCategories,
       location: selectedLocation,
@@ -86,7 +98,7 @@ function SearchPageContent() {
       verifiedOnly,
       sortBy: sortBy as "rating" | "price_asc" | "price_desc" | "reviews",
     });
-  }, [searchQuery, selectedCategories, selectedLocation, maxPrice, verifiedOnly, sortBy]);
+  }, [providers, searchQuery, selectedCategories, selectedLocation, maxPrice, verifiedOnly, sortBy]);
 
   const renderFiltersContent = () => (
     <div className="space-y-6">

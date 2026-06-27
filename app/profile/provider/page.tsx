@@ -16,7 +16,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
-  Camera,
   CheckCircle2,
   Lock,
   Upload,
@@ -35,8 +34,19 @@ interface FeeRow {
 }
 
 interface StoredProviderProfile {
+  displayName: string;
   category: string;
+  location: string;
+  bio: string;
+  phone: string;
+  whatsapp: string;
+  services: string[];
+  experience: string;
+  availability: string;
+  price: string;
+  priceUnit: "monthly" | "per day" | "per hour" | "termly";
   liveIn: boolean;
+  published: boolean;
   feeRows: FeeRow[];
   savedAt?: string;
 }
@@ -54,8 +64,19 @@ interface ProviderUpload {
 }
 
 const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
+  displayName: "",
   category: "schools",
+  location: "",
+  bio: "",
+  phone: "",
+  whatsapp: "",
+  services: [],
+  experience: "",
+  availability: "",
+  price: "",
+  priceUnit: "termly",
   liveIn: false,
+  published: false,
   feeRows: [
     { grade: "Baby Class", termly: "2800", annually: "8400" },
     { grade: "Toddler Class", termly: "3000", annually: "9000" },
@@ -90,9 +111,24 @@ export default function ProviderProfilePage() {
       "liveIn" in value &&
       "feeRows" in value
   );
+  const [displayName, setDisplayName] = useState(storedProfile.displayName ?? "");
   const [category, setCategory] = useState(storedProfile.category);
+  const [location, setLocation] = useState(storedProfile.location ?? "");
+  const [bio, setBio] = useState(storedProfile.bio ?? "");
+  const [phone, setPhone] = useState(storedProfile.phone ?? "");
+  const [whatsapp, setWhatsapp] = useState(storedProfile.whatsapp ?? "");
+  const [services, setServices] = useState(
+    Array.isArray(storedProfile.services) ? storedProfile.services.join(", ") : ""
+  );
+  const [experience, setExperience] = useState(storedProfile.experience ?? "");
+  const [availability, setAvailability] = useState(storedProfile.availability ?? "");
+  const [price, setPrice] = useState(storedProfile.price ?? "");
+  const [priceUnit, setPriceUnit] = useState<StoredProviderProfile["priceUnit"]>(
+    storedProfile.priceUnit ?? "termly"
+  );
   const [liveIn, setLiveIn] = useState(storedProfile.liveIn);
-  const [verified] = useState(true);
+  const [published, setPublished] = useState(Boolean(storedProfile.published));
+  const [verified, setVerified] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [uploadMessage, setUploadMessage] = useState("");
   const [uploads, setUploads] = useState<ProviderUpload[]>([]);
@@ -131,18 +167,48 @@ export default function ProviderProfilePage() {
     if (!response?.ok) return;
 
     const payload = await response.json();
-    if (!payload.profile) return;
+    setVerified(Boolean(payload.verified));
+    if (!payload.profile) {
+      setDisplayName(user?.name ?? "");
+      setLocation(user?.location ?? "");
+      setPhone(user?.phone ?? "");
+      setWhatsapp(user?.phone ?? "");
+      return;
+    }
 
+    setDisplayName(payload.profile.displayName ?? user?.name ?? "");
     setCategory(payload.profile.category ?? DEFAULT_PROVIDER_PROFILE.category);
+    setLocation(payload.profile.location ?? user?.location ?? "");
+    setBio(payload.profile.bio ?? "");
+    setPhone(payload.profile.phone ?? user?.phone ?? "");
+    setWhatsapp(payload.profile.whatsapp ?? payload.profile.phone ?? user?.phone ?? "");
+    setServices(Array.isArray(payload.profile.services) ? payload.profile.services.join(", ") : "");
+    setExperience(payload.profile.experience ?? "");
+    setAvailability(payload.profile.availability ?? "");
+    setPrice(payload.profile.price ?? "");
+    setPriceUnit(payload.profile.priceUnit ?? "termly");
     setLiveIn(Boolean(payload.profile.liveIn));
+    setPublished(Boolean(payload.profile.published));
+    setVerified(Boolean(payload.verified));
     setFeeRows(Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows);
     setStoredProfile({
+      displayName: payload.profile.displayName ?? user?.name ?? "",
       category: payload.profile.category ?? DEFAULT_PROVIDER_PROFILE.category,
+      location: payload.profile.location ?? user?.location ?? "",
+      bio: payload.profile.bio ?? "",
+      phone: payload.profile.phone ?? user?.phone ?? "",
+      whatsapp: payload.profile.whatsapp ?? payload.profile.phone ?? user?.phone ?? "",
+      services: Array.isArray(payload.profile.services) ? payload.profile.services : [],
+      experience: payload.profile.experience ?? "",
+      availability: payload.profile.availability ?? "",
+      price: payload.profile.price ?? "",
+      priceUnit: payload.profile.priceUnit ?? "termly",
       liveIn: Boolean(payload.profile.liveIn),
+      published: Boolean(payload.profile.published),
       feeRows: Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows,
       savedAt: payload.profile.savedAt,
     });
-  }, [session, setStoredProfile]);
+  }, [session, setStoredProfile, user]);
 
   useEffect(() => {
     const refreshTimer = window.setTimeout(() => {
@@ -158,13 +224,29 @@ export default function ProviderProfilePage() {
     return () => window.clearTimeout(refreshTimer);
   }, [refreshProviderProfile]);
 
-  const saveProviderProfile = async () => {
+  const saveProviderProfile = async (nextPublished = published) => {
     if (!session) {
       setSaveMessage("Sign in to save your provider profile.");
       return;
     }
 
-    const nextProfile = { category, liveIn, feeRows, savedAt: new Date().toISOString() };
+    const nextProfile = {
+      displayName,
+      category,
+      location,
+      bio,
+      phone,
+      whatsapp,
+      services: services.split(",").map((item) => item.trim()).filter(Boolean),
+      experience,
+      availability,
+      price,
+      priceUnit,
+      liveIn,
+      published: nextPublished,
+      feeRows,
+      savedAt: new Date().toISOString(),
+    };
     const response = await fetch("/api/profiles/provider", {
       method: "POST",
       credentials: "same-origin",
@@ -178,8 +260,12 @@ export default function ProviderProfilePage() {
       return;
     }
 
-    setStoredProfile(nextProfile);
-    setSaveMessage("Saved!");
+    const payload = await response.json();
+    const savedProfile = { ...nextProfile, ...payload.profile };
+    setStoredProfile(savedProfile);
+    setPublished(Boolean(payload.profile.published));
+    setVerified(Boolean(payload.verified));
+    setSaveMessage(payload.profile.published ? "Published!" : "Saved!");
     setTimeout(() => setSaveMessage(""), 3000);
   };
 
@@ -270,20 +356,12 @@ export default function ProviderProfilePage() {
           <div
             className="h-36 relative"
             style={{ background: "linear-gradient(135deg, var(--brand-leaf), var(--brand-gold))" }}
-          >
-            <button className="absolute bottom-3 right-3 bg-white/80 backdrop-blur-sm rounded-full px-3 py-1.5 text-xs font-medium text-[var(--brand-ink)] flex items-center gap-1 hover:bg-white transition-colors shadow-sm">
-              <Camera className="w-3.5 h-3.5" />
-              Change Cover
-            </button>
-          </div>
+          />
           <div className="px-6 pb-5">
             <div className="relative -mt-12 mb-4 w-fit">
               <div className="w-20 h-20 rounded-lg border-4 border-white shadow-md overflow-hidden bg-[var(--brand-ivory)] flex items-center justify-center text-4xl">
                 🏫
               </div>
-              <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border border-[var(--brand-line)] shadow-sm flex items-center justify-center hover:bg-gray-50">
-                <Camera className="w-3.5 h-3.5 text-[var(--brand-muted)]" />
-              </button>
             </div>
             <div className="flex items-center gap-3">
               <div>
@@ -298,8 +376,38 @@ export default function ProviderProfilePage() {
                   Verified
                 </Badge>
               )}
+              <Badge
+                className={`rounded-full border ${
+                  published
+                    ? "border-green-200 bg-green-50 text-green-700"
+                    : "border-[var(--brand-line)] bg-[var(--brand-ivory)] text-[var(--brand-muted)]"
+                }`}
+              >
+                {published ? "Published" : "Draft"}
+              </Badge>
             </div>
           </div>
+        </div>
+
+        <div className="mb-6 flex flex-col gap-3 rounded-lg border border-[var(--brand-line)] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-sm font-black text-[var(--brand-ink)]">
+              {published ? "Your listing is visible in provider search." : "Your listing is private."}
+            </div>
+            <div className="mt-1 text-xs text-[var(--brand-muted)]">
+              {verified
+                ? "Your verified badge is active."
+                : "Upload your documents for admin review to qualify for the verified badge."}
+            </div>
+          </div>
+          {published && session && (
+            <a
+              href={`/provider/account-${session.userId}`}
+              className="text-sm font-black text-[var(--brand-leaf)] hover:underline"
+            >
+              View public listing
+            </a>
+          )}
         </div>
 
         <Tabs defaultValue="basic">
@@ -330,75 +438,71 @@ export default function ProviderProfilePage() {
                 </Select>
               </div>
 
-              {isSchool ? (
-                <>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">School Name</Label>
-                    <Input defaultValue={user?.name ?? ""} placeholder="Sunshine Early Learning Centre" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Curriculum Type</Label>
-                    <Select defaultValue="cambridge">
-                      <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cambridge">Cambridge EYFS</SelectItem>
-                        <SelectItem value="national">National Curriculum (Botswana)</SelectItem>
-                        <SelectItem value="montessori">Montessori</SelectItem>
-                        <SelectItem value="waldorf">Waldorf / Steiner</SelectItem>
-                        <SelectItem value="ib">IB Early Years</SelectItem>
-                        <SelectItem value="mixed">Mixed Approach</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Year Established</Label>
-                    <Input type="number" defaultValue="2010" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
-                  </div>
-                </>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">First Name</Label>
-                    <Input placeholder="e.g. Kefilwe" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Middle Name</Label>
-                    <Input placeholder="Optional" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Last Name</Label>
-                    <Input placeholder="e.g. Modise" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Known As / Display Name</Label>
-                    <Input placeholder="e.g. Kefi" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
-                  </div>
-                </div>
-              )}
+              <div>
+                <Label htmlFor="provider-display-name" className="text-sm font-medium text-[var(--brand-ink)]">
+                  Public display name
+                </Label>
+                <Input
+                  id="provider-display-name"
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                  placeholder={isSchool ? "Sunshine Early Learning Centre" : "Kefilwe Modise"}
+                  className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                />
+              </div>
 
               <div>
                 <Label className="text-sm font-medium text-[var(--brand-ink)]">Location / Area</Label>
-                <Select defaultValue="phakalane">
-                  <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="phakalane">Phakalane, Gaborone</SelectItem>
-                    <SelectItem value="gaborone-west">Gaborone West</SelectItem>
-                    <SelectItem value="tlokweng">Tlokweng</SelectItem>
-                    <SelectItem value="block9">Block 9, Gaborone</SelectItem>
-                    <SelectItem value="broadhurst">Broadhurst, Gaborone</SelectItem>
-                    <SelectItem value="mogoditshane">Mogoditshane</SelectItem>
-                    <SelectItem value="francistown">Francistown</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
+                  placeholder="Phakalane, Gaborone"
+                  className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                />
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-[var(--brand-ink)]">About / Description</Label>
                 <Textarea
-                  defaultValue="We provide outstanding early childhood education in a warm and nurturing environment. Our qualified staff follow the Cambridge curriculum enhanced with Setswana cultural values."
+                  value={bio}
+                  onChange={(event) => setBio(event.target.value)}
+                  placeholder="Describe your care approach, qualifications, and what families can expect."
                   className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)] resize-none"
                   rows={4}
                 />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-[var(--brand-ink)]">Services</Label>
+                <Textarea
+                  value={services}
+                  onChange={(event) => setServices(event.target.value)}
+                  placeholder="Baby class, aftercare, holiday programme"
+                  className="mt-1 resize-none rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                  rows={3}
+                />
+                <p className="mt-1 text-xs text-[var(--brand-muted)]">Separate services with commas.</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label className="text-sm font-medium text-[var(--brand-ink)]">Experience</Label>
+                  <Input
+                    value={experience}
+                    onChange={(event) => setExperience(event.target.value)}
+                    placeholder="10 years of childcare experience"
+                    className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-[var(--brand-ink)]">Availability</Label>
+                  <Input
+                    value={availability}
+                    onChange={(event) => setAvailability(event.target.value)}
+                    placeholder="Monday to Friday, 7:00 AM - 5:30 PM"
+                    className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                  />
+                </div>
               </div>
 
               <Separator />
@@ -407,15 +511,30 @@ export default function ProviderProfilePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-[var(--brand-ink)]">Phone Number</Label>
-                  <Input defaultValue="+267 71 234 567" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+                  <Input
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    placeholder="+267 71 234 567"
+                    className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                  />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-[var(--brand-ink)]">WhatsApp Number</Label>
-                  <Input defaultValue="+26771234567" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+                  <Input
+                    value={whatsapp}
+                    onChange={(event) => setWhatsapp(event.target.value)}
+                    placeholder="+26771234567"
+                    className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                  />
                 </div>
                 <div className="sm:col-span-2">
                   <Label className="text-sm font-medium text-[var(--brand-ink)]">Email Address</Label>
-                  <Input type="email" defaultValue={user?.email ?? ""} placeholder="info@sunshineelc.co.bw" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+                  <Input
+                    type="email"
+                    value={user?.email ?? ""}
+                    readOnly
+                    className="mt-1 rounded-lg border-[var(--brand-line)] bg-[var(--brand-ivory)]"
+                  />
                 </div>
               </div>
             </div>
@@ -583,48 +702,61 @@ export default function ProviderProfilePage() {
                     ))}
                   </div>
                 </>
-              ) : isNanny ? (
-                <div className="space-y-4">
-                  <h3 className="font-bold text-[var(--brand-ink)] mb-2">Rate Information</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Hourly Rate (BWP)</Label>
-                      <Input type="number" placeholder="e.g. 50" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Daily Rate (BWP)</Label>
-                      <Input type="number" placeholder="e.g. 350" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Monthly Salary (BWP)</Label>
-                      <Input type="number" defaultValue="3500" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-[var(--brand-line)] rounded-lg mt-2">
-                    <div>
-                      <div className="font-medium text-[var(--brand-ink)] text-sm">Available for Live-In</div>
-                      <div className="text-gray-400 text-xs">Live with the family</div>
-                    </div>
-                    <button onClick={() => setLiveIn(!liveIn)} className="text-[var(--brand-leaf)]">
-                      {liveIn ? (
-                        <ToggleRight className="w-8 h-8" />
-                      ) : (
-                        <ToggleLeft className="w-8 h-8 text-gray-300" />
-                      )}
-                    </button>
-                  </div>
-                </div>
               ) : (
                 <div className="space-y-4">
-                  <h3 className="font-bold text-[var(--brand-ink)] mb-2">Service Rates</h3>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Hourly Rate (BWP)</Label>
-                    <Input type="number" defaultValue="120" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+                  <h3 className="mb-2 font-bold text-[var(--brand-ink)]">Starting price</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Price (BWP)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={price}
+                        onChange={(event) => setPrice(event.target.value)}
+                        placeholder="e.g. 350"
+                        className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Billing unit</Label>
+                      <Select
+                        value={priceUnit}
+                        onValueChange={(value) =>
+                          setPriceUnit((value ?? "per hour") as StoredProviderProfile["priceUnit"])
+                        }
+                      >
+                        <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="per hour">Per hour</SelectItem>
+                          <SelectItem value="per day">Per day</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="termly">Termly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Consultation Fee (BWP)</Label>
-                    <Input type="number" defaultValue="350" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
-                  </div>
+                  {isNanny && (
+                    <div className="mt-2 flex items-center justify-between rounded-lg border border-[var(--brand-line)] p-4">
+                      <div>
+                        <div className="text-sm font-medium text-[var(--brand-ink)]">Available for Live-In</div>
+                        <div className="text-xs text-gray-400">Live with the family</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setLiveIn(!liveIn)}
+                        className="text-[var(--brand-leaf)]"
+                        aria-label={liveIn ? "Disable live-in availability" : "Enable live-in availability"}
+                      >
+                        {liveIn ? (
+                          <ToggleRight className="h-8 w-8" />
+                        ) : (
+                          <ToggleLeft className="h-8 w-8 text-gray-300" />
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -698,21 +830,26 @@ export default function ProviderProfilePage() {
         </Tabs>
 
         {/* Save */}
-        <div className="flex justify-end gap-3 mt-6">
-          <Button variant="outline" className="rounded-lg border-[var(--brand-line)] text-[var(--brand-muted)]">
-            Cancel
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <Button
+            variant="outline"
+            onClick={() => void saveProviderProfile(false)}
+            disabled={loading}
+            className="rounded-lg border-[var(--brand-line)] text-[var(--brand-muted)]"
+          >
+            {published ? "Unpublish" : "Save Draft"}
           </Button>
           <Button
-            onClick={saveProviderProfile}
+            onClick={() => void saveProviderProfile(true)}
             disabled={loading}
             className="rounded-lg text-white font-semibold px-8"
             style={{ background: "var(--brand-leaf)" }}
           >
-            {saveMessage === "Saved!" ? "Saved!" : "Save Changes"}
+            {published ? "Update Published Listing" : "Publish Listing"}
           </Button>
         </div>
-        {saveMessage && saveMessage !== "Saved!" && (
-          <div className="mt-4 rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3 text-sm font-bold text-[var(--brand-coral)]">
+        {saveMessage && (
+          <div className="mt-4 rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3 text-sm font-bold text-[var(--brand-muted)]">
             {saveMessage}
           </div>
         )}

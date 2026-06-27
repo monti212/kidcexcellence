@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  allProvidersFromStore,
   getCategoryById,
   getCategoryIcon,
-  getProviderById,
 } from "@/lib/platform-service";
+import { readStore } from "@/lib/platform-store";
 import {
   ArrowLeft,
   CalendarDays,
@@ -25,7 +26,8 @@ export default async function ProviderProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const provider = getProviderById(id);
+  const store = await readStore();
+  const provider = allProvidersFromStore(store).find((item) => item.id === id);
   if (!provider) notFound();
 
   const category = getCategoryById(provider.category);

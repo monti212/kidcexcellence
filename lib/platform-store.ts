@@ -6,8 +6,8 @@ import { CONVERSATIONS, type Conversation, type Message } from "@/lib/mock-data"
 import {
   APPROVED_VERIFICATIONS,
   PENDING_VERIFICATIONS,
+  allProvidersFromStore,
   buildProviderConversation,
-  getProviderById,
   type ApprovedVerification,
   type PendingVerification,
 } from "@/lib/platform-service";
@@ -74,8 +74,19 @@ export interface ParentProfileRecord {
 
 export interface ProviderProfileRecord {
   userId: string;
+  displayName: string;
   category: string;
+  location: string;
+  bio: string;
+  phone: string;
+  whatsapp: string;
+  services: string[];
+  experience: string;
+  availability: string;
+  price: string;
+  priceUnit: "monthly" | "per day" | "per hour" | "termly";
   liveIn: boolean;
+  published: boolean;
   feeRows: Array<{
     grade: string;
     termly: string;
@@ -144,12 +155,32 @@ async function persistStore(store: PlatformStore) {
 
 function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
   const initial = createInitialStore();
+  const providerProfiles = Object.fromEntries(
+    Object.entries(store.providerProfiles ?? {}).map(([userId, profile]) => [
+      userId,
+      {
+        ...profile,
+        userId,
+        displayName: profile.displayName ?? "",
+        location: profile.location ?? "",
+        bio: profile.bio ?? "",
+        phone: profile.phone ?? "",
+        whatsapp: profile.whatsapp ?? "",
+        services: profile.services ?? [],
+        experience: profile.experience ?? "",
+        availability: profile.availability ?? "",
+        price: profile.price ?? "",
+        priceUnit: profile.priceUnit ?? "termly",
+        published: profile.published ?? false,
+      },
+    ])
+  );
   return {
     users: store.users ?? initial.users,
     sessions: store.sessions ?? initial.sessions,
     accountTokens: store.accountTokens ?? initial.accountTokens,
     parentProfiles: store.parentProfiles ?? initial.parentProfiles,
-    providerProfiles: store.providerProfiles ?? initial.providerProfiles,
+    providerProfiles,
     uploads: store.uploads ?? initial.uploads,
     conversations: store.conversations ?? initial.conversations,
     verifications: {
@@ -474,7 +505,7 @@ export async function getStoredConversations(providerId?: string | null) {
   const store = await readStore();
   if (!providerId) return store.conversations;
 
-  const provider = getProviderById(providerId);
+  const provider = allProvidersFromStore(store).find((item) => item.id === providerId);
   if (!provider) return store.conversations;
   if (store.conversations.some((conversation) => conversation.participant === provider.name)) {
     return store.conversations;
@@ -493,7 +524,9 @@ export async function appendConversationMessage(input: {
       input.providerId &&
       !store.conversations.some((conversation) => conversation.id === input.conversationId)
     ) {
-      const provider = getProviderById(input.providerId);
+      const provider = allProvidersFromStore(store).find(
+        (item) => item.id === input.providerId
+      );
       if (provider) store.conversations.unshift(buildProviderConversation(provider));
     }
 

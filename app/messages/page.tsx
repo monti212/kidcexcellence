@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Conversation } from "@/lib/mock-data";
+import type { Conversation, Provider } from "@/lib/mock-data";
 import {
   buildProviderConversation,
   getCategoryIcon,
@@ -34,7 +34,10 @@ function MessagesPageContent() {
   const providerId = searchParams.get("provider");
   const [newMessage, setNewMessage] = useState("");
   const [sendError, setSendError] = useState("");
-  const provider = providerId ? getProviderById(providerId) : undefined;
+  const [loadedProvider, setLoadedProvider] = useState<Provider | undefined>(() =>
+    providerId ? getProviderById(providerId) : undefined
+  );
+  const provider = providerId ? loadedProvider : undefined;
   const initialConversationId = provider ? `provider-${provider.id}` : null;
   const initialConversations = useMemo(() => {
     return getConversations(provider?.id);
@@ -58,6 +61,20 @@ function MessagesPageContent() {
     const existing = effectiveConversations.find((conversation) => conversation.participant === provider.name);
     return existing?.id ?? initialConversationId;
   });
+
+  useEffect(() => {
+    if (!providerId) return;
+
+    const loadProvider = async () => {
+      const response = await fetch(`/api/providers/${encodeURIComponent(providerId)}`, {
+        cache: "no-store",
+      }).catch(() => null);
+      if (!response?.ok) return;
+      const payload = await response.json();
+      setLoadedProvider(payload.provider);
+    };
+    void loadProvider();
+  }, [providerId]);
 
   const refreshConversations = useCallback(async () => {
     const params = provider?.id ? `?provider=${encodeURIComponent(provider.id)}` : "";
