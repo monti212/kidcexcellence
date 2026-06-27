@@ -228,7 +228,7 @@ function SearchPageContent() {
               <span className="hidden sm:inline">Map View</span>
             </Button>
             {compareIds.length > 0 && (
-              <Link href={`/compare?ids=${compareIds.join(",")}`}>
+              <Link href="/compare">
                 <Button className="hidden rounded-lg bg-[var(--brand-ink)] font-black text-white hover:bg-[var(--brand-leaf)] sm:inline-flex">
                   Compare {compareIds.length}
                 </Button>

@@ -2,7 +2,7 @@
 
 import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Provider } from "@/lib/mock-data";
@@ -18,25 +18,32 @@ import {
   MapPin,
   Plus,
   BarChart2,
+  Trash2,
 } from "lucide-react";
 
-// Default to first 3 verified providers for demo
-const defaultCompareIds = ["1", "2", "9"];
-
 function ComparePageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const queryIds = searchParams.get("ids");
   const [storedCompareIds, setCompareIds] = useLocalStorageState<string[]>(
     "kidcexcellence.compareIds",
-    defaultCompareIds,
-    (value): value is string[] => Array.isArray(value)
+    [],
+    (value): value is string[] =>
+      Array.isArray(value) &&
+      value.length <= 3 &&
+      value.every((item) => typeof item === "string")
   );
-  const compareIds = useMemo(
-    () => (queryIds ? queryIds.split(",").filter(Boolean).slice(0, 3) : storedCompareIds),
-    [queryIds, storedCompareIds]
-  );
+  const compareIds = useMemo(() => storedCompareIds.slice(0, 3), [storedCompareIds]);
 
   const [providers, setProviders] = useState<Provider[]>([]);
+
+  useEffect(() => {
+    if (!queryIds) return;
+    const importedIds = [...new Set(queryIds.split(",").map((id) => id.trim()).filter(Boolean))]
+      .slice(0, 3);
+    setCompareIds(importedIds);
+    router.replace("/compare");
+  }, [queryIds, router, setCompareIds]);
 
   useEffect(() => {
     const loadProviders = async () => {
@@ -106,6 +113,7 @@ function ComparePageContent() {
                     <button
                       onClick={() => removeProvider(p.id)}
                       className="absolute top-3 right-3 w-7 h-7 rounded-full bg-gray-100 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-colors"
+                      aria-label={`Remove ${p.name} from comparison`}
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -245,24 +253,24 @@ function ComparePageContent() {
               </div>
             </div>
 
-            {/* Add Another */}
-            {providers.length < 3 && (
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              {providers.length < 3 && (
                 <Link href="/search">
                   <Button variant="outline" className="mx-auto flex items-center gap-2 rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-ink)] hover:bg-[var(--brand-ivory)]">
                     <Plus className="w-4 h-4" />
                     Add Another Provider
                   </Button>
                 </Link>
-                <Button
-                  variant="outline"
-                  className="rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-muted)] hover:bg-[var(--brand-ivory)]"
-                  onClick={() => setCompareIds(defaultCompareIds)}
-                >
-                  Reset demo comparison
-                </Button>
-              </div>
-            )}
+              )}
+              <Button
+                variant="outline"
+                className="rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-muted)] hover:bg-[var(--brand-ivory)]"
+                onClick={() => setCompareIds([])}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Clear comparison
+              </Button>
+            </div>
           </>
         )}
       </div>
