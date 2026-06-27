@@ -114,8 +114,15 @@ describe("Kidcexcellence platform APIs", () => {
     const home = await request("/");
     const homeMarkup = await home.text();
     assert.equal(homeMarkup.includes('href="#"'), false);
+    assert.equal(homeMarkup.includes("500+"), false);
+    assert.equal(homeMarkup.includes("reply tracking"), false);
+    assert.equal(homeMarkup.includes("Live provider desk"), false);
     assert.match(homeMarkup, /href="\/privacy"/);
     assert.match(homeMarkup, /href="\/terms"/);
+
+    const search = await request("/search");
+    assert.equal(search.status, 200);
+    assert.equal((await search.text()).includes("Map View"), false);
   });
 
   it("creates a parent session, protects profile writes, sends messages, and logs out", async () => {

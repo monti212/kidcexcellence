@@ -35,20 +35,34 @@ export default function HomePage() {
   const [featuredProviders, setFeaturedProviders] = useState<Provider[]>(
     INITIAL_FEATURED_PROVIDERS
   );
+  const [marketplaceProviders, setMarketplaceProviders] = useState<Provider[]>(PROVIDERS);
 
   useEffect(() => {
     const loadFeaturedProviders = async () => {
-      const response = await fetch("/api/providers?verified=true", {
+      const response = await fetch("/api/providers", {
         cache: "no-store",
       }).catch(() => null);
       if (!response?.ok) return;
       const payload = await response.json();
       if (Array.isArray(payload.providers)) {
-        setFeaturedProviders(payload.providers.slice(0, 6));
+        setMarketplaceProviders(payload.providers);
+        setFeaturedProviders(
+          payload.providers.filter((provider: Provider) => provider.verified).slice(0, 6)
+        );
       }
     };
     void loadFeaturedProviders();
   }, []);
+
+  const verifiedProviderCount = marketplaceProviders.filter(
+    (provider) => provider.verified
+  ).length;
+  const categoryCounts = new Map(
+    CATEGORIES.map((category) => [
+      category.id,
+      marketplaceProviders.filter((provider) => provider.category === category.id).length,
+    ])
+  );
 
   return (
     <div className="brand-page">
@@ -110,9 +124,9 @@ export default function HomePage() {
 
           <div className="mt-8 grid grid-cols-3 gap-3">
             {[
-              ["500+", "listed services"],
-              ["6", "city hubs"],
-              ["24h", "reply tracking"],
+              [String(marketplaceProviders.length), "listed providers"],
+              [String(verifiedProviderCount), "verified profiles"],
+              [String(CATEGORIES.length), "service categories"],
             ].map(([value, label]) => (
               <div key={label} className="border-l-2 border-[var(--brand-gold)] pl-4">
                 <div className="text-2xl font-black text-[var(--brand-ink)]">{value}</div>
@@ -129,7 +143,7 @@ export default function HomePage() {
             <div className="border-b border-[var(--brand-line)] bg-[var(--brand-ink)] p-4 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-black">Live provider desk</div>
+                  <div className="text-sm font-black">Provider desk</div>
                   <div className="text-xs text-white/65">Gaborone care search</div>
                 </div>
                 <div className="rounded-full bg-[var(--brand-gold)] px-3 py-1 text-xs font-black text-[var(--brand-ink)]">
@@ -183,7 +197,7 @@ export default function HomePage() {
       <section className="border-y border-[var(--brand-line)] bg-white">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 md:grid-cols-3 lg:px-8">
           {[
-            [CheckCircle2, "Document-aware verification", "Provider documents, safety status, and sensitive previews live in the admin desk."],
+            [CheckCircle2, "Document-aware verification", "Submitted provider files stay private and are available only to verification administrators."],
             [ClipboardCheck, "Side-by-side decisions", "Parents can compare location, fees, availability, reviews, services, and verification status."],
             [Sparkles, "Provider-ready onboarding", "Schools, clinics, tutors, and individual caregivers get category-specific signup paths."],
           ].map(([Icon, title, body]) => {
@@ -218,7 +232,9 @@ export default function HomePage() {
             <Link key={category.id} href={`/search?category=${category.id}`} className="brand-card p-4 transition-transform hover:-translate-y-0.5">
               <div className="text-3xl">{category.icon}</div>
               <div className="mt-4 text-sm font-black text-[var(--brand-ink)]">{category.name}</div>
-              <div className="mt-1 text-xs font-bold text-[var(--brand-muted)]">{category.count}+ providers</div>
+              <div className="mt-1 text-xs font-bold text-[var(--brand-muted)]">
+                {categoryCounts.get(category.id) ?? 0} providers
+              </div>
             </Link>
           ))}
         </div>

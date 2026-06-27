@@ -26,7 +26,7 @@ import ProviderCard from "@/components/ProviderCard";
 import type { Provider } from "@/lib/mock-data";
 import { filterProviderList, getCategories } from "@/lib/platform-service";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
-import { CheckCircle2, Map, Search, SlidersHorizontal } from "lucide-react";
+import { CheckCircle2, Search, SlidersHorizontal } from "lucide-react";
 
 const LOCATIONS = ["All Locations", "Gaborone", "Francistown", "Maun", "Kasane", "Lobatse", "Serowe"];
 const CATEGORIES = getCategories();
@@ -58,7 +58,6 @@ function SearchPageContent() {
     [],
     (value): value is string[] => Array.isArray(value)
   );
-  const [showMap, setShowMap] = useState(false);
   const [providers, setProviders] = useState<Provider[]>([]);
 
   useEffect(() => {
@@ -219,14 +218,6 @@ function SearchPageContent() {
                 {renderFiltersContent()}
               </SheetContent>
             </Sheet>
-            <Button
-              variant="outline"
-              className={`flex items-center gap-2 rounded-lg border-[var(--brand-line)] font-black ${showMap ? "bg-[var(--brand-gold)] text-[var(--brand-ink)]" : "bg-white text-[var(--brand-ink)]"}`}
-              onClick={() => setShowMap(!showMap)}
-            >
-              <Map className="w-4 h-4" />
-              <span className="hidden sm:inline">Map View</span>
-            </Button>
             {compareIds.length > 0 && (
               <Link href="/compare">
                 <Button className="hidden rounded-lg bg-[var(--brand-ink)] font-black text-white hover:bg-[var(--brand-leaf)] sm:inline-flex">
@@ -249,20 +240,6 @@ function SearchPageContent() {
 
         {/* Results */}
         <div className="flex-1 min-w-0">
-          {showMap && (
-            <div className="brand-card mb-6 h-64 overflow-hidden p-4">
-              <div className="relative h-full rounded-lg bg-[linear-gradient(135deg,#e8f3eb,#fff8ec)]">
-                <div className="absolute left-[14%] top-[28%] rounded-full bg-[var(--brand-leaf)] px-3 py-1 text-xs font-black text-white shadow-sm">Gaborone</div>
-                <div className="absolute right-[18%] top-[18%] rounded-full bg-[var(--brand-coral)] px-3 py-1 text-xs font-black text-white shadow-sm">Phakalane</div>
-                <div className="absolute bottom-[22%] left-[34%] rounded-full bg-[var(--brand-gold)] px-3 py-1 text-xs font-black text-[var(--brand-ink)] shadow-sm">Broadhurst</div>
-                <div className="absolute inset-x-8 top-1/2 h-px rotate-[-8deg] bg-[var(--brand-line)]" />
-                <div className="absolute bottom-4 right-4 rounded-lg bg-white px-3 py-2 text-xs font-bold text-[var(--brand-muted)] shadow-sm">
-                  {filteredProviders.length} visible providers
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-[var(--brand-muted)]">
               <span className="font-black text-[var(--brand-ink)]">{filteredProviders.length}</span>{" "}
