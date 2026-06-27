@@ -29,6 +29,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+`ENABLE_DEMO_PROVIDERS=true` exposes the bundled sample listings for local
+demonstrations. Leave it unset or set it to `false` in production so only
+published provider-owned profiles appear publicly.
+
 ## Verification
 
 ```bash

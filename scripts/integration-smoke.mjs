@@ -11,6 +11,7 @@ const tmpRoot = await mkdtemp(path.join(tmpdir(), "kidcexcellence-test-"));
 const env = {
   ...process.env,
   ADMIN_EMAILS: "admin-test@example.com",
+  ENABLE_DEMO_PROVIDERS: "true",
   PLATFORM_STORE_PATH: path.join(tmpRoot, "platform-store.json"),
   PLATFORM_UPLOADS_DIR: path.join(tmpRoot, "uploads"),
 };
@@ -123,6 +124,16 @@ describe("Kidcexcellence platform APIs", () => {
     const search = await request("/search");
     assert.equal(search.status, 200);
     assert.equal((await search.text()).includes("Map View"), false);
+
+    const providerIndex = await request("/api/providers");
+    const providerIndexPayload = await json(providerIndex);
+    assert.equal(
+      providerIndexPayload.categories.reduce(
+        (total, category) => total + category.count,
+        0
+      ),
+      providerIndexPayload.providers.length
+    );
   });
 
   it("creates a parent session, protects profile writes, sends messages, and logs out", async () => {

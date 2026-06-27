@@ -14,10 +14,14 @@ export async function GET(request: Request) {
   const maxPriceParam = searchParams.get("maxPrice");
   const maxPrice = maxPriceParam ? Number(maxPriceParam) : undefined;
   const store = await readStore();
+  const allProviders = allProvidersFromStore(store);
 
   return NextResponse.json({
-    categories: getCategories(),
-    providers: filterProviderList(allProvidersFromStore(store), {
+    categories: getCategories().map((category) => ({
+      ...category,
+      count: allProviders.filter((provider) => provider.category === category.id).length,
+    })),
+    providers: filterProviderList(allProviders, {
       q: searchParams.get("q") ?? undefined,
       categories,
       location: searchParams.get("location") ?? undefined,

@@ -215,7 +215,14 @@ export function allProvidersFromStore(store: {
     approvedProviders: ApprovedVerification[];
   };
 }) {
-  return [...accountProvidersFromStore(store), ...PROVIDERS];
+  const includeDemoProviders =
+    process.env.ENABLE_DEMO_PROVIDERS === "true" ||
+    (process.env.ENABLE_DEMO_PROVIDERS === undefined &&
+      process.env.NODE_ENV === "development");
+  return [
+    ...accountProvidersFromStore(store),
+    ...(includeDemoProviders ? PROVIDERS : []),
+  ];
 }
 
 export function providerIsApproved(

@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ProviderCard from "@/components/ProviderCard";
-import { CATEGORIES, PROVIDERS, type Provider } from "@/lib/mock-data";
+import { CATEGORIES, type Provider } from "@/lib/mock-data";
 import {
   ArrowRight,
   CheckCircle2,
@@ -27,15 +27,11 @@ import {
 } from "lucide-react";
 
 const LOCATIONS = ["Gaborone", "Francistown", "Maun", "Kasane", "Lobatse", "Serowe"];
-const INITIAL_FEATURED_PROVIDERS = PROVIDERS.filter((provider) => provider.verified).slice(0, 6);
-
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
-  const [featuredProviders, setFeaturedProviders] = useState<Provider[]>(
-    INITIAL_FEATURED_PROVIDERS
-  );
-  const [marketplaceProviders, setMarketplaceProviders] = useState<Provider[]>(PROVIDERS);
+  const [featuredProviders, setFeaturedProviders] = useState<Provider[]>([]);
+  const [marketplaceProviders, setMarketplaceProviders] = useState<Provider[]>([]);
 
   useEffect(() => {
     const loadFeaturedProviders = async () => {
@@ -189,6 +185,11 @@ export default function HomePage() {
                   </div>
                 </div>
               ))}
+              {featuredProviders.length === 0 && (
+                <div className="rounded-lg border border-dashed border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-8 text-center text-sm text-[var(--brand-muted)]">
+                  Verified provider listings will appear here after approval.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -256,6 +257,17 @@ export default function HomePage() {
           {featuredProviders.map((provider) => (
             <ProviderCard key={provider.id} provider={provider} />
           ))}
+          {featuredProviders.length === 0 && (
+            <div className="sm:col-span-2 lg:col-span-3 rounded-lg border border-dashed border-[var(--brand-line)] bg-white px-6 py-12 text-center">
+              <ShieldCheck className="mx-auto h-8 w-8 text-[var(--brand-leaf)]" />
+              <h3 className="mt-3 font-black text-[var(--brand-ink)]">
+                Verified listings are being prepared
+              </h3>
+              <p className="mx-auto mt-2 max-w-lg text-sm text-[var(--brand-muted)]">
+                Published provider profiles appear here after document review and approval.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
