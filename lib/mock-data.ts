@@ -43,6 +43,7 @@ export interface Message {
 
 export interface Conversation {
   id: string;
+  providerId?: string;
   participant: string;
   participantImage: string;
   lastMessage: string;

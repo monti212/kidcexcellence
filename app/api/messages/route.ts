@@ -10,9 +10,18 @@ import { isSameOriginMutation } from "@/lib/request-guard";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  const auth = await getSessionFromRequest(request);
+  if (!auth || !["parent", "provider"].includes(auth.user.role)) {
+    return NextResponse.json({ error: "Account authentication required" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   return NextResponse.json({
-    conversations: await getStoredConversations(searchParams.get("provider")),
+    conversations: await getStoredConversations(
+      auth.session.userId,
+      auth.user.role,
+      searchParams.get("provider")
+    ),
   });
 }
 
@@ -22,8 +31,8 @@ export async function POST(request: Request) {
   }
 
   const auth = await getSessionFromRequest(request);
-  if (!auth) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  if (!auth || !["parent", "provider"].includes(auth.user.role)) {
+    return NextResponse.json({ error: "Account authentication required" }, { status: 401 });
   }
 
   const rateLimit = consumeRateLimit({
@@ -40,16 +49,22 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
 
-  if (!body?.conversationId || !body?.text) {
+  const text = String(body?.text ?? "").trim();
+  if (!body?.conversationId || !text) {
     return NextResponse.json(
       { error: "conversationId and text are required" },
       { status: 400 }
     );
   }
+  if (text.length > 2000) {
+    return NextResponse.json({ error: "Messages must be 2,000 characters or fewer" }, { status: 400 });
+  }
 
   const result = await appendConversationMessage({
+    viewerUserId: auth.session.userId,
+    viewerRole: auth.user.role,
     conversationId: String(body.conversationId),
-    text: String(body.text),
+    text,
     providerId: typeof body.providerId === "string" ? body.providerId : undefined,
   });
 

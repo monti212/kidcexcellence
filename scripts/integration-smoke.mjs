@@ -197,6 +197,18 @@ describe("Kidcexcellence platform APIs", () => {
     assert.equal(updatedSessionPayload.user.phone, "+267 71 234 567");
     assert.equal(updatedSessionPayload.user.email, email);
 
+    const unauthMessages = await request("/api/messages");
+    assert.equal(unauthMessages.status, 401);
+
+    const startedConversation = await request("/api/messages?provider=1", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(startedConversation.status, 200);
+    const startedConversationPayload = await json(startedConversation);
+    assert.equal(startedConversationPayload.conversations.length, 1);
+    assert.equal(startedConversationPayload.conversations[0].messages.length, 0);
+    const conversationId = startedConversationPayload.conversations[0].id;
+
     const message = await request("/api/messages", {
       method: "POST",
       headers: {
@@ -204,7 +216,7 @@ describe("Kidcexcellence platform APIs", () => {
         Cookie: cookie,
         Origin: baseUrl,
       },
-      body: JSON.stringify({ conversationId: "conv1", text: "Integration hello" }),
+      body: JSON.stringify({ conversationId, providerId: "1", text: "Integration hello" }),
     });
     assert.equal(message.status, 200);
     assert.equal((await json(message)).message.text, "Integration hello");
@@ -215,6 +227,40 @@ describe("Kidcexcellence platform APIs", () => {
     assert.equal(conversations.status, 200);
     const conversationsPayload = await json(conversations);
     assert.equal(conversationsPayload.conversations[0].lastMessage, "Integration hello");
+    assert.equal(conversationsPayload.conversations[0].messages[0].isOwn, true);
+
+    const secondParentSignup = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "parent",
+        name: "Other Parent",
+        email: `other-parent-${Date.now()}@example.com`,
+        password: "password123",
+        location: "maun",
+      }),
+    });
+    assert.equal(secondParentSignup.status, 200);
+    const secondParentCookie = cookieFrom(secondParentSignup);
+    const isolatedInbox = await request("/api/messages", {
+      headers: { Cookie: secondParentCookie },
+    });
+    assert.equal((await json(isolatedInbox)).conversations.length, 0);
+
+    const forbiddenAppend = await request("/api/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: secondParentCookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ conversationId, text: "Cross-account write" }),
+    });
+    assert.equal(forbiddenAppend.status, 404);
 
     const logout = await request("/api/auth", {
       method: "DELETE",
@@ -457,6 +503,76 @@ describe("Kidcexcellence platform APIs", () => {
     assert.equal(publicProviderPayload.provider.name, "Integration Nursery");
     assert.equal(publicProviderPayload.provider.price, 4200);
     assert.equal(publicProviderPayload.provider.verified, false);
+
+    const inquirySignup = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "parent",
+        name: "Integration Inquiry Parent",
+        email: `inquiry-${Date.now()}@example.com`,
+        password: "password123",
+        location: "gaborone",
+      }),
+    });
+    assert.equal(inquirySignup.status, 200);
+    const inquiryCookie = cookieFrom(inquirySignup);
+    const inquiryDraft = await request(
+      `/api/messages?provider=${encodeURIComponent(profilePayload.publicId)}`,
+      { headers: { Cookie: inquiryCookie } }
+    );
+    const inquiryDraftPayload = await json(inquiryDraft);
+    const inquiryConversationId = inquiryDraftPayload.conversations[0].id;
+    const inquiryMessage = await request("/api/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: inquiryCookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        conversationId: inquiryConversationId,
+        providerId: profilePayload.publicId,
+        text: "Do you have a Reception place available?",
+      }),
+    });
+    assert.equal(inquiryMessage.status, 200);
+
+    const providerInbox = await request("/api/messages", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(providerInbox.status, 200);
+    const providerInboxPayload = await json(providerInbox);
+    assert.equal(providerInboxPayload.conversations.length, 1);
+    assert.equal(providerInboxPayload.conversations[0].participant, "Integration Inquiry Parent");
+    assert.equal(providerInboxPayload.conversations[0].messages[0].isOwn, false);
+
+    const providerReply = await request("/api/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        conversationId: inquiryConversationId,
+        text: "Yes, please arrange a visit.",
+      }),
+    });
+    assert.equal(providerReply.status, 200);
+    assert.equal((await json(providerReply)).message.isOwn, true);
+
+    const parentInbox = await request("/api/messages", {
+      headers: { Cookie: inquiryCookie },
+    });
+    const parentInboxPayload = await json(parentInbox);
+    assert.equal(parentInboxPayload.conversations[0].participant, "Integration Nursery");
+    assert.equal(parentInboxPayload.conversations[0].messages[0].isOwn, true);
+    assert.equal(parentInboxPayload.conversations[0].messages[1].isOwn, false);
 
     const publicPage = await request(`/provider/${profilePayload.publicId}`);
     assert.equal(publicPage.status, 200);

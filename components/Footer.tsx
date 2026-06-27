@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
 
 export default function Footer() {
+  const pathname = usePathname();
+  if (pathname === "/messages") return null;
+
   return (
     <footer className="mt-auto border-t border-[var(--brand-line)] bg-[var(--brand-ink)] text-white">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">

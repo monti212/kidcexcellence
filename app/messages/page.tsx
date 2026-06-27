@@ -1,18 +1,23 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Conversation, Provider } from "@/lib/mock-data";
 import {
-  buildProviderConversation,
   getCategoryIcon,
-  getConversations,
   getProviderById,
   getProviderByName,
 } from "@/lib/platform-service";
-import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import { usePlatformSession } from "@/lib/use-platform-session";
 import { Send, ArrowLeft, MessageSquare } from "lucide-react";
 import { clsx } from "clsx";
@@ -28,39 +33,26 @@ function ConversationAvatar({ name }: { name: string }) {
   );
 }
 
+const subscribeToHydration = () => () => {};
+
 function MessagesPageContent() {
   const searchParams = useSearchParams();
   const { session, loading } = usePlatformSession();
   const providerId = searchParams.get("provider");
+  const mounted = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false
+  );
   const [newMessage, setNewMessage] = useState("");
+  const [conversationSearch, setConversationSearch] = useState("");
   const [sendError, setSendError] = useState("");
   const [loadedProvider, setLoadedProvider] = useState<Provider | undefined>(() =>
     providerId ? getProviderById(providerId) : undefined
   );
   const provider = providerId ? loadedProvider : undefined;
-  const initialConversationId = provider ? `provider-${provider.id}` : null;
-  const initialConversations = useMemo(() => {
-    return getConversations(provider?.id);
-  }, [provider]);
-  const [conversations, setConversations] = useLocalStorageState<Conversation[]>(
-    "kidcexcellence.conversations",
-    initialConversations,
-    (value): value is Conversation[] => Array.isArray(value)
-  );
-  const effectiveConversations = useMemo(() => {
-    const providerConversation = provider
-      ? conversations.find((conversation) => conversation.participant === provider.name) ?? buildProviderConversation(provider)
-      : undefined;
-
-    return providerConversation && !conversations.some((conversation) => conversation.id === providerConversation.id)
-      ? [providerConversation, ...conversations]
-      : conversations;
-  }, [conversations, provider]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(() => {
-    if (!provider) return null;
-    const existing = effectiveConversations.find((conversation) => conversation.participant === provider.name);
-    return existing?.id ?? initialConversationId;
-  });
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!providerId) return;
@@ -90,11 +82,11 @@ function MessagesPageContent() {
     setConversations(payload.conversations);
     if (provider) {
       const providerConversation = payload.conversations.find(
-        (conversation: Conversation) => conversation.participant === provider.name
+        (conversation: Conversation) => conversation.providerId === provider.id
       );
-      setActiveConversationId(providerConversation?.id ?? initialConversationId);
+      setActiveConversationId(providerConversation?.id ?? null);
     }
-  }, [initialConversationId, provider, setConversations]);
+  }, [provider]);
 
   useEffect(() => {
     const refreshTimer = window.setTimeout(() => {
@@ -104,9 +96,18 @@ function MessagesPageContent() {
   }, [refreshConversations]);
 
   const activeConv = useMemo(
-    () => effectiveConversations.find((c) => c.id === activeConversationId),
-    [activeConversationId, effectiveConversations]
+    () => conversations.find((conversation) => conversation.id === activeConversationId),
+    [activeConversationId, conversations]
   );
+  const visibleConversations = useMemo(() => {
+    const query = conversationSearch.trim().toLowerCase();
+    return query
+      ? conversations.filter((conversation) =>
+          conversation.participant.toLowerCase().includes(query)
+        )
+      : conversations;
+  }, [conversationSearch, conversations]);
+  const showSignInPrompt = mounted && !loading && !session && Boolean(providerId);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeConversationId) return;
@@ -135,26 +136,11 @@ function MessagesPageContent() {
     }
 
     const payload = await response.json();
-    const message = payload.message;
-
-    setConversations((prev) =>
-      (prev.some((conversation) => conversation.id === activeConversationId)
-        ? prev
-        : activeConv
-          ? [activeConv, ...prev]
-          : prev
-      ).map((conv) =>
-        conv.id === activeConversationId
-          ? {
-              ...conv,
-              lastMessage: messageText,
-              timestamp: "now",
-              unread: 0,
-              messages: [...conv.messages, message],
-            }
-          : conv
-      )
-    );
+    setConversations((current) => [
+      payload.conversation,
+      ...current.filter((conversation) => conversation.id !== payload.conversation.id),
+    ]);
+    setActiveConversationId(payload.conversation.id);
   };
 
   return (
@@ -163,7 +149,7 @@ function MessagesPageContent() {
       <div
         className={clsx(
           "w-full sm:w-80 shrink-0 bg-white border-r border-[var(--brand-line)] flex flex-col",
-          activeConversationId && "hidden sm:flex"
+          (activeConversationId || showSignInPrompt) && "hidden sm:flex"
         )}
       >
         <div className="border-b border-[var(--brand-line)] p-5">
@@ -173,18 +159,22 @@ function MessagesPageContent() {
           </div>
           <Input
             placeholder="Search conversations..."
+            value={conversationSearch}
+            onChange={(event) => setConversationSearch(event.target.value)}
             className="mt-3 rounded-lg border-[var(--brand-line)] bg-[var(--brand-ivory)] text-sm"
           />
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {effectiveConversations.length === 0 ? (
+          {visibleConversations.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No conversations yet</p>
+              <p className="text-sm">
+                {conversationSearch ? "No matching conversations" : "No conversations yet"}
+              </p>
             </div>
           ) : (
-            effectiveConversations.map((conv) => (
+            visibleConversations.map((conv) => (
               <button
                 key={conv.id}
                 onClick={() => setActiveConversationId(conv.id)}
@@ -220,7 +210,7 @@ function MessagesPageContent() {
       <div
         className={clsx(
           "flex-1 flex flex-col min-w-0",
-          !activeConversationId && "hidden sm:flex"
+          !activeConversationId && !showSignInPrompt && "hidden sm:flex"
         )}
       >
         {activeConv ? (
@@ -230,13 +220,14 @@ function MessagesPageContent() {
               <button
                 className="sm:hidden p-1 rounded-lg hover:bg-gray-100"
                 onClick={() => setActiveConversationId(null)}
+                aria-label="Back to conversations"
               >
                 <ArrowLeft className="w-5 h-5 text-gray-500" />
               </button>
               <ConversationAvatar name={activeConv.participant} />
               <div>
                 <div className="text-sm font-black text-[var(--brand-ink)]">{activeConv.participant}</div>
-                <div className="text-xs font-black text-[var(--brand-leaf)]">Online</div>
+                <div className="text-xs font-black text-[var(--brand-leaf)]">Secure conversation</div>
               </div>
             </div>
 
@@ -289,6 +280,7 @@ function MessagesPageContent() {
                   onClick={sendMessage}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-leaf)] p-0 text-white hover:bg-[var(--brand-ink)]"
                   disabled={!newMessage.trim() || loading}
+                  aria-label="Send message"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
@@ -307,16 +299,19 @@ function MessagesPageContent() {
             >
               <MessageSquare className="h-10 w-10 text-[var(--brand-leaf)]" />
             </div>
-            <h2 className="mb-2 text-xl font-black text-[var(--brand-ink)]">Your Messages</h2>
+            <h2 className="mb-2 text-xl font-black text-[var(--brand-ink)]">
+              {showSignInPrompt ? "Sign in to message providers" : "Your Messages"}
+            </h2>
             <p className="max-w-xs text-sm text-[var(--brand-muted)]">
-              Select a conversation from the sidebar, or browse providers to start messaging.
+              {showSignInPrompt
+                ? "Use a parent account to start a private provider enquiry."
+                : "Select a conversation from the sidebar, or browse providers to start messaging."}
             </p>
-            <Button
-              className="mt-6 rounded-lg bg-[var(--brand-leaf)] text-white hover:bg-[var(--brand-ink)]"
-              onClick={() => setActiveConversationId("conv1")}
-            >
-              Open a Conversation
-            </Button>
+            <Link href={showSignInPrompt ? "/auth" : "/search"}>
+              <Button className="mt-6 rounded-lg bg-[var(--brand-leaf)] text-white hover:bg-[var(--brand-ink)]">
+                {showSignInPrompt ? "Sign in" : "Browse providers"}
+              </Button>
+            </Link>
           </div>
         )}
       </div>

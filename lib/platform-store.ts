@@ -2,12 +2,11 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import path from "node:path";
-import { CONVERSATIONS, type Conversation, type Message } from "@/lib/mock-data";
+import { type Conversation, type Message, type Provider } from "@/lib/mock-data";
 import {
   APPROVED_VERIFICATIONS,
   PENDING_VERIFICATIONS,
   allProvidersFromStore,
-  buildProviderConversation,
   getCategoryLabel,
   type ApprovedVerification,
   type PendingVerification,
@@ -116,6 +115,14 @@ export interface PlatformUploadRecord {
   createdAt: string;
 }
 
+export interface StoredConversation extends Conversation {
+  parentUserId: string;
+  parentName: string;
+  providerId: string;
+  providerUserId?: string;
+  providerName: string;
+}
+
 export interface PlatformStore {
   users: PlatformUser[];
   sessions: PlatformSession[];
@@ -123,7 +130,7 @@ export interface PlatformStore {
   parentProfiles: Record<string, ParentProfileRecord>;
   providerProfiles: Record<string, ProviderProfileRecord>;
   uploads: PlatformUploadRecord[];
-  conversations: Conversation[];
+  conversations: StoredConversation[];
   verifications: {
     pendingProviders: PendingVerification[];
     approvedProviders: ApprovedVerification[];
@@ -147,7 +154,7 @@ function createInitialStore(): PlatformStore {
     parentProfiles: {},
     providerProfiles: {},
     uploads: [],
-    conversations: CONVERSATIONS,
+    conversations: [],
     verifications: {
       pendingProviders: PENDING_VERIFICATIONS,
       approvedProviders: APPROVED_VERIFICATIONS,
@@ -206,7 +213,11 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
     ),
     providerProfiles,
     uploads: store.uploads ?? initial.uploads,
-    conversations: store.conversations ?? initial.conversations,
+    conversations: (store.conversations ?? []).filter(
+      (conversation): conversation is StoredConversation =>
+        typeof (conversation as StoredConversation).parentUserId === "string" &&
+        typeof (conversation as StoredConversation).providerId === "string"
+    ),
     verifications: {
       pendingProviders:
         store.verifications?.pendingProviders ?? initial.verifications.pendingProviders,
@@ -534,45 +545,126 @@ export async function removeUpload(id: string, userId: string) {
   });
 }
 
-export async function getStoredConversations(providerId?: string | null) {
-  const store = await readStore();
-  if (!providerId) return store.conversations;
+function providerAccountUserId(provider: Provider) {
+  return provider.id.startsWith("account-") ? provider.id.slice("account-".length) : undefined;
+}
 
-  const provider = allProvidersFromStore(store).find((item) => item.id === providerId);
-  if (!provider) return store.conversations;
-  if (store.conversations.some((conversation) => conversation.participant === provider.name)) {
-    return store.conversations;
+function buildStoredConversation(
+  provider: Provider,
+  parentUserId: string,
+  parentName: string
+): StoredConversation {
+  return {
+    id: `conversation-${parentUserId}-${provider.id}`,
+    parentUserId,
+    parentName,
+    providerId: provider.id,
+    providerUserId: providerAccountUserId(provider),
+    providerName: provider.name,
+    participant: provider.name,
+    participantImage: provider.image,
+    lastMessage: "Conversation started",
+    timestamp: "now",
+    unread: 0,
+    messages: [],
+  };
+}
+
+function conversationForViewer(conversation: StoredConversation, viewerUserId: string) {
+  const viewerIsParent = conversation.parentUserId === viewerUserId;
+  return {
+    ...conversation,
+    participant: viewerIsParent ? conversation.providerName : conversation.parentName,
+    messages: conversation.messages.map((message) => ({
+      ...message,
+      isOwn: message.senderId === viewerUserId,
+    })),
+  };
+}
+
+export async function getStoredConversations(
+  viewerUserId: string,
+  viewerRole: UserRole,
+  providerId?: string | null
+) {
+  const store = await readStore();
+  const ownedConversations = store.conversations.filter((conversation) =>
+    viewerRole === "parent"
+      ? conversation.parentUserId === viewerUserId
+      : viewerRole === "provider" && conversation.providerUserId === viewerUserId
+  );
+
+  if (viewerRole !== "parent" || !providerId) {
+    return ownedConversations.map((conversation) =>
+      conversationForViewer(conversation, viewerUserId)
+    );
   }
 
-  return [buildProviderConversation(provider), ...store.conversations];
+  const existing = ownedConversations.find(
+    (conversation) => conversation.providerId === providerId
+  );
+  if (existing) {
+    return ownedConversations.map((conversation) =>
+      conversationForViewer(conversation, viewerUserId)
+    );
+  }
+
+  const provider = allProvidersFromStore(store).find((item) => item.id === providerId);
+  if (!provider) {
+    return ownedConversations.map((conversation) =>
+      conversationForViewer(conversation, viewerUserId)
+    );
+  }
+
+  const parent = store.users.find((user) => user.id === viewerUserId);
+  const draft = buildStoredConversation(provider, viewerUserId, parent?.name ?? "Parent");
+  return [
+    conversationForViewer(draft, viewerUserId),
+    ...ownedConversations.map((conversation) =>
+      conversationForViewer(conversation, viewerUserId)
+    ),
+  ];
 }
 
 export async function appendConversationMessage(input: {
+  viewerUserId: string;
+  viewerRole: UserRole;
   conversationId: string;
   text: string;
   providerId?: string | null;
 }) {
   return updateStore((store) => {
-    if (
-      input.providerId &&
-      !store.conversations.some((conversation) => conversation.id === input.conversationId)
-    ) {
+    if (input.viewerRole === "parent" && input.providerId) {
+      const existing = store.conversations.find(
+        (conversation) =>
+          conversation.parentUserId === input.viewerUserId &&
+          conversation.providerId === input.providerId
+      );
       const provider = allProvidersFromStore(store).find(
         (item) => item.id === input.providerId
       );
-      if (provider) store.conversations.unshift(buildProviderConversation(provider));
+      const parent = store.users.find((user) => user.id === input.viewerUserId);
+      if (!existing && provider && parent) {
+        store.conversations.unshift(
+          buildStoredConversation(provider, input.viewerUserId, parent.name)
+        );
+      }
     }
 
     const message: Message = {
-      id: `msg-${Date.now()}`,
-      senderId: "parent",
+      id: randomUUID(),
+      senderId: input.viewerUserId,
       text: input.text,
       timestamp: new Date().toISOString(),
       isOwn: true,
     };
 
     const conversation = store.conversations.find(
-      (item) => item.id === input.conversationId
+      (item) =>
+        item.id === input.conversationId &&
+        (input.viewerRole === "parent"
+          ? item.parentUserId === input.viewerUserId
+          : input.viewerRole === "provider" && item.providerUserId === input.viewerUserId)
     );
     if (!conversation) return { message, conversation: null };
 
@@ -580,7 +672,10 @@ export async function appendConversationMessage(input: {
     conversation.lastMessage = input.text;
     conversation.timestamp = "now";
     conversation.unread = 0;
-    return { message, conversation };
+    return {
+      message,
+      conversation: conversationForViewer(conversation, input.viewerUserId),
+    };
   });
 }
 

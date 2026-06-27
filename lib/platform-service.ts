@@ -1,8 +1,6 @@
 import {
   CATEGORIES,
-  CONVERSATIONS,
   PROVIDERS,
-  type Conversation,
   type Provider,
 } from "@/lib/mock-data";
 import type {
@@ -273,36 +271,6 @@ export function sortProviders(providers: Provider[], sortBy: ProviderSort = "rat
     if (sortBy === "reviews") return b.reviewCount - a.reviewCount;
     return b.rating - a.rating;
   });
-}
-
-export function buildProviderConversation(provider: Provider): Conversation {
-  return {
-    id: `provider-${provider.id}`,
-    participant: provider.name,
-    participantImage: provider.image,
-    lastMessage: "New enquiry started from provider profile.",
-    timestamp: "now",
-    unread: 0,
-    messages: [
-      {
-        id: `welcome-${provider.id}`,
-        senderId: "provider",
-        text: `Hello, this is ${provider.name}. Send your question and we will respond with availability, fees, and visit options.`,
-        timestamp: "now",
-        isOwn: false,
-      },
-    ],
-  };
-}
-
-export function getConversations(providerId?: string | null) {
-  if (!providerId) return CONVERSATIONS;
-  const provider = getProviderById(providerId);
-  if (!provider) return CONVERSATIONS;
-  if (CONVERSATIONS.some((conversation) => conversation.participant === provider.name)) {
-    return CONVERSATIONS;
-  }
-  return [buildProviderConversation(provider), ...CONVERSATIONS];
 }
 
 export function getVerificationQueues() {
