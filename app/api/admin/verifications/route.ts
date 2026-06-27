@@ -4,6 +4,7 @@ import {
   getSessionFromRequest,
   readStore,
 } from "@/lib/platform-store";
+import { allProvidersFromStore } from "@/lib/platform-service";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
 
@@ -12,6 +13,39 @@ export const runtime = "nodejs";
 async function requireAdmin(request: Request) {
   const auth = await getSessionFromRequest(request);
   return auth?.session.role === "admin" ? auth : null;
+}
+
+function dashboardPayload(
+  store: Awaited<ReturnType<typeof readStore>>,
+  admin: { name: string; email: string }
+) {
+  return {
+    ...store.verifications,
+    pendingProviders: store.verifications.pendingProviders.map((pending) => ({
+      ...pending,
+      uploads: pending.userId
+        ? store.uploads
+            .filter(
+              (upload) =>
+                upload.userId === pending.userId && upload.type === "document"
+            )
+            .map((upload) => ({
+              id: upload.id,
+              label: upload.label,
+              fileName: upload.fileName,
+              contentType: upload.contentType,
+              size: upload.size,
+              url: `/api/uploads/${upload.id}`,
+            }))
+        : [],
+    })),
+    stats: {
+      totalProviders: allProvidersFromStore(store).length,
+      totalParents: store.users.filter((user) => user.role === "parent").length,
+      registeredProviders: store.users.filter((user) => user.role === "provider").length,
+    },
+    admin,
+  };
 }
 
 export async function GET(request: Request) {
@@ -33,7 +67,7 @@ export async function GET(request: Request) {
   }
 
   const store = await readStore();
-  return NextResponse.json(store.verifications);
+  return NextResponse.json(dashboardPayload(store, auth.user));
 }
 
 export async function PATCH(request: Request) {
@@ -65,5 +99,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Verification id is required" }, { status: 400 });
   }
 
-  return NextResponse.json(await decideVerification(String(body.id), action));
+  await decideVerification(String(body.id), action);
+  const store = await readStore();
+  return NextResponse.json(dashboardPayload(store, auth.user));
 }

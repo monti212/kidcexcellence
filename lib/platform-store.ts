@@ -5,7 +5,6 @@ import path from "node:path";
 import { type Conversation, type Message, type Provider } from "@/lib/mock-data";
 import {
   APPROVED_VERIFICATIONS,
-  PENDING_VERIFICATIONS,
   allProvidersFromStore,
   getCategoryLabel,
   type ApprovedVerification,
@@ -156,7 +155,7 @@ function createInitialStore(): PlatformStore {
     uploads: [],
     conversations: [],
     verifications: {
-      pendingProviders: PENDING_VERIFICATIONS,
+      pendingProviders: [],
       approvedProviders: APPROVED_VERIFICATIONS,
       rejectedCount: 0,
     },
@@ -220,7 +219,9 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
     ),
     verifications: {
       pendingProviders:
-        store.verifications?.pendingProviders ?? initial.verifications.pendingProviders,
+        (store.verifications?.pendingProviders ?? initial.verifications.pendingProviders).filter(
+          (pending) => Boolean(pending.userId)
+        ),
       approvedProviders:
         store.verifications?.approvedProviders ?? initial.verifications.approvedProviders,
       rejectedCount: store.verifications?.rejectedCount ?? initial.verifications.rejectedCount,
@@ -517,6 +518,19 @@ export async function listUploads(userId: string, type?: PlatformUploadRecord["t
 export async function getUploadForUser(id: string, userId: string) {
   const store = await readStore();
   return store.uploads.find((upload) => upload.id === id && upload.userId === userId) ?? null;
+}
+
+export async function getVerificationUploadForAdmin(id: string) {
+  const store = await readStore();
+  const upload = store.uploads.find(
+    (item) =>
+      item.id === id &&
+      item.type === "document" &&
+      store.verifications.pendingProviders.some(
+        (pending) => pending.userId === item.userId
+      )
+  );
+  return upload ?? null;
 }
 
 export async function recordUpload(upload: PlatformUploadRecord) {

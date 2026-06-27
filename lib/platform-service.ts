@@ -41,39 +41,6 @@ export interface ApprovedVerification {
   date: string;
 }
 
-export const PENDING_VERIFICATIONS: PendingVerification[] = [
-  {
-    id: "p1",
-    name: "Happy Feet Nursery",
-    category: "Nursery",
-    location: "Gaborone West",
-    submittedDate: "2025-04-01",
-    documents: ["CV", "Proof of Residence", "Prospectus"],
-    image: "https://picsum.photos/400/300?random=50",
-    status: "pending",
-  },
-  {
-    id: "p2",
-    name: "Ntombi Khumalo",
-    category: "Nanny",
-    location: "Tlokweng",
-    submittedDate: "2025-04-02",
-    documents: ["ID Copy", "CV", "2 References"],
-    image: "https://api.dicebear.com/7.x/personas/svg?seed=Ntombi",
-    status: "pending",
-  },
-  {
-    id: "p3",
-    name: "Dr. Tsholo Mokoena",
-    category: "Pediatric Clinic",
-    location: "Broadhurst",
-    submittedDate: "2025-04-03",
-    documents: ["Medical License", "CV", "Proof of Practice"],
-    image: "https://api.dicebear.com/7.x/personas/svg?seed=Tsholo",
-    status: "pending",
-  },
-];
-
 export const APPROVED_VERIFICATIONS: ApprovedVerification[] = [
   { id: "a1", name: "Sunshine Early Learning Centre", category: "School", verified: true, date: "2025-03-15" },
   { id: "a2", name: "Little Stars Nursery", category: "Nursery", verified: true, date: "2025-03-20" },
@@ -271,12 +238,4 @@ export function sortProviders(providers: Provider[], sortBy: ProviderSort = "rat
     if (sortBy === "reviews") return b.reviewCount - a.reviewCount;
     return b.rating - a.rating;
   });
-}
-
-export function getVerificationQueues() {
-  return {
-    pendingProviders: PENDING_VERIFICATIONS,
-    approvedProviders: APPROVED_VERIFICATIONS,
-    rejectedCount: 0,
-  };
 }

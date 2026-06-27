@@ -9,63 +9,88 @@ import { Separator } from "@/components/ui/separator";
 import {
   CheckCircle2,
   XCircle,
-  Eye,
   Shield,
   Users,
   Clock,
   BarChart2,
-  Lock,
   Search,
+  ExternalLink,
+  FileText,
 } from "lucide-react";
-import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import {
-  APPROVED_VERIFICATIONS,
-  PENDING_VERIFICATIONS,
   type ApprovedVerification,
   type PendingVerification,
 } from "@/lib/platform-service";
+import {
+  notifyPlatformSessionChanged,
+  usePlatformSession,
+} from "@/lib/use-platform-session";
+
+interface AdminUpload {
+  id: string;
+  label: string;
+  fileName: string;
+  contentType: string;
+  size: number;
+  url: string;
+}
+
+interface AdminPendingVerification extends PendingVerification {
+  uploads: AdminUpload[];
+}
 
 interface AdminState {
-  pendingProviders: PendingVerification[];
+  pendingProviders: AdminPendingVerification[];
   approvedProviders: ApprovedVerification[];
   rejectedCount: number;
+  stats: {
+    totalProviders: number;
+    totalParents: number;
+    registeredProviders: number;
+  };
+  admin: {
+    name: string;
+    email: string;
+  };
 }
 
 const DEFAULT_ADMIN_STATE: AdminState = {
-  pendingProviders: PENDING_VERIFICATIONS,
-  approvedProviders: APPROVED_VERIFICATIONS,
+  pendingProviders: [],
+  approvedProviders: [],
   rejectedCount: 0,
+  stats: {
+    totalProviders: 0,
+    totalParents: 0,
+    registeredProviders: 0,
+  },
+  admin: {
+    name: "Admin",
+    email: "",
+  },
 };
 
 function AdminDashboard() {
-  const [adminState, setAdminState] = useLocalStorageState<AdminState>(
-    "kidcexcellence.admin.state",
-    DEFAULT_ADMIN_STATE,
-    (value): value is AdminState =>
-      typeof value === "object" &&
-      value !== null &&
-      "pendingProviders" in value &&
-      "approvedProviders" in value &&
-      "rejectedCount" in value
-  );
-  const { pendingProviders, approvedProviders, rejectedCount } = adminState;
-  const [showSensitive, setShowSensitive] = useState<string | null>(null);
+  const [adminState, setAdminState] = useState<AdminState>(DEFAULT_ADMIN_STATE);
+  const { pendingProviders, approvedProviders, rejectedCount, stats, admin } = adminState;
   const [searchQuery, setSearchQuery] = useState("");
   const [actionError, setActionError] = useState("");
+  const [dashboardLoading, setDashboardLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/verifications")
+    fetch("/api/admin/verifications", { credentials: "same-origin", cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
       .then((payload) => {
         if (payload) setAdminState(payload);
       })
-      .catch(() => undefined);
-  }, [setAdminState]);
+      .catch(() => undefined)
+      .finally(() => setDashboardLoading(false));
+  }, []);
 
   const approveProvider = async (id: string) => {
     setActionError("");
     const response = await fetch("/api/admin/verifications", {
       method: "PATCH",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, action: "approve" }),
     }).catch(() => null);
@@ -80,6 +105,7 @@ function AdminDashboard() {
     setActionError("");
     const response = await fetch("/api/admin/verifications", {
       method: "PATCH",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, action: "reject" }),
     }).catch(() => null);
@@ -111,19 +137,20 @@ function AdminDashboard() {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-black">
-            A
+            {admin.name.charAt(0).toUpperCase() || "A"}
           </div>
-          <span className="text-sm font-medium">Admin</span>
+          <span className="text-sm font-medium">{admin.name}</span>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
           {[
             { label: "Pending Verifications", value: pendingProviders.length, icon: <Clock className="w-5 h-5 text-orange-500" />, bg: "bg-orange-50", border: "border-orange-100" },
-            { label: "Total Providers", value: 47, icon: <Users className="w-5 h-5 text-blue-500" />, bg: "bg-blue-50", border: "border-blue-100" },
-            { label: "Total Parents", value: 156, icon: <Users className="w-5 h-5 text-emerald-600" />, bg: "bg-emerald-50", border: "border-emerald-50" },
+            { label: "Total Providers", value: stats.totalProviders, icon: <Users className="w-5 h-5 text-blue-500" />, bg: "bg-blue-50", border: "border-blue-100" },
+            { label: "Registered Providers", value: stats.registeredProviders, icon: <Users className="w-5 h-5 text-violet-500" />, bg: "bg-violet-50", border: "border-violet-100" },
+            { label: "Total Parents", value: stats.totalParents, icon: <Users className="w-5 h-5 text-emerald-600" />, bg: "bg-emerald-50", border: "border-emerald-50" },
             { label: "Verified Providers", value: approvedProviders.length, icon: <CheckCircle2 className="w-5 h-5 text-green-500" />, bg: "bg-green-50", border: "border-green-100" },
             { label: "Rejected This Session", value: rejectedCount, icon: <XCircle className="w-5 h-5 text-red-500" />, bg: "bg-red-50", border: "border-red-100" },
           ].map((stat) => (
@@ -157,7 +184,11 @@ function AdminDashboard() {
             </div>
           )}
 
-          {pendingProviders.length === 0 ? (
+          {dashboardLoading ? (
+            <div className="py-10 text-center text-sm text-[var(--brand-muted)]">
+              Loading verification queue...
+            </div>
+          ) : pendingProviders.length === 0 ? (
             <div className="text-center py-10">
               <CheckCircle2 className="w-10 h-10 text-green-400 mx-auto mb-2" />
               <p className="text-[var(--brand-muted)] font-medium">All providers verified!</p>
@@ -184,32 +215,27 @@ function AdminDashboard() {
                       <p className="text-[var(--brand-muted)] text-sm mb-2">
                         📍 {provider.location} · Submitted {provider.submittedDate}
                       </p>
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {provider.documents.map((doc) => (
-                          <span key={doc} className="bg-gray-100 text-gray-600 rounded-full px-2.5 py-0.5 text-xs">
-                            📄 {doc}
+                      <div className="mb-4 flex flex-wrap gap-2">
+                        {provider.uploads.length === 0 ? (
+                          <span className="text-xs font-medium text-red-600">
+                            No reviewable files found
                           </span>
-                        ))}
+                        ) : (
+                          provider.uploads.map((upload) => (
+                            <a
+                              key={upload.id}
+                              href={upload.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-3 py-2 text-xs font-bold text-[var(--brand-ink)] hover:border-[var(--brand-leaf)]"
+                            >
+                              <FileText className="h-3.5 w-3.5 text-[var(--brand-leaf)]" />
+                              {upload.label}
+                              <ExternalLink className="h-3 w-3 text-[var(--brand-muted)]" />
+                            </a>
+                          ))
+                        )}
                       </div>
-                      {/* View ID button (sensitive) */}
-                      <button
-                        onClick={() => setShowSensitive(showSensitive === provider.id ? null : provider.id)}
-                        className="text-xs font-medium text-blue-600 flex items-center gap-1 hover:text-blue-800 mb-3"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        {showSensitive === provider.id ? "Hide" : "View"} ID Document
-                      </button>
-
-                      {showSensitive === provider.id && (
-                        <div className="relative h-24 bg-gray-200 rounded-lg flex items-center justify-center mb-3 border border-[var(--brand-line)] overflow-hidden">
-                          <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400 opacity-80 backdrop-blur" />
-                          <div className="relative z-10 flex flex-col items-center text-gray-600">
-                            <Lock className="w-6 h-6 mb-1" />
-                            <span className="text-sm font-black">Sensitive Document</span>
-                            <span className="text-xs opacity-70">ID details blurred for privacy</span>
-                          </div>
-                        </div>
-                      )}
 
                       <div className="flex gap-2">
                         <Button
@@ -298,8 +324,8 @@ function AdminGate() {
   const initialEmail = searchParams.get("email") ?? "";
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
-  const [authenticated, setAuthenticated] = useState(false);
   const [error, setError] = useState("");
+  const { user, loading, refresh } = usePlatformSession();
 
   const login = async () => {
     setError("");
@@ -315,7 +341,8 @@ function AdminGate() {
     }).catch(() => null);
 
     if (response?.ok) {
-      setAuthenticated(true);
+      await refresh();
+      notifyPlatformSessionChanged();
       return;
     }
 
@@ -323,7 +350,15 @@ function AdminGate() {
     setError(payload?.error ?? "Admin sign-in failed.");
   };
 
-  if (authenticated) return <AdminDashboard />;
+  if (loading) {
+    return (
+      <div className="min-h-screen brand-page flex items-center justify-center text-[var(--brand-muted)]">
+        Checking admin session...
+      </div>
+    );
+  }
+
+  if (user?.role === "admin") return <AdminDashboard />;
 
   return (
     <div className="min-h-screen brand-page flex items-center justify-center py-12 px-4">

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   getSessionFromRequest,
   getUploadForUser,
+  getVerificationUploadForAdmin,
   removeUpload,
 } from "@/lib/platform-store";
 import { isSameOriginMutation } from "@/lib/request-guard";
@@ -12,7 +13,10 @@ export const runtime = "nodejs";
 async function requireUpload(request: Request, id: string) {
   const auth = await getSessionFromRequest(request);
   if (!auth) return { error: "Authentication required", status: 401 as const };
-  const upload = await getUploadForUser(id, auth.session.userId);
+  const upload =
+    auth.user.role === "admin"
+      ? await getVerificationUploadForAdmin(id)
+      : await getUploadForUser(id, auth.session.userId);
   if (!upload) return { error: "Upload not found", status: 404 as const };
   return { upload };
 }

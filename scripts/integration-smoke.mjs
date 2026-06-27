@@ -308,7 +308,10 @@ describe("Kidcexcellence platform APIs", () => {
     });
     assert.equal(queue.status, 200);
     const queuePayload = await json(queue);
-    assert.ok(queuePayload.pendingProviders.length > 0);
+    assert.equal(queuePayload.pendingProviders.length, 0);
+    assert.ok(queuePayload.stats.totalProviders > 0);
+    assert.ok(queuePayload.stats.totalParents > 0);
+    assert.equal(queuePayload.admin.email, "admin-test@example.com");
 
     const decision = await request("/api/admin/verifications", {
       method: "PATCH",
@@ -318,12 +321,11 @@ describe("Kidcexcellence platform APIs", () => {
         Origin: baseUrl,
       },
       body: JSON.stringify({
-        id: queuePayload.pendingProviders[0].id,
+        id: "",
         action: "approve",
       }),
     });
-    assert.equal(decision.status, 200);
-    assert.equal((await json(decision)).pendingProviders.length, queuePayload.pendingProviders.length - 1);
+    assert.equal(decision.status, 400);
   });
 
   it("supports email verification and password reset lifecycle", async () => {
@@ -658,6 +660,12 @@ describe("Kidcexcellence platform APIs", () => {
       (item) => item.name === "Integration Nursery"
     );
     assert.ok(providerSubmission);
+    assert.equal(providerSubmission.uploads.length, 2);
+    const adminDocument = await request(providerSubmission.uploads[0].url, {
+      headers: { Cookie: adminCookie },
+    });
+    assert.equal(adminDocument.status, 200);
+    assert.equal(adminDocument.headers.get("content-type"), "application/pdf");
 
     const rejected = await request("/api/admin/verifications", {
       method: "PATCH",
@@ -669,6 +677,11 @@ describe("Kidcexcellence platform APIs", () => {
       body: JSON.stringify({ id: providerSubmission.id, action: "reject" }),
     });
     assert.equal(rejected.status, 200);
+
+    const rejectedDocument = await request(providerSubmission.uploads[0].url, {
+      headers: { Cookie: adminCookie },
+    });
+    assert.equal(rejectedDocument.status, 404);
 
     const rejectedStatus = await request("/api/verifications", {
       headers: { Cookie: cookie },
