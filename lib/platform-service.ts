@@ -24,6 +24,7 @@ export interface ProviderFilters {
 
 export interface PendingVerification {
   id: string;
+  userId?: string;
   name: string;
   category: string;
   location: string;
@@ -35,6 +36,7 @@ export interface PendingVerification {
 
 export interface ApprovedVerification {
   id: string;
+  userId?: string;
   name: string;
   category: string;
   verified: true;
@@ -230,7 +232,11 @@ export function accountProvidersFromStore(store: {
         user,
         profile,
         store.uploads,
-        providerIsApproved(store.verifications.approvedProviders, profile.displayName || user.name)
+        providerIsApproved(
+          store.verifications.approvedProviders,
+          profile.displayName || user.name,
+          user.id
+        )
       ),
     ];
   });
@@ -249,11 +255,14 @@ export function allProvidersFromStore(store: {
 
 export function providerIsApproved(
   approvedProviders: ApprovedVerification[],
-  displayName: string
+  displayName: string,
+  userId?: string
 ) {
   const normalizedName = displayName.trim().toLowerCase();
   return approvedProviders.some(
-    (provider) => provider.name.trim().toLowerCase() === normalizedName
+    (provider) =>
+      (userId && provider.userId === userId) ||
+      provider.name.trim().toLowerCase() === normalizedName
   );
 }
 

@@ -47,6 +47,7 @@ interface StoredProviderProfile {
   priceUnit: "monthly" | "per day" | "per hour" | "termly";
   liveIn: boolean;
   published: boolean;
+  verificationStatus: "not_submitted" | "pending" | "approved" | "rejected";
   feeRows: FeeRow[];
   savedAt?: string;
 }
@@ -77,6 +78,7 @@ const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
   priceUnit: "termly",
   liveIn: false,
   published: false,
+  verificationStatus: "not_submitted",
   feeRows: [
     { grade: "Baby Class", termly: "2800", annually: "8400" },
     { grade: "Toddler Class", termly: "3000", annually: "9000" },
@@ -128,6 +130,9 @@ export default function ProviderProfilePage() {
   );
   const [liveIn, setLiveIn] = useState(storedProfile.liveIn);
   const [published, setPublished] = useState(Boolean(storedProfile.published));
+  const [verificationStatus, setVerificationStatus] = useState(
+    storedProfile.verificationStatus ?? "not_submitted"
+  );
   const [verified, setVerified] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [uploadMessage, setUploadMessage] = useState("");
@@ -189,6 +194,7 @@ export default function ProviderProfilePage() {
     setPriceUnit(payload.profile.priceUnit ?? "termly");
     setLiveIn(Boolean(payload.profile.liveIn));
     setPublished(Boolean(payload.profile.published));
+    setVerificationStatus(payload.profile.verificationStatus ?? "not_submitted");
     setVerified(Boolean(payload.verified));
     setFeeRows(Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows);
     setStoredProfile({
@@ -205,6 +211,7 @@ export default function ProviderProfilePage() {
       priceUnit: payload.profile.priceUnit ?? "termly",
       liveIn: Boolean(payload.profile.liveIn),
       published: Boolean(payload.profile.published),
+      verificationStatus: payload.profile.verificationStatus ?? "not_submitted",
       feeRows: Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows,
       savedAt: payload.profile.savedAt,
     });
@@ -244,6 +251,7 @@ export default function ProviderProfilePage() {
       priceUnit,
       liveIn,
       published: nextPublished,
+      verificationStatus,
       feeRows,
       savedAt: new Date().toISOString(),
     };
@@ -264,6 +272,7 @@ export default function ProviderProfilePage() {
     const savedProfile = { ...nextProfile, ...payload.profile };
     setStoredProfile(savedProfile);
     setPublished(Boolean(payload.profile.published));
+    setVerificationStatus(payload.profile.verificationStatus ?? "not_submitted");
     setVerified(Boolean(payload.verified));
     setSaveMessage(payload.profile.published ? "Published!" : "Saved!");
     setTimeout(() => setSaveMessage(""), 3000);
@@ -342,6 +351,27 @@ export default function ProviderProfilePage() {
 
     setUploads((prev) => prev.filter((upload) => upload.id !== uploadId));
   };
+
+  const submitVerification = async () => {
+    const response = await fetch("/api/verifications", {
+      method: "POST",
+      credentials: "same-origin",
+    }).catch(() => null);
+
+    if (!response?.ok) {
+      const payload = await response?.json().catch(() => null);
+      setUploadMessage(payload?.error ?? "Could not submit verification.");
+      return;
+    }
+
+    setVerificationStatus("pending");
+    setUploadMessage("Verification submitted for admin review.");
+  };
+
+  const hasIdentityDocument = documentUploads.some((upload) =>
+    ["national-id", "certified-id"].includes(upload.documentKey ?? "")
+  );
+  const canSubmitVerification = hasIdentityDocument && documentUploads.length >= 2;
 
   return (
     <div className="min-h-screen brand-page py-8 px-4 sm:px-6 lg:px-8">
@@ -546,6 +576,39 @@ export default function ProviderProfilePage() {
               <p className="text-[var(--brand-muted)] text-sm bg-blue-50 rounded-lg p-3 border border-blue-100">
                 Upload your documents for verification. Once approved, you&apos;ll receive the Verified badge on your profile.
               </p>
+
+              <div className="flex flex-col gap-3 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-[var(--brand-ink)]">
+                    {verificationStatus === "approved" && "Verification approved"}
+                    {verificationStatus === "pending" && "Verification under review"}
+                    {verificationStatus === "rejected" && "Updates required"}
+                    {verificationStatus === "not_submitted" && "Ready for verification?"}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--brand-muted)]">
+                    {verificationStatus === "approved" &&
+                      "Your public profile displays the Verified badge."}
+                    {verificationStatus === "pending" &&
+                      "An administrator is reviewing your submitted documents."}
+                    {verificationStatus === "rejected" &&
+                      "Update your documents, then submit them for another review."}
+                    {verificationStatus === "not_submitted" &&
+                      "Upload an identity document and one supporting document to submit."}
+                  </p>
+                </div>
+                {(verificationStatus === "not_submitted" ||
+                  verificationStatus === "rejected") && (
+                  <Button
+                    type="button"
+                    onClick={submitVerification}
+                    disabled={!canSubmitVerification}
+                    className="shrink-0 rounded-lg bg-[var(--brand-leaf)] text-white hover:bg-[var(--brand-leaf)]/90"
+                  >
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Submit for review
+                  </Button>
+                )}
+              </div>
 
               {/* Admin-only sensitive documents */}
               <div className="space-y-4">

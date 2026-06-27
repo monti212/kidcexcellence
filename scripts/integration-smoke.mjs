@@ -400,6 +400,7 @@ describe("Kidcexcellence platform APIs", () => {
           experience: "Ten years serving families",
           availability: "Monday to Friday",
           published: true,
+          verificationStatus: "approved",
           liveIn: true,
           feeRows: [{ grade: "Reception", termly: "4200", annually: "12600" }],
         },
@@ -417,6 +418,7 @@ describe("Kidcexcellence platform APIs", () => {
     assert.equal(savedProfilePayload.profile.category, "nurseries");
     assert.equal(savedProfilePayload.profile.feeRows[0].grade, "Reception");
     assert.equal(savedProfilePayload.profile.published, true);
+    assert.equal(savedProfilePayload.profile.verificationStatus, "not_submitted");
 
     const discovery = await request("/api/providers?q=Integration%20Nursery");
     assert.equal(discovery.status, 200);
@@ -429,10 +431,33 @@ describe("Kidcexcellence platform APIs", () => {
     const publicProviderPayload = await json(publicProvider);
     assert.equal(publicProviderPayload.provider.name, "Integration Nursery");
     assert.equal(publicProviderPayload.provider.price, 4200);
+    assert.equal(publicProviderPayload.provider.verified, false);
 
     const publicPage = await request(`/provider/${profilePayload.publicId}`);
     assert.equal(publicPage.status, 200);
     assert.match(await publicPage.text(), /Integration Nursery/);
+
+    const prematureSubmission = await request("/api/verifications", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+    });
+    assert.equal(prematureSubmission.status, 400);
+
+    const identityForm = new FormData();
+    identityForm.set("type", "document");
+    identityForm.set("documentKey", "national-id");
+    identityForm.set("label", "National ID / Passport");
+    identityForm.set(
+      "file",
+      new Blob(["test identity"], { type: "application/pdf" }),
+      "identity.pdf"
+    );
+    const identityUpload = await request("/api/uploads", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+      body: identityForm,
+    });
+    assert.equal(identityUpload.status, 200);
 
     const form = new FormData();
     form.set("type", "document");
@@ -453,7 +478,104 @@ describe("Kidcexcellence platform APIs", () => {
       headers: { Cookie: cookie },
     });
     assert.equal(list.status, 200);
-    assert.equal((await json(list)).uploads.length, 1);
+    assert.equal((await json(list)).uploads.length, 2);
+
+    const submitted = await request("/api/verifications", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+    });
+    assert.equal(submitted.status, 200);
+    assert.equal((await json(submitted)).status, "pending");
+
+    const status = await request("/api/verifications", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(status.status, 200);
+    assert.equal((await json(status)).status, "pending");
+
+    const adminLogin = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "login",
+        role: "admin",
+        email: "admin-test@example.com",
+        password: "password123",
+      }),
+    });
+    assert.equal(adminLogin.status, 200);
+    const adminCookie = cookieFrom(adminLogin);
+
+    const queue = await request("/api/admin/verifications", {
+      headers: { Cookie: adminCookie },
+    });
+    const queuePayload = await json(queue);
+    const providerSubmission = queuePayload.pendingProviders.find(
+      (item) => item.name === "Integration Nursery"
+    );
+    assert.ok(providerSubmission);
+
+    const rejected = await request("/api/admin/verifications", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: adminCookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ id: providerSubmission.id, action: "reject" }),
+    });
+    assert.equal(rejected.status, 200);
+
+    const rejectedStatus = await request("/api/verifications", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal((await json(rejectedStatus)).status, "rejected");
+
+    const resubmitted = await request("/api/verifications", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+    });
+    assert.equal(resubmitted.status, 200);
+
+    const refreshedQueue = await request("/api/admin/verifications", {
+      headers: { Cookie: adminCookie },
+    });
+    const refreshedQueuePayload = await json(refreshedQueue);
+    const resubmission = refreshedQueuePayload.pendingProviders.find(
+      (item) => item.name === "Integration Nursery"
+    );
+    assert.ok(resubmission);
+
+    const approved = await request("/api/admin/verifications", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: adminCookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ id: resubmission.id, action: "approve" }),
+    });
+    assert.equal(approved.status, 200);
+
+    const approvedProfile = await request("/api/profiles/provider", {
+      headers: { Cookie: cookie },
+    });
+    const approvedProfilePayload = await json(approvedProfile);
+    assert.equal(approvedProfilePayload.profile.verificationStatus, "approved");
+    assert.equal(approvedProfilePayload.verified, true);
+
+    const verifiedDiscovery = await request("/api/providers?q=Integration%20Nursery");
+    const verifiedDiscoveryPayload = await json(verifiedDiscovery);
+    assert.equal(verifiedDiscoveryPayload.providers[0].verified, true);
+
+    const duplicateSubmission = await request("/api/verifications", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+    });
+    assert.equal(duplicateSubmission.status, 400);
 
     const file = await request(uploadPayload.upload.url, {
       headers: { Cookie: cookie },

@@ -23,7 +23,11 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     profile,
-    verified: providerIsApproved(store.verifications.approvedProviders, displayName),
+    verified: providerIsApproved(
+      store.verifications.approvedProviders,
+      displayName,
+      auth.session.userId
+    ),
   });
 }
 
@@ -63,6 +67,9 @@ export async function POST(request: Request) {
     );
   }
 
+  const currentStore = await readStore();
+  const verificationStatus =
+    currentStore.providerProfiles[userId]?.verificationStatus ?? "not_submitted";
   const requestedPublish = Boolean(body.profile.published);
   const normalized = {
     displayName: String(body.profile.displayName ?? auth.user.name).trim(),
@@ -85,6 +92,7 @@ export async function POST(request: Request) {
       : "termly",
     liveIn: Boolean(body.profile.liveIn),
     published: requestedPublish,
+    verificationStatus,
     feeRows: Array.isArray(body.profile.feeRows)
       ? body.profile.feeRows.map((row: unknown) => {
           const item = row as Record<string, unknown>;
@@ -123,7 +131,8 @@ export async function POST(request: Request) {
     profile,
     verified: providerIsApproved(
       store.verifications.approvedProviders,
-      profile.displayName || auth.user.name
+      profile.displayName || auth.user.name,
+      auth.session.userId
     ),
     publicId: profile.published ? `account-${userId}` : null,
   });

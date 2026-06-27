@@ -8,6 +8,7 @@ import {
   PENDING_VERIFICATIONS,
   allProvidersFromStore,
   buildProviderConversation,
+  getCategoryLabel,
   type ApprovedVerification,
   type PendingVerification,
 } from "@/lib/platform-service";
@@ -87,6 +88,7 @@ export interface ProviderProfileRecord {
   priceUnit: "monthly" | "per day" | "per hour" | "termly";
   liveIn: boolean;
   published: boolean;
+  verificationStatus: "not_submitted" | "pending" | "approved" | "rejected";
   feeRows: Array<{
     grade: string;
     termly: string;
@@ -172,6 +174,7 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
         price: profile.price ?? "",
         priceUnit: profile.priceUnit ?? "termly",
         published: profile.published ?? false,
+        verificationStatus: profile.verificationStatus ?? "not_submitted",
       },
     ])
   );
@@ -563,6 +566,7 @@ export async function decideVerification(id: string, action: "approve" | "reject
     if (action === "approve") {
       store.verifications.approvedProviders.unshift({
         id: `approved-${pending.id}`,
+        userId: pending.userId,
         name: pending.name,
         category: pending.category,
         verified: true,
@@ -571,7 +575,59 @@ export async function decideVerification(id: string, action: "approve" | "reject
     } else {
       store.verifications.rejectedCount += 1;
     }
+    if (pending.userId && store.providerProfiles[pending.userId]) {
+      store.providerProfiles[pending.userId].verificationStatus =
+        action === "approve" ? "approved" : "rejected";
+    }
 
     return store.verifications;
+  });
+}
+
+export async function submitProviderVerification(userId: string) {
+  return updateStore((store) => {
+    const user = store.users.find((item) => item.id === userId && item.role === "provider");
+    const profile = store.providerProfiles[userId];
+    if (!user || !profile) {
+      throw new Error("Complete and save your provider profile before submitting verification.");
+    }
+    if (profile.verificationStatus === "approved") {
+      throw new Error("This provider profile is already verified.");
+    }
+
+    const documents = store.uploads.filter(
+      (upload) => upload.userId === userId && upload.type === "document"
+    );
+    const hasIdentity = documents.some((document) =>
+      ["national-id", "certified-id"].includes(document.documentKey ?? "")
+    );
+    if (!hasIdentity || documents.length < 2) {
+      throw new Error(
+        "Upload an identity document and at least one supporting document before submitting."
+      );
+    }
+
+    const existing = store.verifications.pendingProviders.find(
+      (item) => item.userId === userId
+    );
+    const submission: PendingVerification = {
+      id: existing?.id ?? `provider-${userId}`,
+      userId,
+      name: profile.displayName || user.name,
+      category: getCategoryLabel(profile.category),
+      location: profile.location || user.location || "Botswana",
+      submittedDate: new Date().toISOString().slice(0, 10),
+      documents: documents.map((document) => document.label),
+      image: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+        profile.displayName || user.name
+      )}`,
+      status: "pending",
+    };
+    store.verifications.pendingProviders = [
+      submission,
+      ...store.verifications.pendingProviders.filter((item) => item.userId !== userId),
+    ];
+    profile.verificationStatus = "pending";
+    return submission;
   });
 }
