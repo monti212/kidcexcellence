@@ -13,7 +13,7 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div>
-            <div className="[&_*]:text-white">
+            <div className="rounded-2xl bg-white px-4 py-3 inline-flex">
               <BrandMark />
             </div>
             <p className="mt-4 max-w-sm text-sm leading-6 text-white/68">

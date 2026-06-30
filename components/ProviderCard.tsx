@@ -12,22 +12,22 @@ interface ProviderCardProps {
 }
 
 const categoryStyles: Record<string, string> = {
-  schools: "bg-[#e4f0ff] text-[#285c8f]",
-  nurseries: "bg-[#e5f4eb] text-[#2f7d5a]",
-  nannies: "bg-[#ffe7de] text-[#a84b37]",
-  babysitters: "bg-[#fff0c9] text-[#8a6118]",
-  "pediatric-clinics": "bg-[#f8e3e1] text-[#9f3c34]",
-  tutors: "bg-[#eee8ff] text-[#60499d]",
+  schools: "bg-[#e7f4f6] text-[#2f7f8d]",
+  nurseries: "bg-[#fff4d1] text-[#9c7a07]",
+  nannies: "bg-[#fff0ea] text-[#bf5538]",
+  babysitters: "bg-[#fff6df] text-[#8a6118]",
+  "pediatric-clinics": "bg-[#eaf5f7] text-[#317684]",
+  tutors: "bg-[#fff3e5] text-[#ba6437]",
 };
 
 export default function ProviderCard({ provider, onAddToCompare, inCompare }: ProviderCardProps) {
   const categoryIcon = getCategoryIcon(provider.category);
 
   return (
-    <article className="brand-card flex h-full flex-col overflow-hidden transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
-      <div className="relative h-44 overflow-hidden bg-[#f7ead5]">
-        <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,#f7ead5_0%,#e8f3eb_100%)]">
-          <div className="grid h-24 w-24 place-items-center rounded-full border-4 border-white bg-white/55 text-5xl shadow-sm">
+    <article className="brand-card flex h-full flex-col overflow-hidden transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <div className="relative h-44 overflow-hidden bg-[#f6f4ee]">
+        <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(83,175,188,0.18),_transparent_38%),linear-gradient(180deg,#ffffff_0%,#f6f4ee_100%)]">
+          <div className="grid h-24 w-24 place-items-center rounded-[2rem] border border-white bg-white text-5xl shadow-sm">
             {categoryIcon}
           </div>
         </div>
@@ -37,7 +37,7 @@ export default function ProviderCard({ provider, onAddToCompare, inCompare }: Pr
           </Badge>
         </div>
         {provider.verified && (
-          <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-black text-[var(--brand-leaf)] shadow-sm">
+          <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-black text-[var(--brand-sky)] shadow-sm">
             <CheckCircle2 className="h-3.5 w-3.5" />
             Verified
           </div>
@@ -67,7 +67,7 @@ export default function ProviderCard({ provider, onAddToCompare, inCompare }: Pr
 
         <div className="mb-4 flex flex-wrap gap-1.5">
           {provider.services.slice(0, 3).map((service) => (
-            <span key={service} className="rounded-md bg-[var(--brand-ivory)] px-2 py-1 text-xs font-bold text-[var(--brand-muted)]">
+            <span key={service} className="rounded-full bg-[var(--brand-cream)] px-2.5 py-1 text-xs font-bold text-[var(--brand-muted)]">
               {service}
             </span>
           ))}
@@ -88,7 +88,7 @@ export default function ProviderCard({ provider, onAddToCompare, inCompare }: Pr
               <Button
                 variant="outline"
                 size="sm"
-                className={`h-9 rounded-lg border-[var(--brand-line)] px-3 text-xs font-black ${
+                className={`h-9 rounded-full border-[var(--brand-line)] px-3 text-xs font-black ${
                   inCompare ? "bg-[var(--brand-gold)] text-[var(--brand-ink)]" : "bg-white text-[var(--brand-ink)]"
                 }`}
                 onClick={() => onAddToCompare(provider.id)}
@@ -97,7 +97,7 @@ export default function ProviderCard({ provider, onAddToCompare, inCompare }: Pr
               </Button>
             )}
             <Link href={`/provider/${provider.id}`}>
-              <Button size="sm" className="h-9 rounded-lg bg-[var(--brand-leaf)] px-3 text-xs font-black text-white hover:bg-[var(--brand-ink)]">
+              <Button size="sm" className="h-9 rounded-full bg-[var(--brand-ink)] px-3 text-xs font-black text-white hover:bg-[var(--brand-sky)]">
                 <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
                 Profile
               </Button>

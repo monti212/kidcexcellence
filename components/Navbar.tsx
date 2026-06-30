@@ -34,7 +34,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[var(--brand-line)] bg-[rgba(255,248,236,0.92)] backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-[var(--brand-line)] bg-[rgba(251,251,248,0.82)] backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           <Link href="/" className="shrink-0" aria-label="Kidcexcellence home">
@@ -49,7 +49,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   className={clsx(
-                    "rounded-lg px-3 py-2 text-sm font-bold transition-colors",
+                    "rounded-full px-3.5 py-2 text-sm font-semibold transition-colors",
                     active
                       ? "bg-[var(--brand-ink)] text-white"
                       : "text-[var(--brand-muted)] hover:bg-white hover:text-[var(--brand-ink)]"
@@ -63,7 +63,7 @@ export default function Navbar() {
 
           <div className="hidden items-center gap-2 md:flex">
             <Link href="/safety">
-              <Button variant="ghost" className="h-10 rounded-lg text-[var(--brand-muted)] hover:text-[var(--brand-ink)]">
+              <Button variant="ghost" className="h-10 rounded-full text-[var(--brand-muted)] hover:text-[var(--brand-ink)]">
                 <ShieldCheck className="mr-2 h-4 w-4" />
                 Safety
               </Button>
@@ -71,7 +71,7 @@ export default function Navbar() {
             {user ? (
               <>
                 <Link href={profileHref}>
-                  <Button variant="outline" className="h-10 rounded-lg border-[var(--brand-line)] bg-white px-3 font-extrabold text-[var(--brand-ink)] hover:bg-[var(--brand-ivory)]">
+                  <Button variant="outline" className="h-10 rounded-full border-[var(--brand-line)] bg-white px-3 font-extrabold text-[var(--brand-ink)] hover:bg-[var(--brand-cream)]">
                     <UserCircle className="mr-2 h-4 w-4" />
                     {user.name}
                   </Button>
@@ -79,7 +79,7 @@ export default function Navbar() {
                 <Button
                   variant="ghost"
                   onClick={handleLogout}
-                  className="h-10 rounded-lg px-3 text-[var(--brand-muted)] hover:text-[var(--brand-ink)]"
+                  className="h-10 rounded-full px-3 text-[var(--brand-muted)] hover:text-[var(--brand-ink)]"
                   aria-label="Sign out"
                 >
                   <LogOut className="h-4 w-4" />
@@ -87,7 +87,7 @@ export default function Navbar() {
               </>
             ) : (
               <Link href="/auth">
-                <Button className="h-10 rounded-lg bg-[var(--brand-leaf)] px-4 font-extrabold text-white hover:bg-[var(--brand-ink)]" disabled={loading}>
+                <Button className="h-10 rounded-full bg-[var(--brand-ink)] px-4 font-extrabold text-white hover:bg-[var(--brand-sky)]" disabled={loading}>
                   Join the network
                 </Button>
               </Link>
@@ -103,7 +103,7 @@ export default function Navbar() {
             >
               <Menu className="h-5 w-5" />
             </SheetTrigger>
-            <SheetContent side="right" className="w-80 bg-[var(--brand-ivory)] pt-8">
+            <SheetContent side="right" className="w-80 bg-[var(--brand-paper)] pt-8">
               <div className="mb-8">
                 <BrandMark />
               </div>
@@ -116,7 +116,7 @@ export default function Navbar() {
                       href={link.href}
                       onClick={() => setOpen(false)}
                       className={clsx(
-                        "rounded-lg px-4 py-3 text-base font-bold transition-colors",
+                        "rounded-2xl px-4 py-3 text-base font-semibold transition-colors",
                         active
                           ? "bg-[var(--brand-ink)] text-white"
                           : "bg-white text-[var(--brand-muted)] hover:text-[var(--brand-ink)]"
@@ -129,13 +129,13 @@ export default function Navbar() {
               </div>
               <div className="mt-8 grid gap-3">
                 <Link href="/safety" onClick={() => setOpen(false)}>
-                  <Button variant="outline" className="w-full rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
+                  <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
                     Safety guidance
                   </Button>
                 </Link>
                 {user?.role === "admin" && (
                   <Link href="/admin" onClick={() => setOpen(false)}>
-                    <Button variant="outline" className="w-full rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
+                    <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
                       Verification desk
                     </Button>
                   </Link>
@@ -143,17 +143,17 @@ export default function Navbar() {
                 {user ? (
                   <>
                     <Link href={profileHref} onClick={() => setOpen(false)}>
-                      <Button variant="outline" className="w-full rounded-lg border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
+                      <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
                         {user.name}
                       </Button>
                     </Link>
-                    <Button onClick={handleLogout} variant="ghost" className="w-full rounded-lg text-[var(--brand-muted)]">
+                    <Button onClick={handleLogout} variant="ghost" className="w-full rounded-full text-[var(--brand-muted)]">
                       Sign out
                     </Button>
                   </>
                 ) : (
                   <Link href="/auth" onClick={() => setOpen(false)}>
-                    <Button className="w-full rounded-lg bg-[var(--brand-leaf)] font-extrabold text-white hover:bg-[var(--brand-ink)]" disabled={loading}>
+                    <Button className="w-full rounded-full bg-[var(--brand-ink)] font-extrabold text-white hover:bg-[var(--brand-sky)]" disabled={loading}>
                       Join the network
                     </Button>
                   </Link>
