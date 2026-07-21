@@ -120,6 +120,8 @@ export interface StoredConversation extends Conversation {
   providerId: string;
   providerUserId?: string;
   providerName: string;
+  unreadForParent?: number;
+  unreadForProvider?: number;
 }
 
 export interface PlatformStore {
@@ -563,6 +565,10 @@ function providerAccountUserId(provider: Provider) {
   return provider.id.startsWith("account-") ? provider.id.slice("account-".length) : undefined;
 }
 
+function userAvatar(name: string) {
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`;
+}
+
 function buildStoredConversation(
   provider: Provider,
   parentUserId: string,
@@ -580,6 +586,8 @@ function buildStoredConversation(
     lastMessage: "Conversation started",
     timestamp: "now",
     unread: 0,
+    unreadForParent: 0,
+    unreadForProvider: 0,
     messages: [],
   };
 }
@@ -589,6 +597,12 @@ function conversationForViewer(conversation: StoredConversation, viewerUserId: s
   return {
     ...conversation,
     participant: viewerIsParent ? conversation.providerName : conversation.parentName,
+    participantImage: viewerIsParent
+      ? conversation.participantImage
+      : userAvatar(conversation.parentName),
+    unread: viewerIsParent
+      ? conversation.unreadForParent ?? 0
+      : conversation.unreadForProvider ?? conversation.unread ?? 0,
     messages: conversation.messages.map((message) => ({
       ...message,
       isOwn: message.senderId === viewerUserId,
@@ -643,7 +657,7 @@ export async function getStoredConversations(
 export async function appendConversationMessage(input: {
   viewerUserId: string;
   viewerRole: UserRole;
-  conversationId: string;
+  conversationId?: string | null;
   text: string;
   providerId?: string | null;
 }) {
@@ -673,19 +687,33 @@ export async function appendConversationMessage(input: {
       isOwn: true,
     };
 
-    const conversation = store.conversations.find(
-      (item) =>
-        item.id === input.conversationId &&
-        (input.viewerRole === "parent"
+    const conversation = store.conversations.find((item) => {
+      const ownsConversation =
+        input.viewerRole === "parent"
           ? item.parentUserId === input.viewerUserId
-          : input.viewerRole === "provider" && item.providerUserId === input.viewerUserId)
-    );
+          : input.viewerRole === "provider" && item.providerUserId === input.viewerUserId;
+      if (!ownsConversation) return false;
+      if (input.conversationId && item.id === input.conversationId) return true;
+      return (
+        input.viewerRole === "parent" &&
+        Boolean(input.providerId) &&
+        item.providerId === input.providerId
+      );
+    });
     if (!conversation) return { message, conversation: null };
 
     conversation.messages.push(message);
     conversation.lastMessage = input.text;
     conversation.timestamp = "now";
-    conversation.unread = 0;
+    if (input.viewerRole === "parent") {
+      conversation.unreadForParent = 0;
+      conversation.unreadForProvider = (conversation.unreadForProvider ?? 0) + 1;
+      conversation.unread = conversation.unreadForProvider;
+    } else {
+      conversation.unreadForProvider = 0;
+      conversation.unreadForParent = (conversation.unreadForParent ?? 0) + 1;
+      conversation.unread = conversation.unreadForParent;
+    }
     return {
       message,
       conversation: conversationForViewer(conversation, input.viewerUserId),

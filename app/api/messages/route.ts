@@ -50,9 +50,12 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
 
   const text = String(body?.text ?? "").trim();
-  if (!body?.conversationId || !text) {
+  const conversationId =
+    typeof body?.conversationId === "string" ? body.conversationId : undefined;
+  const providerId = typeof body?.providerId === "string" ? body.providerId : undefined;
+  if ((!conversationId && !providerId) || !text) {
     return NextResponse.json(
-      { error: "conversationId and text are required" },
+      { error: "conversationId or providerId, and text are required" },
       { status: 400 }
     );
   }
@@ -63,9 +66,9 @@ export async function POST(request: Request) {
   const result = await appendConversationMessage({
     viewerUserId: auth.session.userId,
     viewerRole: auth.user.role,
-    conversationId: String(body.conversationId),
+    conversationId,
     text,
-    providerId: typeof body.providerId === "string" ? body.providerId : undefined,
+    providerId,
   });
 
   if (!result.conversation) {

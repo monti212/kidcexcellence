@@ -8,27 +8,33 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Conversation, Provider } from "@/lib/mock-data";
-import {
-  getCategoryIcon,
-  getProviderById,
-  getProviderByName,
-} from "@/lib/platform-service";
+import { getProviderById } from "@/lib/platform-service";
 import { usePlatformSession } from "@/lib/use-platform-session";
 import { Send, ArrowLeft, MessageSquare } from "lucide-react";
 import { clsx } from "clsx";
 
-function ConversationAvatar({ name }: { name: string }) {
-  const provider = getProviderByName(name);
-  const icon = provider ? getCategoryIcon(provider.category) : "💬";
-
+function ConversationAvatar({ image, name }: { image?: string; name: string }) {
   return (
-    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[var(--brand-line)] bg-[var(--brand-ivory)] text-xl">
-      {icon}
+    <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border border-[var(--brand-line)] bg-[var(--brand-ivory)]">
+      {image ? (
+        <Image
+          src={image}
+          alt={`${name} avatar`}
+          fill
+          sizes="44px"
+          className="object-cover"
+        />
+      ) : (
+        <div className="grid h-full w-full place-items-center text-sm font-black text-[var(--brand-leaf)]">
+          {name.slice(0, 1).toUpperCase()}
+        </div>
+      )}
     </div>
   );
 }
@@ -108,11 +114,18 @@ function MessagesPageContent() {
       : conversations;
   }, [conversationSearch, conversations]);
   const showSignInPrompt = mounted && !loading && !session && Boolean(providerId);
+  const showProviderChatHint =
+    mounted && !loading && session?.role === "provider" && Boolean(providerId);
+  const canSendMessage = Boolean(session) && !showProviderChatHint;
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !activeConversationId) return;
+    if (!newMessage.trim() || (!activeConversationId && !provider?.id)) return;
     if (!session) {
       setSendError("Sign in to send messages to providers.");
+      return;
+    }
+    if (showProviderChatHint) {
+      setSendError("Use a parent account to start enquiries with providers.");
       return;
     }
     const messageText = newMessage;
@@ -123,7 +136,7 @@ function MessagesPageContent() {
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        conversationId: activeConversationId,
+        conversationId: activeConversationId ?? undefined,
         providerId: provider?.id,
         text: messageText,
       }),
@@ -149,7 +162,7 @@ function MessagesPageContent() {
       <div
         className={clsx(
           "w-full sm:w-80 shrink-0 bg-white border-r border-[var(--brand-line)] flex flex-col",
-          (activeConversationId || showSignInPrompt) && "hidden sm:flex"
+          (activeConversationId || showSignInPrompt || showProviderChatHint) && "hidden sm:flex"
         )}
       >
         <div className="border-b border-[var(--brand-line)] p-5">
@@ -183,7 +196,7 @@ function MessagesPageContent() {
                   activeConversationId === conv.id && "bg-[var(--brand-ivory)]"
                 )}
               >
-                <ConversationAvatar name={conv.participant} />
+                <ConversationAvatar image={conv.participantImage} name={conv.participant} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <span className="truncate text-sm font-black text-[var(--brand-ink)]">{conv.participant}</span>
@@ -224,10 +237,12 @@ function MessagesPageContent() {
               >
                 <ArrowLeft className="w-5 h-5 text-gray-500" />
               </button>
-              <ConversationAvatar name={activeConv.participant} />
+              <ConversationAvatar image={activeConv.participantImage} name={activeConv.participant} />
               <div>
                 <div className="text-sm font-black text-[var(--brand-ink)]">{activeConv.participant}</div>
-                <div className="text-xs font-black text-[var(--brand-leaf)]">Secure conversation</div>
+                <div className="text-xs font-black text-[var(--brand-leaf)]">
+                  Direct conversation
+                </div>
               </div>
             </div>
 
@@ -242,7 +257,7 @@ function MessagesPageContent() {
                   )}
                 >
                   {!msg.isOwn && (
-                    <ConversationAvatar name={activeConv.participant} />
+                    <ConversationAvatar image={activeConv.participantImage} name={activeConv.participant} />
                   )}
                   <div
                     className={clsx(
@@ -275,11 +290,12 @@ function MessagesPageContent() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                   className="rounded-lg border-[var(--brand-line)] bg-[var(--brand-ivory)] focus-visible:ring-[var(--brand-leaf)]"
+                  disabled={!canSendMessage}
                 />
                 <Button
                   onClick={sendMessage}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-leaf)] p-0 text-white hover:bg-[var(--brand-ink)]"
-                  disabled={!newMessage.trim() || loading}
+                  disabled={!newMessage.trim() || loading || !canSendMessage}
                   aria-label="Send message"
                 >
                   <Send className="w-4 h-4" />
@@ -300,16 +316,22 @@ function MessagesPageContent() {
               <MessageSquare className="h-10 w-10 text-[var(--brand-leaf)]" />
             </div>
             <h2 className="mb-2 text-xl font-black text-[var(--brand-ink)]">
-              {showSignInPrompt ? "Sign in to message providers" : "Your Messages"}
+              {showSignInPrompt
+                ? "Sign in to message providers"
+                : showProviderChatHint
+                  ? "Provider enquiries start from parent accounts"
+                  : "Your Messages"}
             </h2>
             <p className="max-w-xs text-sm text-[var(--brand-muted)]">
               {showSignInPrompt
                 ? "Use a parent account to start a private provider enquiry."
+                : showProviderChatHint
+                  ? "Providers can reply to enquiries from this inbox once a parent starts a conversation."
                 : "Select a conversation from the sidebar, or browse providers to start messaging."}
             </p>
-            <Link href={showSignInPrompt ? "/auth" : "/search"}>
+            <Link href={showSignInPrompt ? "/auth" : showProviderChatHint ? "/messages" : "/search"}>
               <Button className="mt-6 rounded-lg bg-[var(--brand-leaf)] text-white hover:bg-[var(--brand-ink)]">
-                {showSignInPrompt ? "Sign in" : "Browse providers"}
+                {showSignInPrompt ? "Sign in" : showProviderChatHint ? "Open inbox" : "Browse providers"}
               </Button>
             </Link>
           </div>
