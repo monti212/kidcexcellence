@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Kidcexcellence | Botswana Childcare Marketplace",
+  title: "Kidcellence | Botswana Childcare Marketplace",
   description:
     "Find, compare, message, and verify trusted childcare providers across Botswana.",
 };

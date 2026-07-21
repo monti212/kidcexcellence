@@ -3,8 +3,8 @@ import { ScrollText } from "lucide-react";
 import { TrustPage } from "@/components/TrustPage";
 
 export const metadata: Metadata = {
-  title: "Terms | Kidcexcellence",
-  description: "Terms for using the Kidcexcellence childcare marketplace.",
+  title: "Terms | Kidcellence",
+  description: "Terms for using the Kidcellence childcare marketplace.",
 };
 
 export default function TermsPage() {
@@ -12,13 +12,13 @@ export default function TermsPage() {
     <TrustPage
       eyebrow="Terms of service"
       title="Clear responsibilities build a trusted marketplace."
-      introduction="These terms govern access to Kidcexcellence. By creating an account or using the marketplace, you agree to use it lawfully, honestly, and with the safety of children and families in mind."
+      introduction="These terms govern access to Kidcellence. By creating an account or using the marketplace, you agree to use it lawfully, honestly, and with the safety of children and families in mind."
       updated="27 June 2026"
       icon={<ScrollText className="h-5 w-5" />}
       sections={[
         {
           title: "Marketplace role",
-          body: "Kidcexcellence provides discovery, comparison, profile, messaging, and verification workflow tools. Kidcexcellence is not the childcare provider, employer, booking agent, insurer, regulator, or party to arrangements made between families and providers.",
+          body: "Kidcellence provides discovery, comparison, profile, messaging, and verification workflow tools. Kidcellence is not the childcare provider, employer, booking agent, insurer, regulator, or party to arrangements made between families and providers.",
         },
         {
           title: "Accounts",
@@ -26,7 +26,7 @@ export default function TermsPage() {
         },
         {
           title: "Provider listings",
-          body: "Providers are responsible for the accuracy, legality, and currency of their listings, prices, qualifications, availability, documents, and contact information. Publishing a listing does not create an endorsement by Kidcexcellence.",
+          body: "Providers are responsible for the accuracy, legality, and currency of their listings, prices, qualifications, availability, documents, and contact information. Publishing a listing does not create an endorsement by Kidcellence.",
         },
         {
           title: "Acceptable use",
@@ -39,15 +39,15 @@ export default function TermsPage() {
         },
         {
           title: "Verification",
-          body: "Verification is based on information available during review and may be suspended or removed. Users must continue their own due diligence and notify Kidcexcellence when material listing or document information changes.",
+          body: "Verification is based on information available during review and may be suspended or removed. Users must continue their own due diligence and notify Kidcellence when material listing or document information changes.",
         },
         {
-          title: "Availability and liability",
-          body: "The platform is provided on an as-available basis. To the extent permitted by applicable law, Kidcexcellence is not responsible for independent provider conduct, family decisions, offline arrangements, or losses caused by inaccurate user-supplied information.",
+          title: "Signup and payment terms",
+          body: "By creating an account, publishing a listing, submitting an enquiry, or making a payment through Kidcellence, you agree to provide accurate information and review all provider details, fees, schedules, cancellation rules, and service expectations before confirming an arrangement. Payments, deposits, refunds, and paid promotions are governed by the terms shown at checkout or in the relevant signup flow.",
         },
         {
           title: "Enforcement and changes",
-          body: "Kidcexcellence may restrict or remove accounts, listings, messages, or content that create safety, legal, integrity, or operational risk. Terms may be updated as the service evolves; material revisions will carry a new update date.",
+          body: "Kidcellence may restrict or remove accounts, listings, messages, or content that create safety, legal, integrity, or operational risk. Terms may be updated as the service evolves; material revisions will carry a new update date.",
         },
       ]}
     />

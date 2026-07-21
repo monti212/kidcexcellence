@@ -3,8 +3,8 @@ import Link from "next/link";
 import { CircleHelp, KeyRound, MessagesSquare, Store, UserRound } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Help Centre | Kidcexcellence",
-  description: "Account, provider listing, messaging, and safety help for Kidcexcellence.",
+  title: "Help Centre | Kidcellence",
+  description: "Account, provider listing, messaging, and safety help for Kidcellence.",
 };
 
 const helpTopics = [

@@ -3,6 +3,11 @@ export interface Category {
   name: string;
   icon: string;
   count: number;
+  subcategories?: Array<{
+    id: string;
+    name: string;
+    children?: Array<{ id: string; name: string }>;
+  }>;
 }
 
 export interface Fee {
@@ -23,6 +28,10 @@ export interface Provider {
   verified: boolean;
   bio: string;
   image: string;
+  age?: number;
+  languages?: string[];
+  qualifications?: string[];
+  careAges?: string;
   services: string[];
   experience: string;
   availability: string;
@@ -31,6 +40,7 @@ export interface Provider {
   phone: string;
   email: string;
   whatsapp: string;
+  featured?: boolean;
 }
 
 export interface Message {
@@ -53,12 +63,67 @@ export interface Conversation {
 }
 
 export const CATEGORIES: Category[] = [
-  { id: "schools", name: "Schools", icon: "🏫", count: 48 },
-  { id: "nurseries", name: "Nurseries", icon: "🌱", count: 63 },
-  { id: "nannies", name: "Nannies", icon: "👩‍👧", count: 112 },
-  { id: "babysitters", name: "Babysitters", icon: "🍼", count: 87 },
-  { id: "pediatric-clinics", name: "Pediatric Clinics", icon: "🏥", count: 24 },
-  { id: "tutors", name: "Tutors", icon: "📚", count: 76 },
+  { id: "babysitters", name: "Find a Babysitter", icon: "🍼", count: 87 },
+  { id: "nannies", name: "Find a Nanny", icon: "👩‍👧", count: 112 },
+  {
+    id: "schools",
+    name: "Find a School",
+    icon: "🏫",
+    count: 48,
+    subcategories: [
+      { id: "preschool", name: "Preschool/Kindergarten" },
+      { id: "primary", name: "Primary School" },
+      { id: "junior", name: "Junior School" },
+      { id: "senior", name: "Senior School" },
+    ],
+  },
+  { id: "nurseries", name: "Find a Nursery", icon: "🌱", count: 63 },
+  { id: "tutors", name: "Find a Tutor", icon: "📚", count: 76 },
+  { id: "pediatric-clinics", name: "Find a Pediatrician", icon: "🏥", count: 24 },
+  { id: "pediatric-therapy", name: "Pediatric Occupational/ speech therapy", icon: "🩺", count: 12 },
+  { id: "child-psychologists", name: "Child Psychologists/ Therapists", icon: "🧠", count: 9 },
+  {
+    id: "after-school",
+    name: "After School and Weekend Programs",
+    icon: "🎯",
+    count: 34,
+    subcategories: [
+      {
+        id: "sports",
+        name: "Sports",
+        children: [
+          { id: "football", name: "Football" },
+          { id: "tennis", name: "Tennis" },
+          { id: "rugby", name: "Rugby" },
+        ],
+      },
+      { id: "arts", name: "Arts & Crafts" },
+      { id: "music", name: "Music" },
+      { id: "other-activities", name: "Other activities" },
+    ],
+  },
+  {
+    id: "kiddies-transport",
+    name: "Kiddies Transport",
+    icon: "🚗",
+    count: 15,
+    subcategories: [
+      { id: "school-runs", name: "School Runs" },
+      { id: "private-shuttle", name: "Private Shuttle" },
+    ],
+  },
+  { id: "kiddies-parties", name: "Kiddies Parties", icon: "🎉", count: 22 },
+  {
+    id: "kiddies-entertainment",
+    name: "Kids Entertainment & Events",
+    icon: "🤹",
+    count: 18,
+    subcategories: [
+      { id: "theme-parks", name: "Theme Parks" },
+      { id: "venues", name: "Entertainment Venues" },
+    ],
+  },
+  { id: "agencies", name: "Agencies (Independent)", icon: "🏢", count: 27 },
 ];
 
 export const PROVIDERS: Provider[] = [
@@ -103,6 +168,7 @@ export const PROVIDERS: Provider[] = [
     phone: "+267 71 234 567",
     email: "info@sunshineelc.co.bw",
     whatsapp: "+26771234567",
+    featured: true,
   },
   {
     id: "2",
@@ -153,6 +219,10 @@ export const PROVIDERS: Provider[] = [
     verified: true,
     bio: "I am a warm and dedicated professional nanny with 8 years of experience caring for young children. I am trained in early childhood development and first aid. I speak both Setswana and English fluently. I create engaging educational activities and provide nutritious meals. I am available for live-in or live-out arrangements.",
     image: "https://api.dicebear.com/7.x/personas/svg?seed=Kefilwe",
+    age: 34,
+    languages: ["Setswana", "English"],
+    qualifications: ["Early childhood development", "First Aid"],
+    careAges: "Infants to primary school age",
     services: [
       "Full-time childcare",
       "Meal preparation",
@@ -179,6 +249,10 @@ export const PROVIDERS: Provider[] = [
     verified: true,
     bio: "Reliable, fun, and caring babysitter available for evenings, weekends, and school holidays. I am a college student studying education, passionate about child development. I have completed a Child Safety and First Aid course and have experience with children aged 0-4 years.",
     image: "https://api.dicebear.com/7.x/personas/svg?seed=Thabo",
+    age: 22,
+    languages: ["Setswana", "English"],
+    qualifications: ["Child Safety course", "First Aid"],
+    careAges: "0-4 years",
     services: [
       "Evening babysitting",
       "Weekend care",
@@ -205,6 +279,10 @@ export const PROVIDERS: Provider[] = [
     verified: true,
     bio: "Dr. Ramodupi is a board-certified pediatrician with over 15 years of experience at Princess Marina Hospital and private practice. The clinic specializes in newborn care, well-baby visits, vaccinations, developmental assessments, and acute illness management. Home visits available on request.",
     image: "https://api.dicebear.com/7.x/personas/svg?seed=Mpho",
+    age: 46,
+    languages: ["Setswana", "English"],
+    qualifications: ["Board-certified pediatrician", "Developmental assessments"],
+    careAges: "Newborns to adolescents",
     services: [
       "Well-baby check-ups",
       "Vaccinations",
@@ -232,6 +310,10 @@ export const PROVIDERS: Provider[] = [
     verified: true,
     bio: "Qualified early childhood educator and tutor with a degree in Education from the University of Botswana. I specialise in reading readiness, numeracy foundations, and Setswana language support for children aged 3-7. Sessions are fun, interactive, and tailored to each child's learning style.",
     image: "https://api.dicebear.com/7.x/personas/svg?seed=Naledi",
+    age: 31,
+    languages: ["Setswana", "English"],
+    qualifications: ["Education degree", "Early childhood education"],
+    careAges: "3-7 years",
     services: [
       "Reading readiness",
       "Numeracy foundations",
@@ -294,6 +376,10 @@ export const PROVIDERS: Provider[] = [
     verified: false,
     bio: "Loving and dependable nanny with 5 years of experience. I specialise in infant care and have completed courses in baby massage, sleep training, and infant nutrition. I am available for live-in arrangements and am comfortable travelling with families.",
     image: "https://api.dicebear.com/7.x/personas/svg?seed=Boitumelo",
+    age: 29,
+    languages: ["Setswana", "English"],
+    qualifications: ["Infant nutrition", "Baby massage", "Sleep training"],
+    careAges: "Infants and toddlers",
     services: [
       "Infant specialist",
       "Sleep training support",
@@ -346,6 +432,7 @@ export const PROVIDERS: Provider[] = [
     phone: "+267 79 012 345",
     email: "admissions@gips.co.bw",
     whatsapp: "+26779012345",
+    featured: true,
   },
   {
     id: "10",
@@ -359,6 +446,10 @@ export const PROVIDERS: Provider[] = [
     verified: false,
     bio: "Friendly and responsible babysitter based in Francistown. I have experience with children aged 0-5 and enjoy creating fun activities. I am a trained Early Childhood Development assistant and hold a current First Aid certificate.",
     image: "https://api.dicebear.com/7.x/personas/svg?seed=Letsatsi",
+    age: 24,
+    languages: ["Setswana", "English"],
+    qualifications: ["ECD assistant training", "First Aid"],
+    careAges: "0-5 years",
     services: [
       "Daytime babysitting",
       "Evening care",
@@ -384,6 +475,10 @@ export const PROVIDERS: Provider[] = [
     verified: true,
     bio: "Experienced pediatric doctor offering comprehensive child healthcare services in Francistown. Specialising in neonatal care, chronic conditions management, and developmental paediatrics. Telehealth consultations available for parents outside Francistown.",
     image: "https://api.dicebear.com/7.x/personas/svg?seed=Nneka",
+    age: 41,
+    languages: ["English"],
+    qualifications: ["Pediatric medicine", "Developmental paediatrics"],
+    careAges: "Newborns to adolescents",
     services: [
       "Neonatal care",
       "Well-child visits",
@@ -410,6 +505,10 @@ export const PROVIDERS: Provider[] = [
     verified: true,
     bio: "Patient and creative tutor helping young children build strong educational foundations. I specialise in supporting children with learning differences and use multi-sensory teaching methods. I hold a PGCE from Botswana University of Science and Technology.",
     image: "https://api.dicebear.com/7.x/personas/svg?seed=Dineo",
+    age: 33,
+    languages: ["Setswana", "English"],
+    qualifications: ["PGCE", "Multi-sensory teaching"],
+    careAges: "Early years and primary learners",
     services: [
       "Learning support",
       "Reading & phonics",
@@ -476,7 +575,7 @@ export const CONVERSATIONS: Conversation[] = [
       {
         id: "m5",
         senderId: "parent",
-        text: "Hi Kefilwe, I saw your profile on Kidcexcellence. I'm looking for a nanny for my 18-month-old son starting next month.",
+        text: "Hi Kefilwe, I saw your profile on Kidcellence. I'm looking for a nanny for my 18-month-old son starting next month.",
         timestamp: "9:00 AM",
         isOwn: true,
       },
@@ -549,7 +648,7 @@ export const TESTIMONIALS = [
     name: "Mpho Dlamini",
     location: "Phakalane, Gaborone",
     avatar: "https://api.dicebear.com/7.x/personas/svg?seed=MphoD",
-    text: "Kidcexcellence made it so easy to find the perfect nursery for my twins. I compared three schools side by side, read real reviews, and even messaged the school directly through the app. My twins started at Sunshine ELC last term and they absolutely love it!",
+    text: "Kidcellence made it so easy to find the perfect nursery for my twins. I compared three schools side by side, read real reviews, and even messaged the school directly through the app. My twins started at Sunshine ELC last term and they absolutely love it!",
     rating: 5,
     children: "Twins, age 3",
   },
@@ -558,7 +657,7 @@ export const TESTIMONIALS = [
     name: "Refilwe Mokoena",
     location: "Gaborone West",
     avatar: "https://api.dicebear.com/7.x/personas/svg?seed=Refilwe",
-    text: "As a working mum, I needed a reliable nanny I could trust completely. Through Kidcexcellence I found Kefilwe who has been an absolute blessing for our family. The verified badge gave me confidence and she's been with us for 6 months now.",
+    text: "As a working mum, I needed a reliable nanny I could trust completely. Through Kidcellence I found Kefilwe who has been an absolute blessing for our family. The verified badge gave me confidence and she's been with us for 6 months now.",
     rating: 5,
     children: "Son, 18 months",
   },
@@ -567,7 +666,7 @@ export const TESTIMONIALS = [
     name: "Kabo Sithole",
     location: "Francistown",
     avatar: "https://api.dicebear.com/7.x/personas/svg?seed=Kabo",
-    text: "I was worried I wouldn't find good childcare options in Francistown but Kidcexcellence had excellent listings with Dr. Nneka's clinic and several great nurseries. The WhatsApp contact option made it super convenient to reach out directly.",
+    text: "I was worried I wouldn't find good childcare options in Francistown but Kidcellence had excellent listings with Dr. Nneka's clinic and several great nurseries. The WhatsApp contact option made it super convenient to reach out directly.",
     rating: 5,
     children: "Daughter, 4 months",
   },

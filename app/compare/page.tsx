@@ -26,7 +26,7 @@ function ComparePageContent() {
   const searchParams = useSearchParams();
   const queryIds = searchParams.get("ids");
   const [storedCompareIds, setCompareIds] = useLocalStorageState<string[]>(
-    "kidcexcellence.compareIds",
+    "kidcellence.compareIds",
     [],
     (value): value is string[] =>
       Array.isArray(value) &&

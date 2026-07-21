@@ -82,7 +82,7 @@ export function VerifyEmailPanel({ token }: { token: string }) {
   return (
     <main className="brand-page flex min-h-screen items-center justify-center px-4 py-12">
       <section className="w-full max-w-md">
-        <Link href="/" className="mb-8 flex justify-center" aria-label="Kidcexcellence home">
+        <Link href="/" className="mb-8 flex justify-center" aria-label="Kidcellence home">
           <BrandMark />
         </Link>
         <div className="brand-card p-8 text-center">

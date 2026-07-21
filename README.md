@@ -1,6 +1,6 @@
-# Kidcexcellence
+# Kidcellence
 
-Kidcexcellence is a Botswana childcare marketplace for parents and care providers. It includes provider discovery, side-by-side comparison, provider profiles, in-app messaging, parent/provider workspaces, and an admin verification workflow.
+Kidcellence is a Botswana childcare marketplace for parents and care providers. It includes provider discovery, side-by-side comparison, provider profiles, in-app messaging, parent/provider workspaces, and an admin verification workflow.
 
 ## Current Platform Shape
 
@@ -57,8 +57,8 @@ Default:
 For production hosts, set `PLATFORM_STORE_PATH` to a writable mounted path, for example:
 
 ```bash
-PLATFORM_STORE_PATH=/var/lib/kidcexcellence/platform-store.json
-PLATFORM_UPLOADS_DIR=/var/lib/kidcexcellence/uploads
+PLATFORM_STORE_PATH=/var/lib/kidcellence/platform-store.json
+PLATFORM_UPLOADS_DIR=/var/lib/kidcellence/uploads
 ```
 
 Do not rely on the repository working directory as durable storage on serverless platforms. Use a mounted volume or migrate `lib/platform-store.ts` to a real database and object storage.

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,12 +13,15 @@ import {
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
+  GraduationCap,
+  Languages,
   Mail,
   MapPin,
   MessageCircle,
   Phone,
   ShieldCheck,
   Star,
+  UserRound,
 } from "lucide-react";
 
 export default async function ProviderProfilePage({
@@ -32,12 +36,19 @@ export default async function ProviderProfilePage({
 
   const category = getCategoryById(provider.category);
   const categoryIcon = getCategoryIcon(provider.category);
-  const gallery = [
-    ["Learning rooms", "Warm, supervised activity spaces"],
-    ["Care routine", "Daily structure and parent updates"],
-    ["Safety checks", "Documents and verification status"],
-    ["Family visits", "Schedule visits before booking"],
-  ];
+  const profileDetails = [
+    provider.age ? [UserRound, "Age", `${provider.age} years old`] : null,
+    provider.careAges ? [UserRound, "Care ages", provider.careAges] : null,
+    provider.languages?.length
+      ? [Languages, "Languages", provider.languages.join(", ")]
+      : null,
+    provider.qualifications?.length
+      ? [GraduationCap, "Qualifications", provider.qualifications.join(", ")]
+      : null,
+    [CalendarDays, "Availability", provider.availability],
+    [ShieldCheck, "Experience", provider.experience],
+  ].filter(Boolean) as Array<[typeof Star, string, string]>;
+  const gallery = provider.gallery?.length ? provider.gallery : [provider.image];
 
   return (
     <div className="brand-page min-h-screen">
@@ -50,14 +61,18 @@ export default async function ProviderProfilePage({
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <main className="space-y-6">
             <section className="brand-card overflow-hidden">
-              <div className="relative h-64 overflow-hidden bg-[linear-gradient(135deg,#f7ead5,#e8f3eb)] sm:h-80">
-                <div className="absolute right-8 top-8 grid h-36 w-36 place-items-center rounded-full border-8 border-white/70 bg-white/40 text-7xl shadow-sm">
-                  {categoryIcon}
-                </div>
-                <div className="absolute bottom-8 right-56 hidden h-16 w-16 rounded-lg bg-[var(--brand-gold)]/70 sm:block" />
-                <div className="absolute right-24 top-40 hidden h-20 w-20 rounded-lg bg-[var(--brand-leaf)]/15 sm:block" />
+              <div className="relative min-h-[30rem] overflow-hidden bg-[var(--brand-ink)] sm:min-h-[34rem]">
+                <Image
+                  src={provider.image}
+                  alt={`${provider.name} profile picture`}
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 816px, 100vw"
+                  className="object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-[var(--brand-ink)]/82 via-[var(--brand-ink)]/24 to-transparent" />
-                <div className="absolute bottom-5 left-5 right-5 text-white">
+                <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[var(--brand-ink)]/55 to-transparent" />
+                <div className="absolute bottom-5 left-5 right-5 text-white sm:bottom-7 sm:left-7 sm:right-7">
                   <div className="mb-3 flex flex-wrap gap-2">
                     <Badge className="rounded-md border-0 bg-[var(--brand-gold)] text-[var(--brand-ink)]">
                       {category?.icon} {category?.name}
@@ -68,9 +83,15 @@ export default async function ProviderProfilePage({
                         Verified
                       </Badge>
                     )}
+                    {provider.age && (
+                      <Badge className="rounded-md border-0 bg-white/90 text-[var(--brand-ink)]">
+                        <UserRound className="mr-1 h-3.5 w-3.5" />
+                        Age {provider.age}
+                      </Badge>
+                    )}
                   </div>
-                  <h1 className="text-4xl font-black leading-none">{provider.name}</h1>
-                  <p className="mt-2 flex items-center gap-2 text-sm text-white/80">
+                  <h1 className="max-w-3xl text-4xl font-black leading-none sm:text-5xl">{provider.name}</h1>
+                  <p className="mt-3 flex items-center gap-2 text-sm text-white/85">
                     <MapPin className="h-4 w-4" />
                     {provider.location}
                   </p>
@@ -81,12 +102,15 @@ export default async function ProviderProfilePage({
             <section className="brand-card p-6">
               <h2 className="text-2xl font-black text-[var(--brand-ink)]">About this provider</h2>
               <p className="mt-3 leading-7 text-[var(--brand-muted)]">{provider.bio}</p>
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                {[
-                  [Star, `${provider.rating} rating`, `${provider.reviewCount} parent reviews`],
-                  [CalendarDays, "Availability", provider.availability],
-                  [ShieldCheck, "Experience", provider.experience],
-                ].map(([Icon, title, body]) => {
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
+                  <Star className="mb-3 h-5 w-5 fill-[var(--brand-gold)] text-[var(--brand-gold)]" />
+                  <div className="text-sm font-black text-[var(--brand-ink)]">{provider.rating} rating</div>
+                  <div className="mt-1 text-xs leading-5 text-[var(--brand-muted)]">
+                    {provider.reviewCount} parent reviews
+                  </div>
+                </div>
+                {profileDetails.map(([Icon, title, body]) => {
                   const TypedIcon = Icon as typeof Star;
                   return (
                     <div key={title as string} className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
@@ -173,24 +197,36 @@ export default async function ProviderProfilePage({
                 </a>
               </div>
               <div className="mt-5 rounded-lg bg-[var(--brand-ivory)] p-4 text-sm leading-6 text-[var(--brand-muted)]">
-                Kidcexcellence recommends confirming references, visit times,
+                Kidcellence recommends confirming references, visit times,
                 fees, and child safety policies before booking.
               </div>
             </section>
 
             <section className="brand-card p-5">
-              <h2 className="font-black text-[var(--brand-ink)]">Gallery</h2>
+              <h2 className="font-black text-[var(--brand-ink)]">Photos</h2>
               <div className="mt-4 grid grid-cols-2 gap-2">
-                {gallery.map(([title, body], index) => (
-                  <div key={title} className="flex aspect-square flex-col justify-between rounded-lg bg-[var(--brand-ivory)] p-4">
-                    <div className="text-3xl">{index === 0 ? categoryIcon : ["🧩", "🛡️", "📅"][index - 1]}</div>
-                    <div>
-                      <div className="text-sm font-black text-[var(--brand-ink)]">{title}</div>
-                      <div className="mt-1 text-xs leading-4 text-[var(--brand-muted)]">{body}</div>
-                    </div>
+                {gallery.slice(0, 4).map((image, index) => (
+                  <div key={`${image}-${index}`} className="relative aspect-square overflow-hidden rounded-lg bg-[var(--brand-ivory)]">
+                    <Image
+                      src={image}
+                      alt={
+                        index === 0
+                          ? `${provider.name} profile picture`
+                          : `${provider.name} gallery photo ${index + 1}`
+                      }
+                      fill
+                      sizes="(min-width: 1024px) 160px, 50vw"
+                      className="object-cover"
+                    />
                   </div>
                 ))}
               </div>
+              {!provider.gallery?.length && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-[var(--brand-ivory)] px-3 py-2 text-xs font-bold text-[var(--brand-muted)]">
+                  <span className="text-base">{categoryIcon}</span>
+                  Gallery photos have not been added yet.
+                </div>
+              )}
             </section>
           </aside>
         </div>

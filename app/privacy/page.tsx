@@ -3,8 +3,8 @@ import { LockKeyhole } from "lucide-react";
 import { TrustPage } from "@/components/TrustPage";
 
 export const metadata: Metadata = {
-  title: "Privacy | Kidcexcellence",
-  description: "Kidcexcellence privacy information for families and childcare providers.",
+  title: "Privacy | Kidcellence",
+  description: "Kidcellence privacy information for families and childcare providers.",
 };
 
 export default function PrivacyPage() {
@@ -12,7 +12,7 @@ export default function PrivacyPage() {
     <TrustPage
       eyebrow="Privacy"
       title="Your information should serve a clear purpose."
-      introduction="This notice explains the information Kidcexcellence handles, why it is used, and the choices available to families, providers, and administrators."
+      introduction="This notice explains the information Kidcellence handles, why it is used, and the choices available to families, providers, and administrators."
       updated="27 June 2026"
       icon={<LockKeyhole className="h-5 w-5" />}
       sections={[
@@ -31,11 +31,11 @@ export default function PrivacyPage() {
         },
         {
           title: "Visibility and sharing",
-          body: "Published provider listing information is visible to marketplace visitors. Sensitive provider documents remain restricted to the provider and authorised administrative review. Parent profiles are not public. Kidcexcellence does not sell personal information.",
+          body: "Published provider listing information is visible to marketplace visitors. Sensitive provider documents remain restricted to the provider and authorised administrative review. Parent profiles are not public. Kidcellence does not sell personal information.",
         },
         {
           title: "Cookies and sessions",
-          body: "Kidcexcellence uses an HTTP-only session cookie to keep signed-in accounts authenticated. The current platform does not use advertising cookies.",
+          body: "Kidcellence uses an HTTP-only session cookie to keep signed-in accounts authenticated. The current platform does not use advertising cookies.",
         },
         {
           title: "Retention and choices",
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
         },
         {
           title: "Security",
-          body: "Kidcexcellence applies password hashing, restricted sessions, access checks, rate limits, same-origin write protection, and role-based administrative controls. No online service can promise absolute security, so users should use a unique password and protect access to their email account.",
+          body: "Kidcellence applies password hashing, restricted sessions, access checks, rate limits, same-origin write protection, and role-based administrative controls. No online service can promise absolute security, so users should use a unique password and protect access to their email account.",
         },
       ]}
     />

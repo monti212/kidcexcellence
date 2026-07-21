@@ -104,7 +104,7 @@ const SCHOOL_DOCUMENTS = [
 export default function ProviderProfilePage() {
   const { user, session, loading } = usePlatformSession();
   const [storedProfile, setStoredProfile] = useLocalStorageState<StoredProviderProfile>(
-    "kidcexcellence.provider.profile",
+    "kidcellence.provider.profile",
     DEFAULT_PROVIDER_PROFILE,
     (value): value is StoredProviderProfile =>
       typeof value === "object" &&

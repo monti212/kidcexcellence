@@ -60,7 +60,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-sm text-white/55 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 Kidcexcellence. All rights reserved.</p>
+          <p>© 2026 Kidcellence. All rights reserved.</p>
           <p>Built for Botswana families and trusted local providers.</p>
         </div>
       </div>

@@ -4,11 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { BrandMark } from "@/components/BrandMark";
 import { usePlatformSession } from "@/lib/use-platform-session";
 import { clsx } from "clsx";
-import { LogOut, Menu, ShieldCheck, UserCircle } from "lucide-react";
+import { LogOut, Menu, ShieldCheck, UserCircle, Search, MapPin } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -20,7 +28,10 @@ const navLinks = [
 export default function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
   const { user, loading, logout } = usePlatformSession();
+  const LOCATIONS = ["Gaborone", "Francistown", "Maun", "Kasane", "Lobatse", "Serowe"];
   const profileHref =
     user?.role === "provider"
       ? "/profile/provider"
@@ -37,11 +48,40 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-[var(--brand-line)] bg-[rgba(251,251,248,0.82)] backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
-          <Link href="/" className="shrink-0" aria-label="Kidcexcellence home">
+          <Link href="/" className="shrink-0" aria-label="Kidcellence home">
             <BrandMark />
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">
+            <div className="hidden md:flex items-center gap-2 max-w-md w-full">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--brand-muted)]" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
+                  placeholder="Search nurseries, nannies, schools..."
+                  className="h-10 rounded-full pl-10"
+                />
+              </div>
+              <Select value={selectedLocation} onValueChange={(value) => setSelectedLocation(value ?? "")}>
+                <SelectTrigger className="h-10 w-36 rounded-full">
+                  <MapPin className="mr-2 h-4 w-4 text-[var(--brand-coral)]" />
+                  <SelectValue placeholder="Location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LOCATIONS.map((location) => (
+                    <SelectItem key={location} value={location.toLowerCase()}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Link href={`/search?q=${searchQuery}&location=${selectedLocation}`}>
+                <Button className="h-10 rounded-full bg-[var(--brand-ink)] px-4 font-black text-white hover:bg-[var(--brand-sky)]">
+                  Search
+                </Button>
+              </Link>
+            </div>
             {navLinks.map((link) => {
               const active = pathname === link.href;
               return (

@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -132,10 +133,15 @@ function AdminDashboard() {
       >
         <Shield className="w-6 h-6" />
         <div>
-          <h1 className="font-black text-lg">Kidcexcellence Admin</h1>
+          <h1 className="font-black text-lg">Kidcellence Admin</h1>
           <p className="text-white/70 text-xs">Provider Verification Dashboard</p>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-3">
+          <Link href="/admin/featured-providers">
+            <Button size="sm" className="rounded-full bg-yellow-400 text-[var(--brand-ink)] hover:bg-yellow-500 font-black">
+              Featured Providers
+            </Button>
+          </Link>
           <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-black">
             {admin.name.charAt(0).toUpperCase() || "A"}
           </div>

@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 
 const port = Number(process.env.TEST_PORT ?? 3210);
 const baseUrl = `http://localhost:${port}`;
-const tmpRoot = await mkdtemp(path.join(tmpdir(), "kidcexcellence-test-"));
+const tmpRoot = await mkdtemp(path.join(tmpdir(), "kidcellence-test-"));
 const env = {
   ...process.env,
   ADMIN_EMAILS: "admin-test@example.com",
@@ -80,7 +80,7 @@ after(async () => {
   await rm(tmpRoot, { recursive: true, force: true });
 });
 
-describe("Kidcexcellence platform APIs", () => {
+describe("Kidcellence platform APIs", () => {
   it("renders complete first-party account access flows", async () => {
     const authPage = await request("/auth");
     assert.equal(authPage.status, 200);

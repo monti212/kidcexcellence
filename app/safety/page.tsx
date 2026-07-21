@@ -3,8 +3,8 @@ import { ShieldCheck } from "lucide-react";
 import { TrustPage } from "@/components/TrustPage";
 
 export const metadata: Metadata = {
-  title: "Safety | Kidcexcellence",
-  description: "How Kidcexcellence approaches provider verification and safer childcare decisions.",
+  title: "Safety | Kidcellence",
+  description: "How Kidcellence approaches provider verification and safer childcare decisions.",
 };
 
 export default function SafetyPage() {
@@ -12,12 +12,12 @@ export default function SafetyPage() {
     <TrustPage
       eyebrow="Trust and safety"
       title="Make every care decision carefully."
-      introduction="Kidcexcellence helps families compare information and identify reviewed providers. Verification supports due diligence; it never replaces a family's own interviews, reference checks, visits, and judgement."
+      introduction="Kidcellence helps families compare information and identify reviewed providers. Verification supports due diligence; it never replaces a family's own interviews, reference checks, visits, and judgement."
       icon={<ShieldCheck className="h-5 w-5" />}
       sections={[
         {
           title: "Verified badge",
-          body: "A verified badge means the provider information or documents submitted through Kidcexcellence have been reviewed and approved in the platform workflow. It is not a guarantee of future conduct, service quality, availability, licensing status, or suitability for a particular child.",
+          body: "A verified badge means the provider information or documents submitted through Kidcellence have been reviewed and approved in the platform workflow. It is not a guarantee of future conduct, service quality, availability, licensing status, or suitability for a particular child.",
         },
         {
           title: "Before choosing care",

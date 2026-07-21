@@ -12,7 +12,7 @@ import {
 } from "@/lib/platform-service";
 
 export type UserRole = "parent" | "provider" | "admin";
-export const SESSION_COOKIE_NAME = "kidcexcellence_session";
+export const SESSION_COOKIE_NAME = "kidcellence_session";
 
 export interface PlatformUser {
   id: string;

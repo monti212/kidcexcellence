@@ -3,33 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import ProviderCard from "@/components/ProviderCard";
 import { CATEGORIES, type Provider } from "@/lib/mock-data";
 import {
   ArrowRight,
   CheckCircle2,
   ClipboardCheck,
-  MapPin,
-  MessageCircle,
-  Search,
   ShieldCheck,
-  SlidersHorizontal,
   Sparkles,
-  Star,
 } from "lucide-react";
 
-const LOCATIONS = ["Gaborone", "Francistown", "Maun", "Kasane", "Lobatse", "Serowe"];
 export default function HomePage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
   const [featuredProviders, setFeaturedProviders] = useState<Provider[]>([]);
   const [marketplaceProviders, setMarketplaceProviders] = useState<Provider[]>([]);
 
@@ -42,9 +26,8 @@ export default function HomePage() {
       const payload = await response.json();
       if (Array.isArray(payload.providers)) {
         setMarketplaceProviders(payload.providers);
-        setFeaturedProviders(
-          payload.providers.filter((provider: Provider) => provider.verified).slice(0, 6)
-        );
+        const featured = payload.providers.filter((provider: Provider) => provider.featured);
+        setFeaturedProviders((featured.length ? featured : payload.providers.filter((p: Provider) => p.verified)).slice(0, 6));
       }
     };
     void loadFeaturedProviders();
@@ -62,72 +45,82 @@ export default function HomePage() {
 
   return (
     <div className="brand-page">
-      <section className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl grid-cols-1 gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_0.86fr] lg:px-8 lg:py-14">
-        <div className="flex flex-col justify-center">
-          <h1 className="max-w-4xl text-5xl font-black leading-[0.95] text-[var(--brand-ink)] sm:text-6xl lg:text-7xl">
-            Child-centered discovery for modern Botswana families.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--brand-muted)]">
-            Search trusted schools, nannies, tutors, clinics, and care services in one
-            refined marketplace. Compare fees, reviews, availability, and safety signals
-            without the noise.
-          </p>
+      <section className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl grid-cols-1 gap-10 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+        <div className="flex flex-col justify-center items-center text-center">
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--brand-ink)] shadow-sm">
-              <span className="h-2.5 w-2.5 rounded-full bg-[var(--brand-coral)]" />
-              Kidcellence curated network
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--brand-muted)] shadow-sm">
-              <ShieldCheck className="h-4 w-4 text-[var(--brand-sky)]" />
-              Verification-led matching
-            </div>
-          </div>
 
-          <div className="mt-8 brand-card p-3 sm:p-4">
-            <div className="grid gap-3 lg:grid-cols-[1fr_180px_auto]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--brand-muted)]" />
-                <Input
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search nurseries, nannies, schools..."
-                  className="h-12 rounded-full border-[var(--brand-line)] bg-[var(--brand-paper)] pl-10 text-[var(--brand-ink)] focus-visible:ring-[var(--brand-sky)]"
-                />
+          <div className="mt-6 w-full relative min-h-[500px] sm:min-h-[600px] overflow-hidden rounded-2xl bg-[url('/landing-hero.jpeg')] bg-cover bg-center shadow-[0_24px_80px_rgba(35,38,47,0.18)]">
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(16,24,20,0.82)_0%,rgba(16,24,20,0.58)_45%,rgba(16,24,20,0.22)_100%)]" />
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-[linear-gradient(180deg,transparent_0%,rgba(16,24,20,0.66)_100%)]" />
+            <style>{`
+              @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+              .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+              .delay-1 { animation-delay: 0.2s; }
+              .delay-2 { animation-delay: 0.4s; }
+              .delay-3 { animation-delay: 0.6s; }
+              .delay-4 { animation-delay: 0.8s; }
+            `}</style>
+            <div className="relative z-10 h-full flex flex-col items-center justify-center px-4 py-16 text-center">
+              <h1 className="max-w-3xl text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight text-white drop-shadow-lg animate-fade-in-up">
+                Child-centered discovery for modern Botswana families.
+              </h1>
+              <p className="mt-4 max-w-2xl text-lg sm:text-xl text-white/90 drop-shadow-md animate-fade-in-up delay-1">
+                Search trusted schools, nannies, tutors, clinics, and care services in
+                one refined marketplace. Compare fees, reviews, availability, and safety
+                signals without the noise.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-3 justify-center animate-fade-in-up delay-2">
+                <Link href="/search">
+                  <Button className="rounded-full bg-white px-6 py-3 font-black text-[var(--brand-ink)] hover:bg-[var(--brand-gold)]">
+                    Search services
+                  </Button>
+                </Link>
+                <Link href="/provider">
+                  <Button variant="outline" className="rounded-full border-white/70 bg-white/15 font-black text-white backdrop-blur hover:bg-white/25">
+                    For providers
+                  </Button>
+                </Link>
               </div>
-              <Select value={selectedLocation} onValueChange={(value) => setSelectedLocation(value ?? "")}>
-                <SelectTrigger className="h-12 rounded-full border-[var(--brand-line)] bg-[var(--brand-paper)]">
-                  <MapPin className="mr-2 h-4 w-4 text-[var(--brand-coral)]" />
-                  <SelectValue placeholder="Location" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LOCATIONS.map((location) => (
-                    <SelectItem key={location} value={location.toLowerCase()}>
-                      {location}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Link href={`/search?q=${searchQuery}&location=${selectedLocation}`}>
-                <Button className="h-12 w-full rounded-full bg-[var(--brand-ink)] px-6 font-black text-white hover:bg-[var(--brand-sky)]">
-                  Search
-                </Button>
-              </Link>
+
+              <div className="mt-8 flex flex-wrap gap-2 justify-center animate-fade-in-up delay-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/90 px-4 py-2 text-sm font-semibold text-[var(--brand-ink)] shadow-sm">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--brand-coral)]" />
+                  Kidcellence curated network
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/90 px-4 py-2 text-sm font-semibold text-[var(--brand-ink)] shadow-sm">
+                  <ShieldCheck className="h-4 w-4 text-[var(--brand-sky)]" />
+                  Verification-led matching
+                </div>
+              </div>
             </div>
           </div>
+          
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            {CATEGORIES.slice(0, 6).map((category) => (
-              <Link
-                key={category.id}
-                href={`/search?category=${category.id}`}
-                className="rounded-full border border-[var(--brand-line)] bg-white px-3 py-2 text-sm font-semibold text-[var(--brand-ink)] transition-colors hover:border-[var(--brand-sky)] hover:text-[var(--brand-sky)]"
-              >
-                <span className="mr-1.5">{category.icon}</span>
-                {category.name}
-              </Link>
-            ))}
-          </div>
+          
+
+          {featuredProviders.length > 0 && (
+            <div className="mt-8 w-full">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-black text-[var(--brand-ink)]">Featured Providers</h3>
+                <div className="text-sm text-[var(--brand-muted)]">Sponsored listings — advertise here</div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {featuredProviders.map((p) => (
+                  <div key={p.id} className="relative">
+                    <div className="absolute right-3 top-3 z-10 rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-black text-white">Sponsored</div>
+                    <ProviderCard provider={p} />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 p-3 rounded-lg border border-dashed border-[var(--brand-line)] text-center text-sm text-[var(--brand-muted)]">
+                Want to feature your listing? <Link href="/provider"><span className="font-bold text-[var(--brand-ink)]">Contact us</span></Link>
+              </div>
+            </div>
+          )}
 
           <div className="mt-8 grid grid-cols-3 gap-3">
             {[
@@ -142,66 +135,6 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        <div className="flex items-center">
-          <div className="brand-card w-full overflow-hidden">
-            <div className="border-b border-[var(--brand-line)] bg-white p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-black text-[var(--brand-ink)]">Provider desk</div>
-                  <div className="text-xs text-[var(--brand-muted)]">Calm shortlist for Gaborone families</div>
-                </div>
-                <div className="rounded-full bg-[var(--brand-gold)] px-3 py-1 text-xs font-black text-[var(--brand-ink)]">
-                  Verified first
-                </div>
-              </div>
-            </div>
-            <div className="grid gap-4 bg-[linear-gradient(180deg,#ffffff_0%,#f8f6f1_100%)] p-4">
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  [ShieldCheck, "Safety", "ID + docs"],
-                  [SlidersHorizontal, "Fit", "Fees + hours"],
-                  [MessageCircle, "Contact", "Direct chat"],
-                ].map(([Icon, title, body]) => {
-                  const TypedIcon = Icon as typeof ShieldCheck;
-                  return (
-                    <div key={title as string} className="rounded-[1.25rem] border border-[var(--brand-line)] bg-white p-3 shadow-sm">
-                      <TypedIcon className="mb-3 h-5 w-5 text-[var(--brand-sky)]" />
-                      <div className="text-sm font-black text-[var(--brand-ink)]">{title as string}</div>
-                      <div className="text-xs text-[var(--brand-muted)]">{body as string}</div>
-                    </div>
-                  );
-                })}
-              </div>
-              {featuredProviders.slice(0, 3).map((provider) => (
-                <div key={provider.id} className="flex items-center gap-3 rounded-[1.25rem] border border-[var(--brand-line)] bg-white p-3 shadow-sm">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[1rem] bg-[var(--brand-cream)] text-xl">
-                    {CATEGORIES.find((category) => category.id === provider.category)?.icon}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-black text-[var(--brand-ink)]">{provider.name}</div>
-                    <div className="flex items-center gap-2 text-xs text-[var(--brand-muted)]">
-                      <MapPin className="h-3 w-3 text-[var(--brand-coral)]" />
-                      <span className="truncate">{provider.location}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center justify-end gap-1 text-sm font-black text-[var(--brand-ink)]">
-                      <Star className="h-3.5 w-3.5 fill-[var(--brand-gold)] text-[var(--brand-gold)]" />
-                      {provider.rating}
-                    </div>
-                    <div className="text-xs font-bold text-[var(--brand-muted)]">P {provider.price.toLocaleString()}</div>
-                  </div>
-                </div>
-              ))}
-              {featuredProviders.length === 0 && (
-                <div className="rounded-[1.5rem] border border-dashed border-[var(--brand-line)] bg-white px-4 py-8 text-center text-sm text-[var(--brand-muted)]">
-                  Verified provider listings will appear here after approval.
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </section>
@@ -289,7 +222,7 @@ export default function HomePage() {
             <h2 className="mt-3 max-w-2xl text-3xl font-black">List your childcare service and manage trust from one dashboard.</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">
               Add your profile, fees, documents, service areas, availability, and parent messages.
-              Kidcexcellence keeps discovery and verification in one place.
+              Kidcellence keeps discovery and verification in one place.
             </p>
           </div>
           <div className="flex items-center">

@@ -54,7 +54,7 @@ function SearchPageContent() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("rating");
   const [compareIds, setCompareIds] = useLocalStorageState<string[]>(
-    "kidcexcellence.compareIds",
+    "kidcellence.compareIds",
     [],
     (value): value is string[] => Array.isArray(value)
   );

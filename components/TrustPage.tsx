@@ -32,7 +32,7 @@ export function TrustPage({
             className="inline-flex items-center gap-2 text-sm font-black text-[var(--brand-leaf)] hover:underline"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Kidcexcellence
+            Back to Kidcellence
           </Link>
           <div className="mt-8 flex items-start gap-4">
             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[var(--brand-ink)] text-[var(--brand-gold)]">

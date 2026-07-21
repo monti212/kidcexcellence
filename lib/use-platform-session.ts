@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export const PLATFORM_SESSION_EVENT = "kidcexcellence:session-change";
+export const PLATFORM_SESSION_EVENT = "kidcellence:session-change";
 
 export interface PlatformSessionUser {
   id: string;
@@ -26,7 +26,7 @@ export function notifyPlatformSessionChanged() {
 }
 
 export function clearLegacyPlatformSession() {
-  window.localStorage.removeItem("kidcexcellence.session");
+  window.localStorage.removeItem("kidcellence.session");
 }
 
 export function usePlatformSession() {

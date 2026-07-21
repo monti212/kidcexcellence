@@ -7,7 +7,7 @@ import {
   type SetStateAction,
 } from "react";
 
-const LOCAL_STORAGE_EVENT = "kidcexcellence:local-storage-change";
+const LOCAL_STORAGE_EVENT = "kidcellence:local-storage-change";
 
 export function useLocalStorageState<T>(
   key: string,
