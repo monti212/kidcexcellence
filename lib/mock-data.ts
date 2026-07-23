@@ -123,7 +123,6 @@ export const CATEGORIES: Category[] = [
       { id: "venues", name: "Entertainment Venues" },
     ],
   },
-  { id: "agencies", name: "Agencies (Independent)", icon: "🏢", count: 27 },
 ];
 
 export const PROVIDERS: Provider[] = [
