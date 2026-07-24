@@ -79,7 +79,7 @@ export default function HomePage() {
                     Search services
                   </Button>
                 </Link>
-                <Link href="/auth">
+                <Link href="/auth?role=provider">
                   <Button variant="outline" className="rounded-full border-white/70 bg-white/15 font-black text-white backdrop-blur hover:bg-white/25">
                     For providers
                   </Button>
@@ -117,7 +117,7 @@ export default function HomePage() {
                 ))}
               </div>
               <div className="mt-4 p-3 rounded-lg border border-dashed border-[var(--brand-line)] text-center text-sm text-[var(--brand-muted)]">
-                Want to feature your listing? <Link href="/auth"><span className="font-bold text-[var(--brand-ink)]">Contact us</span></Link>
+                Want to feature your listing? <Link href="/auth?role=provider"><span className="font-bold text-[var(--brand-ink)]">Contact us</span></Link>
               </div>
             </div>
           )}
@@ -226,7 +226,7 @@ export default function HomePage() {
             </p>
           </div>
           <div className="flex items-center">
-            <Link href="/auth">
+            <Link href="/auth?role=provider">
               <Button className="rounded-lg bg-[var(--brand-gold)] px-6 font-black text-[var(--brand-ink)] hover:bg-white">
                 Start provider onboarding
               </Button>

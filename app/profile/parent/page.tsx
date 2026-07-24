@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash2, User } from "lucide-react";
+import { LogIn, Plus, Trash2, User, UserPlus } from "lucide-react";
 import { usePlatformSession } from "@/lib/use-platform-session";
 
 interface Child {
@@ -133,6 +134,48 @@ export default function ParentProfilePage() {
     setSaveMessage("Saved!");
     setTimeout(() => setSaveMessage(""), 3000);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen brand-page px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-xl rounded-lg border border-[var(--brand-line)] bg-white p-6 text-center text-sm font-bold text-[var(--brand-muted)] shadow-sm">
+          Checking your account...
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && (!session || user?.role !== "parent")) {
+    return (
+      <div className="min-h-screen brand-page px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-xl rounded-lg border border-[var(--brand-line)] bg-white p-6 text-center shadow-sm sm:p-8">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg bg-[var(--brand-ivory)] text-[var(--brand-leaf)]">
+            <User className="h-7 w-7" />
+          </div>
+          <h1 className="mt-5 text-2xl font-black text-[var(--brand-ink)]">
+            Sign in to open your family profile
+          </h1>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[var(--brand-muted)]">
+            Parent accounts can save child details, manage enquiries, and message providers from a private dashboard.
+          </p>
+          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link href="/auth?mode=login">
+              <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white font-black text-[var(--brand-ink)] sm:w-auto">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+              </Button>
+            </Link>
+            <Link href="/auth">
+              <Button className="w-full rounded-full bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)] sm:w-auto">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Sign up as parent
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen brand-page py-8 px-4 sm:px-6 lg:px-8">

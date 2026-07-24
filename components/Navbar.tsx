@@ -16,7 +16,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { BrandMark } from "@/components/BrandMark";
 import { usePlatformSession } from "@/lib/use-platform-session";
 import { clsx } from "clsx";
-import { LogOut, Menu, ShieldCheck, UserCircle, Search, MapPin } from "lucide-react";
+import { LogIn, LogOut, Menu, ShieldCheck, UserCircle, UserPlus, Search, MapPin } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -126,11 +126,20 @@ export default function Navbar() {
                 </Button>
               </>
             ) : (
-              <Link href="/auth">
-                <Button className="h-10 rounded-full bg-[var(--brand-ink)] px-4 font-extrabold text-white hover:bg-[var(--brand-sky)]" disabled={loading}>
-                  Join the network
-                </Button>
-              </Link>
+              <>
+                <Link href="/auth?mode=login">
+                  <Button variant="outline" className="h-10 rounded-full border-[var(--brand-line)] bg-white px-3 font-extrabold text-[var(--brand-ink)] hover:bg-[var(--brand-cream)]" disabled={loading}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/auth">
+                  <Button className="h-10 rounded-full bg-[var(--brand-ink)] px-4 font-extrabold text-white hover:bg-[var(--brand-sky)]" disabled={loading}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Sign up
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
 
@@ -192,11 +201,20 @@ export default function Navbar() {
                     </Button>
                   </>
                 ) : (
-                  <Link href="/auth" onClick={() => setOpen(false)}>
-                    <Button className="w-full rounded-full bg-[var(--brand-ink)] font-extrabold text-white hover:bg-[var(--brand-sky)]" disabled={loading}>
-                      Join the network
-                    </Button>
-                  </Link>
+                  <>
+                    <Link href="/auth?mode=login" onClick={() => setOpen(false)}>
+                      <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white font-extrabold text-[var(--brand-ink)]" disabled={loading}>
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Login
+                      </Button>
+                    </Link>
+                    <Link href="/auth" onClick={() => setOpen(false)}>
+                      <Button className="w-full rounded-full bg-[var(--brand-ink)] font-extrabold text-white hover:bg-[var(--brand-sky)]" disabled={loading}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Sign up
+                      </Button>
+                    </Link>
+                  </>
                 )}
               </div>
             </SheetContent>

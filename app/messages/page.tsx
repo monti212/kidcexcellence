@@ -329,7 +329,7 @@ function MessagesPageContent() {
                   ? "Providers can reply to enquiries from this inbox once a parent starts a conversation."
                 : "Select a conversation from the sidebar, or browse providers to start messaging."}
             </p>
-            <Link href={showSignInPrompt ? "/auth" : showProviderChatHint ? "/messages" : "/search"}>
+            <Link href={showSignInPrompt ? "/auth?mode=login" : showProviderChatHint ? "/messages" : "/search"}>
               <Button className="mt-6 rounded-lg bg-[var(--brand-leaf)] text-white hover:bg-[var(--brand-ink)]">
                 {showSignInPrompt ? "Sign in" : showProviderChatHint ? "Open inbox" : "Browse providers"}
               </Button>

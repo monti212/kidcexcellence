@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,8 +19,19 @@ import { Eye, EyeOff, Baby, Briefcase } from "lucide-react";
 import { clearLegacyPlatformSession, notifyPlatformSessionChanged } from "@/lib/use-platform-session";
 
 export default function AuthPage() {
+  return (
+    <Suspense fallback={<div className="brand-page flex min-h-screen items-center justify-center text-sm font-bold text-[var(--brand-muted)]">Loading account access...</div>}>
+      <AuthPageContent />
+    </Suspense>
+  );
+}
+
+function AuthPageContent() {
   const router = useRouter();
-  const [isLogin, setIsLogin] = useState(false);
+  const searchParams = useSearchParams();
+  const initialMode = searchParams.get("mode") === "login";
+  const initialSignupRole = searchParams.get("role") === "provider" ? "provider" : "parent";
+  const [isLogin, setIsLogin] = useState(initialMode);
   const [parentLocation, setParentLocation] = useState("");
   const [providerCategory, setProviderCategory] = useState("");
   const [providerLocation, setProviderLocation] = useState("");
@@ -29,6 +40,10 @@ export default function AuthPage() {
   const [statusMessage, setStatusMessage] = useState("");
   const [lifecycleMessage, setLifecycleMessage] = useState("");
   const [lifecycleHref, setLifecycleHref] = useState("");
+
+  useEffect(() => {
+    setIsLogin(searchParams.get("mode") === "login");
+  }, [searchParams]);
 
   const completeAuth = async (role: "parent" | "provider" | "login", formData: FormData) => {
     const password = String(formData.get("password") ?? "");
@@ -153,6 +168,7 @@ export default function AuthPage() {
             />
           ) : (
             <SignupForm
+              defaultRole={initialSignupRole}
               parentLocation={parentLocation}
               setParentLocation={setParentLocation}
               providerCategory={providerCategory}
@@ -271,6 +287,7 @@ function LoginForm({
 }
 
 function SignupForm({
+  defaultRole,
   parentLocation,
   setParentLocation,
   providerCategory,
@@ -283,6 +300,7 @@ function SignupForm({
   setShowConfirmPassword,
   onComplete,
 }: {
+  defaultRole: "parent" | "provider";
   parentLocation: string;
   setParentLocation: (value: string) => void;
   providerCategory: string;
@@ -296,7 +314,7 @@ function SignupForm({
   onComplete: (role: "parent" | "provider", formData: FormData) => void;
 }) {
   return (
-    <Tabs defaultValue="parent">
+    <Tabs key={defaultRole} defaultValue={defaultRole}>
       <TabsList className="grid w-full grid-cols-2 mb-6 rounded-lg bg-[var(--brand-ivory)]">
         <TabsTrigger value="parent" className="rounded-lg flex items-center gap-2 data-[state=active]:bg-white">
           <Baby className="w-4 h-4" />
