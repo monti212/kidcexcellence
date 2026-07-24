@@ -6,6 +6,12 @@ import {
 } from "@/lib/platform-store";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import {
+  VERIFICATION_FEE,
+  getVerificationDocuments,
+  getVerificationProviderType,
+  missingVerificationDocuments,
+} from "@/lib/verification-requirements";
 
 export const runtime = "nodejs";
 
@@ -23,9 +29,24 @@ export async function GET(request: Request) {
   const approved = store.verifications.approvedProviders.find(
     (item) => item.userId === auth.session.userId
   );
+  const uploadedDocumentKeys = store.uploads
+    .filter((upload) => upload.userId === auth.session.userId && upload.type === "document")
+    .map((upload) => upload.documentKey ?? "");
+  const category = profile?.category ?? auth.user.category ?? "schools";
 
   return NextResponse.json({
     status: profile?.verificationStatus ?? "not_submitted",
+    providerType: getVerificationProviderType(category),
+    fee: VERIFICATION_FEE,
+    payment: {
+      status: profile?.verificationPaymentStatus ?? "unpaid",
+      amount: profile?.verificationFeeAmount,
+      currency: profile?.verificationFeeCurrency,
+      paidAt: profile?.verificationFeePaidAt,
+      reference: profile?.verificationPaymentReference,
+    },
+    requiredDocuments: getVerificationDocuments(category),
+    missingDocuments: missingVerificationDocuments(category, uploadedDocumentKeys),
     pending: pending ?? null,
     approved: approved ?? null,
   });

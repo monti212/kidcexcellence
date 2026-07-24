@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   CheckCircle2,
+  CreditCard,
   Lock,
   Upload,
   ImagePlus,
@@ -26,6 +27,12 @@ import {
 } from "lucide-react";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import { usePlatformSession } from "@/lib/use-platform-session";
+import {
+  VERIFICATION_FEE,
+  getVerificationDocuments,
+  getVerificationProviderType,
+  missingVerificationDocuments,
+} from "@/lib/verification-requirements";
 
 interface FeeRow {
   grade: string;
@@ -48,6 +55,11 @@ interface StoredProviderProfile {
   liveIn: boolean;
   published: boolean;
   verificationStatus: "not_submitted" | "pending" | "approved" | "rejected";
+  verificationPaymentStatus: "unpaid" | "paid";
+  verificationFeeAmount?: number;
+  verificationFeeCurrency?: string;
+  verificationFeePaidAt?: string;
+  verificationPaymentReference?: string;
   feeRows: FeeRow[];
   savedAt?: string;
 }
@@ -79,27 +91,13 @@ const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
   liveIn: false,
   published: false,
   verificationStatus: "not_submitted",
+  verificationPaymentStatus: "unpaid",
   feeRows: [
     { grade: "Baby Class", termly: "2800", annually: "8400" },
     { grade: "Toddler Class", termly: "3000", annually: "9000" },
     { grade: "Nursery", termly: "3200", annually: "9600" },
   ],
 };
-
-const SENSITIVE_DOCUMENTS = [
-  { key: "national-id", label: "National ID / Passport", hint: "High-res scan of valid ID" },
-];
-
-const SUPPORTING_DOCUMENTS = [
-  { key: "cv", label: "CV / Resume", hint: "PDF or Word document" },
-  { key: "references", label: "References", hint: "Letters from previous employers" },
-  { key: "proof-of-residence", label: "Proof of Residence", hint: "Utility bill or bank statement" },
-  { key: "certified-id", label: "Certified ID Copy", hint: "Certified copy from commissioner" },
-];
-
-const SCHOOL_DOCUMENTS = [
-  { key: "school-prospectus", label: "School Prospectus", hint: "PDF brochure or curriculum overview" },
-];
 
 export default function ProviderProfilePage() {
   const { user, session, loading } = usePlatformSession();
@@ -133,6 +131,15 @@ export default function ProviderProfilePage() {
   const [verificationStatus, setVerificationStatus] = useState(
     storedProfile.verificationStatus ?? "not_submitted"
   );
+  const [verificationPaymentStatus, setVerificationPaymentStatus] = useState(
+    storedProfile.verificationPaymentStatus ?? "unpaid"
+  );
+  const [verificationFeePaidAt, setVerificationFeePaidAt] = useState(
+    storedProfile.verificationFeePaidAt ?? ""
+  );
+  const [verificationPaymentReference, setVerificationPaymentReference] = useState(
+    storedProfile.verificationPaymentReference ?? ""
+  );
   const [verified, setVerified] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [uploadMessage, setUploadMessage] = useState("");
@@ -143,9 +150,15 @@ export default function ProviderProfilePage() {
   const isNanny = ["nannies", "babysitters"].includes(category);
   const documentUploads = uploads.filter((upload) => upload.type === "document");
   const galleryUploads = uploads.filter((upload) => upload.type === "gallery");
-  const documents = isSchool
-    ? [...SUPPORTING_DOCUMENTS, ...SCHOOL_DOCUMENTS]
-    : SUPPORTING_DOCUMENTS;
+  const verificationProviderType = getVerificationProviderType(category);
+  const documents = getVerificationDocuments(category);
+  const sensitiveDocuments = documents.filter((document) => document.sensitive);
+  const standardDocuments = documents.filter((document) => !document.sensitive);
+  const missingDocuments = missingVerificationDocuments(
+    category,
+    documentUploads.map((upload) => upload.documentKey ?? "")
+  );
+  const verificationPaid = verificationPaymentStatus === "paid";
 
   const refreshUploads = useCallback(async () => {
     if (!session) {
@@ -195,6 +208,9 @@ export default function ProviderProfilePage() {
     setLiveIn(Boolean(payload.profile.liveIn));
     setPublished(Boolean(payload.profile.published));
     setVerificationStatus(payload.profile.verificationStatus ?? "not_submitted");
+    setVerificationPaymentStatus(payload.profile.verificationPaymentStatus ?? "unpaid");
+    setVerificationFeePaidAt(payload.profile.verificationFeePaidAt ?? "");
+    setVerificationPaymentReference(payload.profile.verificationPaymentReference ?? "");
     setVerified(Boolean(payload.verified));
     setFeeRows(Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows);
     setStoredProfile({
@@ -212,6 +228,11 @@ export default function ProviderProfilePage() {
       liveIn: Boolean(payload.profile.liveIn),
       published: Boolean(payload.profile.published),
       verificationStatus: payload.profile.verificationStatus ?? "not_submitted",
+      verificationPaymentStatus: payload.profile.verificationPaymentStatus ?? "unpaid",
+      verificationFeeAmount: payload.profile.verificationFeeAmount,
+      verificationFeeCurrency: payload.profile.verificationFeeCurrency,
+      verificationFeePaidAt: payload.profile.verificationFeePaidAt,
+      verificationPaymentReference: payload.profile.verificationPaymentReference,
       feeRows: Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows,
       savedAt: payload.profile.savedAt,
     });
@@ -252,6 +273,11 @@ export default function ProviderProfilePage() {
       liveIn,
       published: nextPublished,
       verificationStatus,
+      verificationPaymentStatus,
+      verificationFeeAmount: verificationPaid ? VERIFICATION_FEE.amount : undefined,
+      verificationFeeCurrency: verificationPaid ? VERIFICATION_FEE.currency : undefined,
+      verificationFeePaidAt: verificationFeePaidAt || undefined,
+      verificationPaymentReference: verificationPaymentReference || undefined,
       feeRows,
       savedAt: new Date().toISOString(),
     };
@@ -273,6 +299,9 @@ export default function ProviderProfilePage() {
     setStoredProfile(savedProfile);
     setPublished(Boolean(payload.profile.published));
     setVerificationStatus(payload.profile.verificationStatus ?? "not_submitted");
+    setVerificationPaymentStatus(payload.profile.verificationPaymentStatus ?? "unpaid");
+    setVerificationFeePaidAt(payload.profile.verificationFeePaidAt ?? "");
+    setVerificationPaymentReference(payload.profile.verificationPaymentReference ?? "");
     setVerified(Boolean(payload.verified));
     setSaveMessage(payload.profile.published ? "Published!" : "Saved!");
     setTimeout(() => setSaveMessage(""), 3000);
@@ -352,6 +381,26 @@ export default function ProviderProfilePage() {
     setUploads((prev) => prev.filter((upload) => upload.id !== uploadId));
   };
 
+  const payVerificationFee = async () => {
+    const response = await fetch("/api/verifications/payment", {
+      method: "POST",
+      credentials: "same-origin",
+    }).catch(() => null);
+
+    if (!response?.ok) {
+      const payload = await response?.json().catch(() => null);
+      setUploadMessage(payload?.error ?? "Could not record verification payment.");
+      return;
+    }
+
+    const payload = await response.json();
+    setVerificationPaymentStatus(payload.payment?.status ?? "paid");
+    setVerificationFeePaidAt(payload.payment?.paidAt ?? "");
+    setVerificationPaymentReference(payload.payment?.reference ?? "");
+    setUploadMessage("Verification fee recorded. Upload the required documents to submit.");
+    window.setTimeout(() => setUploadMessage(""), 3000);
+  };
+
   const submitVerification = async () => {
     const response = await fetch("/api/verifications", {
       method: "POST",
@@ -368,10 +417,7 @@ export default function ProviderProfilePage() {
     setUploadMessage("Verification submitted for admin review.");
   };
 
-  const hasIdentityDocument = documentUploads.some((upload) =>
-    ["national-id", "certified-id"].includes(upload.documentKey ?? "")
-  );
-  const canSubmitVerification = hasIdentityDocument && documentUploads.length >= 2;
+  const canSubmitVerification = verificationPaid && missingDocuments.length === 0;
 
   return (
     <div className="min-h-screen brand-page py-8 px-4 sm:px-6 lg:px-8">
@@ -574,8 +620,71 @@ export default function ProviderProfilePage() {
           <TabsContent value="documents">
             <div className="bg-white rounded-lg border border-[var(--brand-line)] shadow-sm p-6 space-y-5">
               <p className="text-[var(--brand-muted)] text-sm bg-blue-50 rounded-lg p-3 border border-blue-100">
-                Upload your documents for verification. Once approved, you&apos;ll receive the Verified badge on your profile.
+                Pay the verification fee and upload the required documents for your provider type.
+                Once approved, your public profile displays the Verified badge.
               </p>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
+                  <div className="flex items-center gap-2 text-sm font-black text-[var(--brand-ink)]">
+                    <CreditCard className="h-4 w-4 text-[var(--brand-leaf)]" />
+                    Verification fee
+                  </div>
+                  <div className="mt-2 text-2xl font-black text-[var(--brand-ink)]">
+                    P {VERIFICATION_FEE.amount}
+                  </div>
+                  <p className="mt-1 text-xs text-[var(--brand-muted)]">
+                    One-time additional review fee for the verification badge.
+                  </p>
+                  {verificationPaid ? (
+                    <Badge className="mt-3 rounded-full border-green-200 bg-green-50 text-green-700">
+                      Paid
+                    </Badge>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={payVerificationFee}
+                      className="mt-3 h-9 rounded-lg bg-[var(--brand-leaf)] text-xs font-black text-white hover:bg-[var(--brand-ink)]"
+                    >
+                      Pay verification fee
+                    </Button>
+                  )}
+                  {verificationFeePaidAt && (
+                    <p className="mt-2 text-xs text-[var(--brand-muted)]">
+                      Paid {new Date(verificationFeePaidAt).toLocaleDateString()}{" "}
+                      {verificationPaymentReference && `· ${verificationPaymentReference}`}
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-[var(--brand-line)] bg-white p-4">
+                  <div className="text-sm font-black text-[var(--brand-ink)]">
+                    Required for {verificationProviderType === "individual" ? "individuals" : "schools and organisations"}
+                  </div>
+                  <ul className="mt-3 space-y-2 text-xs text-[var(--brand-muted)]">
+                    {documents.map((document) => {
+                      const uploaded = documentUploads.some(
+                        (upload) => upload.documentKey === document.key
+                      );
+                      return (
+                        <li key={document.key} className="flex items-start gap-2">
+                          <CheckCircle2
+                            className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
+                              uploaded ? "text-green-600" : "text-gray-300"
+                            }`}
+                          />
+                          <span>
+                            <span className="font-bold text-[var(--brand-ink)]">
+                              {document.label}
+                            </span>{" "}
+                            {document.hint}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
 
               <div className="flex flex-col gap-3 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -593,7 +702,11 @@ export default function ProviderProfilePage() {
                     {verificationStatus === "rejected" &&
                       "Update your documents, then submit them for another review."}
                     {verificationStatus === "not_submitted" &&
-                      "Upload an identity document and one supporting document to submit."}
+                      (verificationPaid
+                        ? missingDocuments.length
+                          ? `Missing: ${missingDocuments.map((document) => document.label).join(", ")}.`
+                          : "All required documents are uploaded. Submit when ready."
+                        : "Pay the verification fee before submitting for review.")}
                   </p>
                 </div>
                 {(verificationStatus === "not_submitted" ||
@@ -618,7 +731,7 @@ export default function ProviderProfilePage() {
                   <Badge className="rounded-full text-xs bg-red-50 text-red-600 border-red-200">Sensitive</Badge>
                 </div>
 
-                {SENSITIVE_DOCUMENTS.map((doc) => {
+                {sensitiveDocuments.map((doc) => {
                   const uploaded = documentUploads.find((upload) => upload.documentKey === doc.key);
                   return (
                   <div key={doc.label} className="border border-red-100 rounded-lg p-4 bg-red-50/30">
@@ -664,7 +777,7 @@ export default function ProviderProfilePage() {
               {/* Standard documents */}
               <div className="space-y-4">
                 <h4 className="font-semibold text-[var(--brand-ink)] text-sm">Supporting Documents</h4>
-                {documents.map((doc) => {
+                {standardDocuments.map((doc) => {
                   const uploaded = documentUploads.find((upload) => upload.documentKey === doc.key);
                   return (
                   <div key={doc.label} className="border border-[var(--brand-line)] rounded-lg p-4 hover:border-[var(--brand-line)] transition-colors">

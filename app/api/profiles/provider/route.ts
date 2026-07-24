@@ -68,8 +68,8 @@ export async function POST(request: Request) {
   }
 
   const currentStore = await readStore();
-  const verificationStatus =
-    currentStore.providerProfiles[userId]?.verificationStatus ?? "not_submitted";
+  const currentProfile = currentStore.providerProfiles[userId];
+  const verificationStatus = currentProfile?.verificationStatus ?? "not_submitted";
   const requestedPublish = Boolean(body.profile.published);
   const normalized = {
     displayName: String(body.profile.displayName ?? auth.user.name).trim(),
@@ -93,6 +93,11 @@ export async function POST(request: Request) {
     liveIn: Boolean(body.profile.liveIn),
     published: requestedPublish,
     verificationStatus,
+    verificationPaymentStatus: currentProfile?.verificationPaymentStatus ?? "unpaid",
+    verificationFeeAmount: currentProfile?.verificationFeeAmount,
+    verificationFeeCurrency: currentProfile?.verificationFeeCurrency,
+    verificationFeePaidAt: currentProfile?.verificationFeePaidAt,
+    verificationPaymentReference: currentProfile?.verificationPaymentReference,
     feeRows: Array.isArray(body.profile.feeRows)
       ? body.profile.feeRows.map((row: unknown) => {
           const item = row as Record<string, unknown>;

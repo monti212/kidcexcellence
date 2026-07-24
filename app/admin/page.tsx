@@ -38,6 +38,13 @@ interface AdminUpload {
 
 interface AdminPendingVerification extends PendingVerification {
   uploads: AdminUpload[];
+  verificationPayment?: {
+    status: "unpaid" | "paid";
+    amount?: number;
+    currency?: string;
+    paidAt?: string;
+    reference?: string;
+  } | null;
 }
 
 interface AdminState {
@@ -221,6 +228,28 @@ function AdminDashboard() {
                       <p className="text-[var(--brand-muted)] text-sm mb-2">
                         📍 {provider.location} · Submitted {provider.submittedDate}
                       </p>
+                      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+                        <Badge
+                          className={`rounded-full border ${
+                            provider.verificationPayment?.status === "paid"
+                              ? "border-green-200 bg-green-50 text-green-700"
+                              : "border-red-200 bg-red-50 text-red-700"
+                          }`}
+                        >
+                          {provider.verificationPayment?.status === "paid"
+                            ? `Verification fee paid${
+                                provider.verificationPayment.amount
+                                  ? ` · P ${provider.verificationPayment.amount}`
+                                  : ""
+                              }`
+                            : "Verification fee unpaid"}
+                        </Badge>
+                        {provider.verificationPayment?.reference && (
+                          <span className="font-bold text-[var(--brand-muted)]">
+                            {provider.verificationPayment.reference}
+                          </span>
+                        )}
+                      </div>
                       <div className="mb-4 flex flex-wrap gap-2">
                         {provider.uploads.length === 0 ? (
                           <span className="text-xs font-medium text-red-600">

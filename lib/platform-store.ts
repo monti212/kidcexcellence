@@ -10,6 +10,10 @@ import {
   type ApprovedVerification,
   type PendingVerification,
 } from "@/lib/platform-service";
+import {
+  VERIFICATION_FEE,
+  missingVerificationDocuments,
+} from "@/lib/verification-requirements";
 
 export type UserRole = "parent" | "provider" | "admin";
 export const SESSION_COOKIE_NAME = "kidcellence_session";
@@ -93,6 +97,11 @@ export interface ProviderProfileRecord {
   liveIn: boolean;
   published: boolean;
   verificationStatus: "not_submitted" | "pending" | "approved" | "rejected";
+  verificationPaymentStatus: "unpaid" | "paid";
+  verificationFeeAmount?: number;
+  verificationFeeCurrency?: string;
+  verificationFeePaidAt?: string;
+  verificationPaymentReference?: string;
   feeRows: Array<{
     grade: string;
     termly: string;
@@ -189,6 +198,11 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
         priceUnit: profile.priceUnit ?? "termly",
         published: profile.published ?? false,
         verificationStatus: profile.verificationStatus ?? "not_submitted",
+        verificationPaymentStatus: profile.verificationPaymentStatus ?? "unpaid",
+        verificationFeeAmount: profile.verificationFeeAmount,
+        verificationFeeCurrency: profile.verificationFeeCurrency,
+        verificationFeePaidAt: profile.verificationFeePaidAt,
+        verificationPaymentReference: profile.verificationPaymentReference,
       },
     ])
   );
@@ -500,13 +514,50 @@ export async function saveProviderProfile(
   profile: Omit<ProviderProfileRecord, "userId" | "savedAt">
 ) {
   return updateStore((store) => {
+    const existing = store.providerProfiles[userId];
     const record = {
+      ...(existing ?? {}),
       ...profile,
       userId,
+      verificationPaymentStatus:
+        existing?.verificationPaymentStatus ?? profile.verificationPaymentStatus ?? "unpaid",
+      verificationFeeAmount: existing?.verificationFeeAmount ?? profile.verificationFeeAmount,
+      verificationFeeCurrency:
+        existing?.verificationFeeCurrency ?? profile.verificationFeeCurrency,
+      verificationFeePaidAt: existing?.verificationFeePaidAt ?? profile.verificationFeePaidAt,
+      verificationPaymentReference:
+        existing?.verificationPaymentReference ?? profile.verificationPaymentReference,
       savedAt: new Date().toISOString(),
     };
     store.providerProfiles[userId] = record;
     return record;
+  });
+}
+
+export async function recordVerificationPayment(userId: string) {
+  return updateStore((store) => {
+    const user = store.users.find((item) => item.id === userId && item.role === "provider");
+    const profile = store.providerProfiles[userId];
+    if (!user || !profile) {
+      throw new Error("Complete and save your provider profile before paying for verification.");
+    }
+    if (profile.verificationStatus === "approved") {
+      throw new Error("This provider profile is already verified.");
+    }
+
+    profile.verificationPaymentStatus = "paid";
+    profile.verificationFeeAmount = VERIFICATION_FEE.amount;
+    profile.verificationFeeCurrency = VERIFICATION_FEE.currency;
+    profile.verificationFeePaidAt = new Date().toISOString();
+    profile.verificationPaymentReference = `verify-${userId}-${Date.now()}`;
+
+    return {
+      status: profile.verificationPaymentStatus,
+      amount: profile.verificationFeeAmount,
+      currency: profile.verificationFeeCurrency,
+      paidAt: profile.verificationFeePaidAt,
+      reference: profile.verificationPaymentReference,
+    };
   });
 }
 
@@ -761,16 +812,22 @@ export async function submitProviderVerification(userId: string) {
     if (profile.verificationStatus === "approved") {
       throw new Error("This provider profile is already verified.");
     }
+    if (profile.verificationPaymentStatus !== "paid") {
+      throw new Error("Pay the verification fee before submitting documents for review.");
+    }
 
     const documents = store.uploads.filter(
       (upload) => upload.userId === userId && upload.type === "document"
     );
-    const hasIdentity = documents.some((document) =>
-      ["national-id", "certified-id"].includes(document.documentKey ?? "")
+    const missingDocuments = missingVerificationDocuments(
+      profile.category,
+      documents.map((document) => document.documentKey ?? "")
     );
-    if (!hasIdentity || documents.length < 2) {
+    if (missingDocuments.length > 0) {
       throw new Error(
-        "Upload an identity document and at least one supporting document before submitting."
+        `Upload required verification documents before submitting: ${missingDocuments
+          .map((document) => document.label)
+          .join(", ")}.`
       );
     }
 

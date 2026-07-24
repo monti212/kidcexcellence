@@ -604,14 +604,23 @@ describe("Kidcellence platform APIs", () => {
     });
     assert.equal(prematureSubmission.status, 400);
 
+    const payment = await request("/api/verifications/payment", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+    });
+    assert.equal(payment.status, 200);
+    const paymentPayload = await json(payment);
+    assert.equal(paymentPayload.payment.status, "paid");
+    assert.equal(paymentPayload.payment.amount, 250);
+
     const identityForm = new FormData();
     identityForm.set("type", "document");
-    identityForm.set("documentKey", "national-id");
-    identityForm.set("label", "National ID / Passport");
+    identityForm.set("documentKey", "registration-certificate");
+    identityForm.set("label", "Registration certificate");
     identityForm.set(
       "file",
-      new Blob(["test identity"], { type: "application/pdf" }),
-      "identity.pdf"
+      new Blob(["test registration"], { type: "application/pdf" }),
+      "registration.pdf"
     );
     const identityUpload = await request("/api/uploads", {
       method: "POST",
@@ -622,9 +631,9 @@ describe("Kidcellence platform APIs", () => {
 
     const form = new FormData();
     form.set("type", "document");
-    form.set("documentKey", "cv");
-    form.set("label", "CV / Resume");
-    form.set("file", new Blob(["test document"], { type: "application/pdf" }), "cv.pdf");
+    form.set("documentKey", "operating-documentation");
+    form.set("label", "Relevant operating documentation");
+    form.set("file", new Blob(["test document"], { type: "application/pdf" }), "operating.pdf");
 
     const upload = await request("/api/uploads", {
       method: "POST",
@@ -633,13 +642,29 @@ describe("Kidcellence platform APIs", () => {
     });
     assert.equal(upload.status, 200);
     const uploadPayload = await json(upload);
-    assert.equal(uploadPayload.upload.fileName, "cv.pdf");
+    assert.equal(uploadPayload.upload.fileName, "operating.pdf");
+
+    const representativeForm = new FormData();
+    representativeForm.set("type", "document");
+    representativeForm.set("documentKey", "representative-id");
+    representativeForm.set("label", "Representative ID");
+    representativeForm.set(
+      "file",
+      new Blob(["test representative"], { type: "application/pdf" }),
+      "representative.pdf"
+    );
+    const representativeUpload = await request("/api/uploads", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+      body: representativeForm,
+    });
+    assert.equal(representativeUpload.status, 200);
 
     const list = await request("/api/uploads", {
       headers: { Cookie: cookie },
     });
     assert.equal(list.status, 200);
-    assert.equal((await json(list)).uploads.length, 2);
+    assert.equal((await json(list)).uploads.length, 3);
 
     const submitted = await request("/api/verifications", {
       method: "POST",
@@ -652,7 +677,10 @@ describe("Kidcellence platform APIs", () => {
       headers: { Cookie: cookie },
     });
     assert.equal(status.status, 200);
-    assert.equal((await json(status)).status, "pending");
+    const statusPayload = await json(status);
+    assert.equal(statusPayload.status, "pending");
+    assert.equal(statusPayload.payment.status, "paid");
+    assert.equal(statusPayload.missingDocuments.length, 0);
 
     const adminLogin = await request("/api/auth", {
       method: "POST",
@@ -678,7 +706,8 @@ describe("Kidcellence platform APIs", () => {
       (item) => item.name === "Integration Nursery"
     );
     assert.ok(providerSubmission);
-    assert.equal(providerSubmission.uploads.length, 2);
+    assert.equal(providerSubmission.verificationPayment.status, "paid");
+    assert.equal(providerSubmission.uploads.length, 3);
     const adminDocument = await request(providerSubmission.uploads[0].url, {
       headers: { Cookie: adminCookie },
     });

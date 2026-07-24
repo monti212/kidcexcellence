@@ -23,6 +23,16 @@ function dashboardPayload(
     ...store.verifications,
     pendingProviders: store.verifications.pendingProviders.map((pending) => ({
       ...pending,
+      verificationPayment: pending.userId
+        ? {
+            status:
+              store.providerProfiles[pending.userId]?.verificationPaymentStatus ?? "unpaid",
+            amount: store.providerProfiles[pending.userId]?.verificationFeeAmount,
+            currency: store.providerProfiles[pending.userId]?.verificationFeeCurrency,
+            paidAt: store.providerProfiles[pending.userId]?.verificationFeePaidAt,
+            reference: store.providerProfiles[pending.userId]?.verificationPaymentReference,
+          }
+        : null,
       uploads: pending.userId
         ? store.uploads
             .filter(
