@@ -29,6 +29,16 @@ export interface Provider {
   bio: string;
   image: string;
   age?: number;
+  stayArrangement?: "stay-in" | "stay-out";
+  willingToRelocate?: boolean;
+  childrenCount?: number;
+  yearsExperience?: number;
+  references?: string;
+  nextOfKin?: string;
+  mission?: string;
+  vision?: string;
+  values?: string;
+  medicalAids?: string;
   languages?: string[];
   qualifications?: string[];
   careAges?: string;

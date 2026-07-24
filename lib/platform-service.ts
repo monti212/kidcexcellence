@@ -69,6 +69,7 @@ export function getCategoryLabel(categoryId: string) {
       nannies: "Nanny",
       helpers: "Helper",
       babysitters: "Babysitter",
+      "kiddies-transport": "Kiddies Transport",
       "pediatric-clinics": "Pediatric Clinic",
       tutors: "Tutor",
     }[categoryId] ?? categoryId
@@ -155,6 +156,9 @@ export function buildAccountProvider(
   const gallery = uploads
     .filter((upload) => upload.userId === user.id && upload.type === "gallery")
     .map((upload) => `/api/uploads/${upload.id}`);
+  const profileImage = uploads.find(
+    (upload) => upload.userId === user.id && upload.type === "profile-image"
+  );
   const profilePrice = Number(profile.price) || 0;
 
   return {
@@ -167,13 +171,35 @@ export function buildAccountProvider(
     rating: 0,
     reviewCount: 0,
     verified,
-    bio: profile.bio,
-    image: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-      profile.displayName || user.name
-    )}`,
+    bio: profile.workExperienceSummary || profile.bio,
+    image: profileImage
+      ? `/api/uploads/${profileImage.id}`
+      : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+          profile.displayName || user.name
+        )}`,
+    age: Number(profile.age) || undefined,
+    stayArrangement: profile.stayArrangement,
+    willingToRelocate: profile.willingToRelocate,
+    childrenCount: Number(profile.childrenCount) || undefined,
+    yearsExperience: Number(profile.yearsExperience) || undefined,
+    references: profile.references,
+    nextOfKin:
+      profile.nextOfKinName || profile.nextOfKinPhone || profile.nextOfKinRelationship
+        ? [profile.nextOfKinName, profile.nextOfKinRelationship, profile.nextOfKinPhone]
+            .filter(Boolean)
+            .join(" · ")
+        : undefined,
+    mission: profile.mission,
+    vision: profile.vision,
+    values: profile.values,
+    medicalAids: profile.medicalAids,
     services: profile.services,
-    experience: profile.experience,
-    availability: profile.availability,
+    experience: profile.yearsExperience
+      ? `${profile.yearsExperience} years${profile.experience ? ` · ${profile.experience}` : ""}`
+      : profile.experience,
+    availability: profile.workStartDate
+      ? `Available from ${profile.workStartDate}`
+      : profile.availability,
     gallery,
     fees,
     phone: profile.phone || user.phone || "",

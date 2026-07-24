@@ -98,6 +98,21 @@ export interface ProviderProfileRecord {
   availability: string;
   price: string;
   priceUnit: "monthly" | "per day" | "per hour" | "termly";
+  age?: string;
+  stayArrangement?: "stay-in" | "stay-out";
+  workStartDate?: string;
+  willingToRelocate?: boolean;
+  childrenCount?: string;
+  workExperienceSummary?: string;
+  yearsExperience?: string;
+  references?: string;
+  nextOfKinName?: string;
+  nextOfKinPhone?: string;
+  nextOfKinRelationship?: string;
+  mission?: string;
+  vision?: string;
+  values?: string;
+  medicalAids?: string;
   liveIn: boolean;
   published: boolean;
   verificationStatus: "not_submitted" | "pending" | "approved" | "rejected";
@@ -119,7 +134,7 @@ export interface ProviderProfileRecord {
 export interface PlatformUploadRecord {
   id: string;
   userId: string;
-  type: "document" | "gallery";
+  type: "document" | "gallery" | "profile-image";
   documentKey?: string;
   label: string;
   fileName: string;
@@ -202,6 +217,21 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
         availability: profile.availability ?? "",
         price: profile.price ?? "",
         priceUnit: profile.priceUnit ?? "termly",
+        age: profile.age ?? "",
+        stayArrangement: profile.stayArrangement ?? "stay-out",
+        workStartDate: profile.workStartDate ?? "",
+        willingToRelocate: profile.willingToRelocate ?? false,
+        childrenCount: profile.childrenCount ?? "",
+        workExperienceSummary: profile.workExperienceSummary ?? "",
+        yearsExperience: profile.yearsExperience ?? "",
+        references: profile.references ?? "",
+        nextOfKinName: profile.nextOfKinName ?? "",
+        nextOfKinPhone: profile.nextOfKinPhone ?? "",
+        nextOfKinRelationship: profile.nextOfKinRelationship ?? "",
+        mission: profile.mission ?? "",
+        vision: profile.vision ?? "",
+        values: profile.values ?? "",
+        medicalAids: profile.medicalAids ?? "",
         published: profile.published ?? false,
         verificationStatus: profile.verificationStatus ?? "not_submitted",
         verificationPaymentStatus: profile.verificationPaymentStatus ?? "unpaid",
@@ -594,6 +624,17 @@ export async function getUploadForUser(id: string, userId: string) {
   return store.uploads.find((upload) => upload.id === id && upload.userId === userId) ?? null;
 }
 
+export async function getPublishedProviderMediaUpload(id: string) {
+  const store = await readStore();
+  const upload = store.uploads.find(
+    (item) =>
+      item.id === id &&
+      (item.type === "gallery" || item.type === "profile-image") &&
+      store.providerProfiles[item.userId]?.published
+  );
+  return upload ?? null;
+}
+
 export async function getVerificationUploadForAdmin(id: string) {
   const store = await readStore();
   const upload = store.uploads.find(
@@ -614,9 +655,10 @@ export async function recordUpload(upload: PlatformUploadRecord) {
       ...store.uploads.filter(
         (item) =>
           !(
-            upload.type === "document" &&
+            (upload.type === "document" || upload.type === "profile-image") &&
+            item.type === upload.type &&
             item.userId === upload.userId &&
-            item.documentKey === upload.documentKey
+            (upload.type === "profile-image" || item.documentKey === upload.documentKey)
           )
       ),
     ];

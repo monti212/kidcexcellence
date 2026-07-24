@@ -17,6 +17,7 @@ const categoryStyles: Record<string, string> = {
   nannies: "bg-[#fff0ea] text-[#bf5538]",
   helpers: "bg-[#edf7ee] text-[#4f7f45]",
   babysitters: "bg-[#fff6df] text-[#8a6118]",
+  "kiddies-transport": "bg-[#eef3ff] text-[#3c5d9b]",
   "pediatric-clinics": "bg-[#eaf5f7] text-[#317684]",
   tutors: "bg-[#fff3e5] text-[#ba6437]",
 };

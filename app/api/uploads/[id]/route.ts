@@ -2,6 +2,7 @@ import { readFile, rm } from "node:fs/promises";
 import { NextResponse } from "next/server";
 import {
   getSessionFromRequest,
+  getPublishedProviderMediaUpload,
   getUploadForUser,
   getVerificationUploadForAdmin,
   removeUpload,
@@ -11,6 +12,9 @@ import { isSameOriginMutation } from "@/lib/request-guard";
 export const runtime = "nodejs";
 
 async function requireUpload(request: Request, id: string) {
+  const publicMedia = await getPublishedProviderMediaUpload(id);
+  if (publicMedia) return { upload: publicMedia };
+
   const auth = await getSessionFromRequest(request);
   if (!auth) return { error: "Authentication required", status: 401 as const };
   const upload =

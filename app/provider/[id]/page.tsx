@@ -38,6 +38,18 @@ export default async function ProviderProfilePage({
   const categoryIcon = getCategoryIcon(provider.category);
   const profileDetails = [
     provider.age ? [UserRound, "Age", `${provider.age} years old`] : null,
+    provider.stayArrangement
+      ? [UserRound, "Stay arrangement", provider.stayArrangement === "stay-in" ? "Stay in" : "Stay out"]
+      : null,
+    typeof provider.willingToRelocate === "boolean"
+      ? [MapPin, "Relocation", provider.willingToRelocate ? "Willing to relocate" : "Not relocating"]
+      : null,
+    typeof provider.childrenCount === "number"
+      ? [UserRound, "Own children", String(provider.childrenCount)]
+      : null,
+    provider.yearsExperience
+      ? [ShieldCheck, "Years experience", `${provider.yearsExperience} years`]
+      : null,
     provider.careAges ? [UserRound, "Care ages", provider.careAges] : null,
     provider.languages?.length
       ? [Languages, "Languages", provider.languages.join(", ")]
@@ -156,6 +168,44 @@ export default async function ProviderProfilePage({
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </section>
+            )}
+
+            {(provider.mission || provider.vision || provider.values || provider.medicalAids || provider.references) && (
+              <section className="brand-card p-6">
+                <h2 className="text-2xl font-black text-[var(--brand-ink)]">Additional details</h2>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  {provider.mission && (
+                    <div>
+                      <h3 className="text-sm font-black text-[var(--brand-ink)]">Mission</h3>
+                      <p className="mt-1 text-sm leading-6 text-[var(--brand-muted)]">{provider.mission}</p>
+                    </div>
+                  )}
+                  {provider.vision && (
+                    <div>
+                      <h3 className="text-sm font-black text-[var(--brand-ink)]">Vision</h3>
+                      <p className="mt-1 text-sm leading-6 text-[var(--brand-muted)]">{provider.vision}</p>
+                    </div>
+                  )}
+                  {provider.values && (
+                    <div>
+                      <h3 className="text-sm font-black text-[var(--brand-ink)]">Values</h3>
+                      <p className="mt-1 text-sm leading-6 text-[var(--brand-muted)]">{provider.values}</p>
+                    </div>
+                  )}
+                  {provider.medicalAids && (
+                    <div>
+                      <h3 className="text-sm font-black text-[var(--brand-ink)]">Medical aids</h3>
+                      <p className="mt-1 text-sm leading-6 text-[var(--brand-muted)]">{provider.medicalAids}</p>
+                    </div>
+                  )}
+                  {provider.references && (
+                    <div>
+                      <h3 className="text-sm font-black text-[var(--brand-ink)]">References</h3>
+                      <p className="mt-1 text-sm leading-6 text-[var(--brand-muted)]">{provider.references}</p>
+                    </div>
+                  )}
                 </div>
               </section>
             )}

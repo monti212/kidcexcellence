@@ -703,6 +703,22 @@ describe("Kidcellence platform APIs", () => {
     const uploadPayload = await json(upload);
     assert.equal(uploadPayload.upload.fileName, "operating.pdf");
 
+    const prospectusForm = new FormData();
+    prospectusForm.set("type", "document");
+    prospectusForm.set("documentKey", "prospectus");
+    prospectusForm.set("label", "Prospectus");
+    prospectusForm.set(
+      "file",
+      new Blob(["test prospectus"], { type: "application/pdf" }),
+      "prospectus.pdf"
+    );
+    const prospectusUpload = await request("/api/uploads", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+      body: prospectusForm,
+    });
+    assert.equal(prospectusUpload.status, 200);
+
     const representativeForm = new FormData();
     representativeForm.set("type", "document");
     representativeForm.set("documentKey", "representative-id");
@@ -723,7 +739,7 @@ describe("Kidcellence platform APIs", () => {
       headers: { Cookie: cookie },
     });
     assert.equal(list.status, 200);
-    assert.equal((await json(list)).uploads.length, 3);
+    assert.equal((await json(list)).uploads.length, 4);
 
     const submitted = await request("/api/verifications", {
       method: "POST",
@@ -766,7 +782,7 @@ describe("Kidcellence platform APIs", () => {
     );
     assert.ok(providerSubmission);
     assert.equal(providerSubmission.verificationPayment.status, "paid");
-    assert.equal(providerSubmission.uploads.length, 3);
+    assert.equal(providerSubmission.uploads.length, 4);
     const adminDocument = await request(providerSubmission.uploads[0].url, {
       headers: { Cookie: adminCookie },
     });

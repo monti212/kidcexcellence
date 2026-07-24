@@ -56,6 +56,21 @@ interface StoredProviderProfile {
   availability: string;
   price: string;
   priceUnit: "monthly" | "per day" | "per hour" | "termly";
+  age?: string;
+  stayArrangement?: "stay-in" | "stay-out";
+  workStartDate?: string;
+  willingToRelocate?: boolean;
+  childrenCount?: string;
+  workExperienceSummary?: string;
+  yearsExperience?: string;
+  references?: string;
+  nextOfKinName?: string;
+  nextOfKinPhone?: string;
+  nextOfKinRelationship?: string;
+  mission?: string;
+  vision?: string;
+  values?: string;
+  medicalAids?: string;
   liveIn: boolean;
   published: boolean;
   verificationStatus: "not_submitted" | "pending" | "approved" | "rejected";
@@ -72,7 +87,7 @@ interface StoredProviderProfile {
 
 interface ProviderUpload {
   id: string;
-  type: "document" | "gallery";
+  type: "document" | "gallery" | "profile-image";
   documentKey?: string;
   label: string;
   fileName: string;
@@ -94,6 +109,21 @@ const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
   availability: "",
   price: "",
   priceUnit: "termly",
+  age: "",
+  stayArrangement: "stay-out",
+  workStartDate: "",
+  willingToRelocate: false,
+  childrenCount: "",
+  workExperienceSummary: "",
+  yearsExperience: "",
+  references: "",
+  nextOfKinName: "",
+  nextOfKinPhone: "",
+  nextOfKinRelationship: "",
+  mission: "",
+  vision: "",
+  values: "",
+  medicalAids: "",
   liveIn: false,
   published: false,
   verificationStatus: "not_submitted",
@@ -132,7 +162,24 @@ export default function ProviderProfilePage() {
   const [priceUnit, setPriceUnit] = useState<StoredProviderProfile["priceUnit"]>(
     storedProfile.priceUnit ?? "termly"
   );
-  const [liveIn, setLiveIn] = useState(storedProfile.liveIn);
+  const [age, setAge] = useState(storedProfile.age ?? "");
+  const [stayArrangement, setStayArrangement] = useState<"stay-in" | "stay-out">(
+    storedProfile.stayArrangement ?? "stay-out"
+  );
+  const [workStartDate, setWorkStartDate] = useState(storedProfile.workStartDate ?? "");
+  const [willingToRelocate, setWillingToRelocate] = useState(Boolean(storedProfile.willingToRelocate));
+  const [childrenCount, setChildrenCount] = useState(storedProfile.childrenCount ?? "");
+  const [workExperienceSummary, setWorkExperienceSummary] = useState(storedProfile.workExperienceSummary ?? "");
+  const [yearsExperience, setYearsExperience] = useState(storedProfile.yearsExperience ?? "");
+  const [references, setReferences] = useState(storedProfile.references ?? "");
+  const [nextOfKinName, setNextOfKinName] = useState(storedProfile.nextOfKinName ?? "");
+  const [nextOfKinPhone, setNextOfKinPhone] = useState(storedProfile.nextOfKinPhone ?? "");
+  const [nextOfKinRelationship, setNextOfKinRelationship] = useState(storedProfile.nextOfKinRelationship ?? "");
+  const [mission, setMission] = useState(storedProfile.mission ?? "");
+  const [vision, setVision] = useState(storedProfile.vision ?? "");
+  const [values, setValues] = useState(storedProfile.values ?? "");
+  const [medicalAids, setMedicalAids] = useState(storedProfile.medicalAids ?? "");
+  const [, setLiveIn] = useState(storedProfile.liveIn);
   const [published, setPublished] = useState(Boolean(storedProfile.published));
   const [verificationStatus, setVerificationStatus] = useState(
     storedProfile.verificationStatus ?? "not_submitted"
@@ -159,9 +206,11 @@ export default function ProviderProfilePage() {
   const [feeRows, setFeeRows] = useState<FeeRow[]>(storedProfile.feeRows);
 
   const isSchool = ["schools", "nurseries"].includes(category);
-  const isNanny = ["nannies", "babysitters"].includes(category);
+  const isIndividualCare = ["nannies", "helpers", "babysitters"].includes(category);
+  const isPediatric = category === "pediatric-clinics";
   const documentUploads = uploads.filter((upload) => upload.type === "document");
   const galleryUploads = uploads.filter((upload) => upload.type === "gallery");
+  const profileImageUpload = uploads.find((upload) => upload.type === "profile-image");
   const verificationProviderType = getVerificationProviderType(category);
   const documents = getVerificationDocuments(category);
   const sensitiveDocuments = documents.filter((document) => document.sensitive);
@@ -223,6 +272,21 @@ export default function ProviderProfilePage() {
     setAvailability(payload.profile.availability ?? "");
     setPrice(payload.profile.price ?? "");
     setPriceUnit(payload.profile.priceUnit ?? "termly");
+    setAge(payload.profile.age ?? "");
+    setStayArrangement(payload.profile.stayArrangement ?? "stay-out");
+    setWorkStartDate(payload.profile.workStartDate ?? "");
+    setWillingToRelocate(Boolean(payload.profile.willingToRelocate));
+    setChildrenCount(payload.profile.childrenCount ?? "");
+    setWorkExperienceSummary(payload.profile.workExperienceSummary ?? "");
+    setYearsExperience(payload.profile.yearsExperience ?? "");
+    setReferences(payload.profile.references ?? "");
+    setNextOfKinName(payload.profile.nextOfKinName ?? "");
+    setNextOfKinPhone(payload.profile.nextOfKinPhone ?? "");
+    setNextOfKinRelationship(payload.profile.nextOfKinRelationship ?? "");
+    setMission(payload.profile.mission ?? "");
+    setVision(payload.profile.vision ?? "");
+    setValues(payload.profile.values ?? "");
+    setMedicalAids(payload.profile.medicalAids ?? "");
     setLiveIn(Boolean(payload.profile.liveIn));
     setPublished(Boolean(payload.profile.published));
     setVerificationStatus(payload.profile.verificationStatus ?? "not_submitted");
@@ -245,6 +309,21 @@ export default function ProviderProfilePage() {
       availability: payload.profile.availability ?? "",
       price: payload.profile.price ?? "",
       priceUnit: payload.profile.priceUnit ?? "termly",
+      age: payload.profile.age ?? "",
+      stayArrangement: payload.profile.stayArrangement ?? "stay-out",
+      workStartDate: payload.profile.workStartDate ?? "",
+      willingToRelocate: Boolean(payload.profile.willingToRelocate),
+      childrenCount: payload.profile.childrenCount ?? "",
+      workExperienceSummary: payload.profile.workExperienceSummary ?? "",
+      yearsExperience: payload.profile.yearsExperience ?? "",
+      references: payload.profile.references ?? "",
+      nextOfKinName: payload.profile.nextOfKinName ?? "",
+      nextOfKinPhone: payload.profile.nextOfKinPhone ?? "",
+      nextOfKinRelationship: payload.profile.nextOfKinRelationship ?? "",
+      mission: payload.profile.mission ?? "",
+      vision: payload.profile.vision ?? "",
+      values: payload.profile.values ?? "",
+      medicalAids: payload.profile.medicalAids ?? "",
       liveIn: Boolean(payload.profile.liveIn),
       published: Boolean(payload.profile.published),
       verificationStatus: payload.profile.verificationStatus ?? "not_submitted",
@@ -292,7 +371,22 @@ export default function ProviderProfilePage() {
       availability,
       price,
       priceUnit,
-      liveIn,
+      age,
+      stayArrangement,
+      workStartDate,
+      willingToRelocate,
+      childrenCount,
+      workExperienceSummary,
+      yearsExperience,
+      references,
+      nextOfKinName,
+      nextOfKinPhone,
+      nextOfKinRelationship,
+      mission,
+      vision,
+      values,
+      medicalAids,
+      liveIn: stayArrangement === "stay-in",
       published: nextPublished,
       verificationStatus,
       verificationPaymentStatus,
@@ -349,7 +443,7 @@ export default function ProviderProfilePage() {
 
   const uploadFile = async (
     file: File | undefined,
-    type: "document" | "gallery",
+    type: "document" | "gallery" | "profile-image",
     label: string,
     documentKey?: string
   ) => {
@@ -385,7 +479,9 @@ export default function ProviderProfilePage() {
           !(
             payload.upload.type === "document" &&
             upload.documentKey === payload.upload.documentKey
-          ) && upload.id !== payload.upload.id
+          ) &&
+          !(payload.upload.type === "profile-image" && upload.type === "profile-image") &&
+          upload.id !== payload.upload.id
       ),
     ]);
     setUploadMessage(`${label} uploaded.`);
@@ -468,8 +564,29 @@ export default function ProviderProfilePage() {
           <div className="px-6 pb-5">
             <div className="relative -mt-12 mb-4 w-fit">
               <div className="w-20 h-20 rounded-lg border-4 border-white shadow-md overflow-hidden bg-[var(--brand-ivory)] flex items-center justify-center text-4xl">
-                🏫
+                {profileImageUpload ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={profileImageUpload.url}
+                    alt="Provider profile picture"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  "🏫"
+                )}
               </div>
+              <label className="absolute -bottom-2 -right-2 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--brand-line)] bg-white text-[var(--brand-leaf)] shadow-sm hover:bg-[var(--brand-ivory)]">
+                <input
+                  type="file"
+                  className="sr-only"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) =>
+                    uploadFile(event.target.files?.[0], "profile-image", "Profile picture")
+                  }
+                  disabled={loading}
+                />
+                <ImagePlus className="h-4 w-4" />
+              </label>
             </div>
             <div className="flex items-center gap-3">
               <div>
@@ -541,6 +658,7 @@ export default function ProviderProfilePage() {
                     <SelectItem value="nannies">Nanny</SelectItem>
                     <SelectItem value="helpers">Helper</SelectItem>
                     <SelectItem value="babysitters">Babysitter</SelectItem>
+                    <SelectItem value="kiddies-transport">Kiddies Transport</SelectItem>
                     <SelectItem value="pediatric-clinics">Pediatric Clinic</SelectItem>
                     <SelectItem value="tutors">Tutor</SelectItem>
                   </SelectContent>
@@ -580,6 +698,151 @@ export default function ProviderProfilePage() {
                   rows={4}
                 />
               </div>
+
+              {isIndividualCare && (
+                <div className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Age</Label>
+                    <Input
+                      type="number"
+                      min="18"
+                      value={age}
+                      onChange={(event) => setAge(event.target.value)}
+                      placeholder="e.g. 32"
+                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Availability date</Label>
+                    <Input
+                      type="date"
+                      value={workStartDate}
+                      onChange={(event) => setWorkStartDate(event.target.value)}
+                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Stay arrangement</Label>
+                    <Select
+                      value={stayArrangement}
+                      onValueChange={(value) =>
+                        setStayArrangement(value === "stay-in" ? "stay-in" : "stay-out")
+                      }
+                    >
+                      <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="stay-in">Stay in</SelectItem>
+                        <SelectItem value="stay-out">Stay out</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Number of kids</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={childrenCount}
+                      onChange={(event) => setChildrenCount(event.target.value)}
+                      placeholder="e.g. 2"
+                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                    />
+                  </div>
+                  <div className="sm:col-span-2 flex items-center justify-between rounded-lg border border-[var(--brand-line)] bg-white p-4">
+                    <div>
+                      <div className="text-sm font-medium text-[var(--brand-ink)]">Willing to relocate</div>
+                      <div className="text-xs text-gray-400">Open to moving for work</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setWillingToRelocate(!willingToRelocate)}
+                      className="text-[var(--brand-leaf)]"
+                      aria-label={willingToRelocate ? "Disable relocation" : "Enable relocation"}
+                    >
+                      {willingToRelocate ? (
+                        <ToggleRight className="h-8 w-8" />
+                      ) : (
+                        <ToggleLeft className="h-8 w-8 text-gray-300" />
+                      )}
+                    </button>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Years of work experience</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={yearsExperience}
+                      onChange={(event) => setYearsExperience(event.target.value)}
+                      placeholder="e.g. 5"
+                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">References</Label>
+                    <Input
+                      value={references}
+                      onChange={(event) => setReferences(event.target.value)}
+                      placeholder="Available on request or list referee names"
+                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Brief work experience</Label>
+                    <Textarea
+                      value={workExperienceSummary}
+                      onChange={(event) => setWorkExperienceSummary(event.target.value)}
+                      placeholder="Summarise previous families, duties, ages cared for, and household responsibilities."
+                      className="mt-1 resize-none rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="sm:col-span-2 grid gap-3 sm:grid-cols-3">
+                    <div>
+                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Next of kin name</Label>
+                      <Input value={nextOfKinName} onChange={(event) => setNextOfKinName(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Relationship</Label>
+                      <Input value={nextOfKinRelationship} onChange={(event) => setNextOfKinRelationship(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Phone</Label>
+                      <Input value={nextOfKinPhone} onChange={(event) => setNextOfKinPhone(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isSchool && (
+                <div className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Mission</Label>
+                    <Textarea value={mission} onChange={(event) => setMission(event.target.value)} rows={2} className="mt-1 resize-none rounded-lg border-[var(--brand-line)]" />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Vision</Label>
+                    <Textarea value={vision} onChange={(event) => setVision(event.target.value)} rows={2} className="mt-1 resize-none rounded-lg border-[var(--brand-line)]" />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Values</Label>
+                    <Textarea value={values} onChange={(event) => setValues(event.target.value)} rows={2} className="mt-1 resize-none rounded-lg border-[var(--brand-line)]" />
+                  </div>
+                </div>
+              )}
+
+              {isPediatric && (
+                <div className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
+                  <Label className="text-sm font-medium text-[var(--brand-ink)]">Medical aids accepted</Label>
+                  <Textarea
+                    value={medicalAids}
+                    onChange={(event) => setMedicalAids(event.target.value)}
+                    placeholder="All medical aids, or list the specific schemes accepted."
+                    rows={3}
+                    className="mt-1 resize-none rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                  />
+                </div>
+              )}
 
               <div>
                 <Label className="text-sm font-medium text-[var(--brand-ink)]">Services</Label>
@@ -964,10 +1227,14 @@ export default function ProviderProfilePage() {
                 </>
               ) : (
                 <div className="space-y-4">
-                  <h3 className="mb-2 font-bold text-[var(--brand-ink)]">Starting price</h3>
+                  <h3 className="mb-2 font-bold text-[var(--brand-ink)]">
+                    {isPediatric ? "Consultation price" : "Starting price"}
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Price (BWP)</Label>
+                      <Label className="text-sm font-medium text-[var(--brand-ink)]">
+                        {isPediatric ? "Consultation price (BWP)" : "Price (BWP)"}
+                      </Label>
                       <Input
                         type="number"
                         min="0"
@@ -997,19 +1264,21 @@ export default function ProviderProfilePage() {
                       </Select>
                     </div>
                   </div>
-                  {isNanny && (
+                  {isIndividualCare && (
                     <div className="mt-2 flex items-center justify-between rounded-lg border border-[var(--brand-line)] p-4">
                       <div>
-                        <div className="text-sm font-medium text-[var(--brand-ink)]">Available for Live-In</div>
-                        <div className="text-xs text-gray-400">Live with the family</div>
+                        <div className="text-sm font-medium text-[var(--brand-ink)]">Stay in arrangement</div>
+                        <div className="text-xs text-gray-400">Provider can live with the family</div>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setLiveIn(!liveIn)}
+                        onClick={() =>
+                          setStayArrangement(stayArrangement === "stay-in" ? "stay-out" : "stay-in")
+                        }
                         className="text-[var(--brand-leaf)]"
-                        aria-label={liveIn ? "Disable live-in availability" : "Enable live-in availability"}
+                        aria-label={stayArrangement === "stay-in" ? "Disable stay in" : "Enable stay in"}
                       >
-                        {liveIn ? (
+                        {stayArrangement === "stay-in" ? (
                           <ToggleRight className="h-8 w-8" />
                         ) : (
                           <ToggleLeft className="h-8 w-8 text-gray-300" />

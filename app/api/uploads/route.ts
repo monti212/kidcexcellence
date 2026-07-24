@@ -60,7 +60,14 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const type = searchParams.get("type") === "gallery" ? "gallery" : searchParams.get("type") === "document" ? "document" : undefined;
+  const type =
+    searchParams.get("type") === "gallery"
+      ? "gallery"
+      : searchParams.get("type") === "profile-image"
+        ? "profile-image"
+        : searchParams.get("type") === "document"
+          ? "document"
+          : undefined;
   const uploads = await listUploads(gate.auth.session.userId, type);
   return NextResponse.json({ uploads: uploads.map(uploadResponse) });
 }
@@ -89,7 +96,12 @@ export async function POST(request: Request) {
 
   const formData = await request.formData().catch(() => null);
   const file = formData?.get("file");
-  const type = formData?.get("type") === "gallery" ? "gallery" : "document";
+  const type =
+    formData?.get("type") === "gallery"
+      ? "gallery"
+      : formData?.get("type") === "profile-image"
+        ? "profile-image"
+        : "document";
   const documentKey =
     typeof formData?.get("documentKey") === "string"
       ? String(formData.get("documentKey"))
@@ -99,14 +111,16 @@ export async function POST(request: Request) {
       ? String(formData.get("label")).trim()
       : type === "gallery"
         ? "Gallery photo"
-        : "Provider document";
+        : type === "profile-image"
+          ? "Profile picture"
+          : "Provider document";
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "A file is required." }, { status: 400 });
   }
 
-  const allowedTypes = type === "gallery" ? GALLERY_TYPES : DOCUMENT_TYPES;
-  const maxBytes = type === "gallery" ? MAX_GALLERY_BYTES : MAX_DOCUMENT_BYTES;
+  const allowedTypes = type === "gallery" || type === "profile-image" ? GALLERY_TYPES : DOCUMENT_TYPES;
+  const maxBytes = type === "gallery" || type === "profile-image" ? MAX_GALLERY_BYTES : MAX_DOCUMENT_BYTES;
   if (!allowedTypes.has(file.type)) {
     return NextResponse.json({ error: "Unsupported file type." }, { status: 400 });
   }
