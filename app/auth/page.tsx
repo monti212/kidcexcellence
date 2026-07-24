@@ -369,6 +369,7 @@ function SignupForm({
           <Button type="submit" className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)]"  >
             Create Parent Account
           </Button>
+          <SignupTermsNotice />
         </form>
       </TabsContent>
 
@@ -450,8 +451,22 @@ function SignupForm({
           <Button type="submit" className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)]"  >
             Create Provider Account
           </Button>
+          <SignupTermsNotice />
         </form>
       </TabsContent>
     </Tabs>
+  );
+}
+
+function SignupTermsNotice() {
+  return (
+    <p className="text-xs leading-5 text-[var(--brand-muted)]">
+      By creating an account, you agree to the{" "}
+      <Link href="/terms" className="font-bold text-[var(--brand-leaf)] hover:underline">
+        Terms of service
+      </Link>
+      . Listing fees, paid promotions, billing, cancellations, and refunds apply only when shown in
+      the relevant signup or payment flow.
+    </p>
   );
 }

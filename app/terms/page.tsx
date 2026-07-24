@@ -17,8 +17,8 @@ export default function TermsPage() {
       icon={<ScrollText className="h-5 w-5" />}
       sections={[
         {
-          title: "Marketplace role",
-          body: "Kidcellence provides discovery, comparison, profile, messaging, and verification workflow tools. Kidcellence is not the childcare provider, employer, booking agent, insurer, regulator, or party to arrangements made between families and providers.",
+          title: "Using Kidcellence",
+          body: "Kidcellence provides tools for discovering, comparing, contacting, and reviewing childcare-related providers. Account creation, listing publication, enquiries, messages, promotions, and payments must be used only for lawful childcare, education, health, family support, or child-focused service purposes.",
         },
         {
           title: "Accounts",
@@ -43,7 +43,7 @@ export default function TermsPage() {
         },
         {
           title: "Signup and payment terms",
-          body: "By creating an account, publishing a listing, submitting an enquiry, or making a payment through Kidcellence, you agree to provide accurate information and review all provider details, fees, schedules, cancellation rules, and service expectations before confirming an arrangement. Payments, deposits, refunds, and paid promotions are governed by the terms shown at checkout or in the relevant signup flow.",
+          body: "By creating an account, publishing a listing, submitting an enquiry, buying a paid promotion, or making a payment through Kidcellence, you agree to the terms shown in the relevant signup, listing, promotion, or checkout flow. Fees, billing periods, cancellation rules, refunds, renewal dates, and promotion placement are confirmed before payment where payment is supported. Any childcare arrangement should be confirmed directly between the family and provider before services begin.",
         },
         {
           title: "Enforcement and changes",
