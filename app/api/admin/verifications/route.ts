@@ -31,6 +31,8 @@ function dashboardPayload(
             currency: store.providerProfiles[pending.userId]?.verificationFeeCurrency,
             paidAt: store.providerProfiles[pending.userId]?.verificationFeePaidAt,
             reference: store.providerProfiles[pending.userId]?.verificationPaymentReference,
+            packageId: store.providerProfiles[pending.userId]?.verificationPackageId,
+            packageName: store.providerProfiles[pending.userId]?.verificationPackageName,
           }
         : null,
       uploads: pending.userId

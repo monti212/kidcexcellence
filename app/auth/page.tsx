@@ -389,6 +389,7 @@ function SignupForm({
                 <SelectItem value="schools">School</SelectItem>
                 <SelectItem value="nurseries">Nursery</SelectItem>
                 <SelectItem value="nannies">Nanny</SelectItem>
+                <SelectItem value="helpers">Helper</SelectItem>
                 <SelectItem value="babysitters">Babysitter</SelectItem>
                 <SelectItem value="pediatric-clinics">Pediatric Clinic</SelectItem>
                 <SelectItem value="tutors">Tutor</SelectItem>

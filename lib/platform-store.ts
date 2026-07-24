@@ -14,6 +14,10 @@ import {
   VERIFICATION_FEE,
   missingVerificationDocuments,
 } from "@/lib/verification-requirements";
+import {
+  categorySupportsVettingPackages,
+  getVettingPackage,
+} from "@/lib/vetting-packages";
 
 export type UserRole = "parent" | "provider" | "admin";
 export const SESSION_COOKIE_NAME = "kidcellence_session";
@@ -102,6 +106,8 @@ export interface ProviderProfileRecord {
   verificationFeeCurrency?: string;
   verificationFeePaidAt?: string;
   verificationPaymentReference?: string;
+  verificationPackageId?: string;
+  verificationPackageName?: string;
   feeRows: Array<{
     grade: string;
     termly: string;
@@ -203,6 +209,8 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
         verificationFeeCurrency: profile.verificationFeeCurrency,
         verificationFeePaidAt: profile.verificationFeePaidAt,
         verificationPaymentReference: profile.verificationPaymentReference,
+        verificationPackageId: profile.verificationPackageId,
+        verificationPackageName: profile.verificationPackageName,
       },
     ])
   );
@@ -527,6 +535,9 @@ export async function saveProviderProfile(
       verificationFeePaidAt: existing?.verificationFeePaidAt ?? profile.verificationFeePaidAt,
       verificationPaymentReference:
         existing?.verificationPaymentReference ?? profile.verificationPaymentReference,
+      verificationPackageId: existing?.verificationPackageId ?? profile.verificationPackageId,
+      verificationPackageName:
+        existing?.verificationPackageName ?? profile.verificationPackageName,
       savedAt: new Date().toISOString(),
     };
     store.providerProfiles[userId] = record;
@@ -534,7 +545,7 @@ export async function saveProviderProfile(
   });
 }
 
-export async function recordVerificationPayment(userId: string) {
+export async function recordVerificationPayment(userId: string, packageId?: string) {
   return updateStore((store) => {
     const user = store.users.find((item) => item.id === userId && item.role === "provider");
     const profile = store.providerProfiles[userId];
@@ -544,12 +555,20 @@ export async function recordVerificationPayment(userId: string) {
     if (profile.verificationStatus === "approved") {
       throw new Error("This provider profile is already verified.");
     }
+    const selectedPackage = categorySupportsVettingPackages(profile.category)
+      ? getVettingPackage(packageId)
+      : null;
+    if (categorySupportsVettingPackages(profile.category) && !selectedPackage) {
+      throw new Error("Choose a Standard or VIP vetting package before paying.");
+    }
 
     profile.verificationPaymentStatus = "paid";
-    profile.verificationFeeAmount = VERIFICATION_FEE.amount;
-    profile.verificationFeeCurrency = VERIFICATION_FEE.currency;
+    profile.verificationFeeAmount = selectedPackage?.price ?? VERIFICATION_FEE.amount;
+    profile.verificationFeeCurrency = selectedPackage?.currency ?? VERIFICATION_FEE.currency;
     profile.verificationFeePaidAt = new Date().toISOString();
-    profile.verificationPaymentReference = `verify-${userId}-${Date.now()}`;
+    profile.verificationPaymentReference = `${selectedPackage ? "vetting" : "verify"}-${userId}-${Date.now()}`;
+    profile.verificationPackageId = selectedPackage?.id;
+    profile.verificationPackageName = selectedPackage?.name;
 
     return {
       status: profile.verificationPaymentStatus,
@@ -557,6 +576,8 @@ export async function recordVerificationPayment(userId: string) {
       currency: profile.verificationFeeCurrency,
       paidAt: profile.verificationFeePaidAt,
       reference: profile.verificationPaymentReference,
+      packageId: profile.verificationPackageId,
+      packageName: profile.verificationPackageName,
     };
   });
 }

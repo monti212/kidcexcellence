@@ -6,11 +6,12 @@ import {
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
 import { VERIFICATION_FEE } from "@/lib/verification-requirements";
+import { VETTING_PACKAGES } from "@/lib/vetting-packages";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  return NextResponse.json({ fee: VERIFICATION_FEE });
+  return NextResponse.json({ fee: VERIFICATION_FEE, packages: VETTING_PACKAGES });
 }
 
 export async function POST(request: Request) {
@@ -36,7 +37,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const payment = await recordVerificationPayment(auth.session.userId);
+    const body = await request.json().catch(() => null);
+    const payment = await recordVerificationPayment(
+      auth.session.userId,
+      typeof body?.packageId === "string" ? body.packageId : undefined
+    );
     return NextResponse.json({ payment });
   } catch (error) {
     return NextResponse.json(

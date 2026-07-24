@@ -33,6 +33,10 @@ import {
   getVerificationProviderType,
   missingVerificationDocuments,
 } from "@/lib/verification-requirements";
+import {
+  VETTING_PACKAGES,
+  categorySupportsVettingPackages,
+} from "@/lib/vetting-packages";
 
 interface FeeRow {
   grade: string;
@@ -60,6 +64,8 @@ interface StoredProviderProfile {
   verificationFeeCurrency?: string;
   verificationFeePaidAt?: string;
   verificationPaymentReference?: string;
+  verificationPackageId?: string;
+  verificationPackageName?: string;
   feeRows: FeeRow[];
   savedAt?: string;
 }
@@ -140,6 +146,12 @@ export default function ProviderProfilePage() {
   const [verificationPaymentReference, setVerificationPaymentReference] = useState(
     storedProfile.verificationPaymentReference ?? ""
   );
+  const [verificationPackageId, setVerificationPackageId] = useState(
+    storedProfile.verificationPackageId ?? "standard"
+  );
+  const [verificationPackageName, setVerificationPackageName] = useState(
+    storedProfile.verificationPackageName ?? ""
+  );
   const [verified, setVerified] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [uploadMessage, setUploadMessage] = useState("");
@@ -159,6 +171,12 @@ export default function ProviderProfilePage() {
     documentUploads.map((upload) => upload.documentKey ?? "")
   );
   const verificationPaid = verificationPaymentStatus === "paid";
+  const hasVettingPackages = categorySupportsVettingPackages(category);
+  const selectedVettingPackage =
+    VETTING_PACKAGES.find((plan) => plan.id === verificationPackageId) ?? VETTING_PACKAGES[0];
+  const verificationPrice = hasVettingPackages
+    ? selectedVettingPackage.price
+    : VERIFICATION_FEE.amount;
 
   const refreshUploads = useCallback(async () => {
     if (!session) {
@@ -211,6 +229,8 @@ export default function ProviderProfilePage() {
     setVerificationPaymentStatus(payload.profile.verificationPaymentStatus ?? "unpaid");
     setVerificationFeePaidAt(payload.profile.verificationFeePaidAt ?? "");
     setVerificationPaymentReference(payload.profile.verificationPaymentReference ?? "");
+    setVerificationPackageId(payload.profile.verificationPackageId ?? "standard");
+    setVerificationPackageName(payload.profile.verificationPackageName ?? "");
     setVerified(Boolean(payload.verified));
     setFeeRows(Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows);
     setStoredProfile({
@@ -233,6 +253,8 @@ export default function ProviderProfilePage() {
       verificationFeeCurrency: payload.profile.verificationFeeCurrency,
       verificationFeePaidAt: payload.profile.verificationFeePaidAt,
       verificationPaymentReference: payload.profile.verificationPaymentReference,
+      verificationPackageId: payload.profile.verificationPackageId,
+      verificationPackageName: payload.profile.verificationPackageName,
       feeRows: Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows,
       savedAt: payload.profile.savedAt,
     });
@@ -274,10 +296,12 @@ export default function ProviderProfilePage() {
       published: nextPublished,
       verificationStatus,
       verificationPaymentStatus,
-      verificationFeeAmount: verificationPaid ? VERIFICATION_FEE.amount : undefined,
-      verificationFeeCurrency: verificationPaid ? VERIFICATION_FEE.currency : undefined,
+      verificationFeeAmount: verificationPaid ? verificationPrice : undefined,
+      verificationFeeCurrency: verificationPaid ? "BWP" : undefined,
       verificationFeePaidAt: verificationFeePaidAt || undefined,
       verificationPaymentReference: verificationPaymentReference || undefined,
+      verificationPackageId: hasVettingPackages ? verificationPackageId : undefined,
+      verificationPackageName: hasVettingPackages ? verificationPackageName : undefined,
       feeRows,
       savedAt: new Date().toISOString(),
     };
@@ -302,6 +326,8 @@ export default function ProviderProfilePage() {
     setVerificationPaymentStatus(payload.profile.verificationPaymentStatus ?? "unpaid");
     setVerificationFeePaidAt(payload.profile.verificationFeePaidAt ?? "");
     setVerificationPaymentReference(payload.profile.verificationPaymentReference ?? "");
+    setVerificationPackageId(payload.profile.verificationPackageId ?? "standard");
+    setVerificationPackageName(payload.profile.verificationPackageName ?? "");
     setVerified(Boolean(payload.verified));
     setSaveMessage(payload.profile.published ? "Published!" : "Saved!");
     setTimeout(() => setSaveMessage(""), 3000);
@@ -385,6 +411,10 @@ export default function ProviderProfilePage() {
     const response = await fetch("/api/verifications/payment", {
       method: "POST",
       credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        packageId: hasVettingPackages ? verificationPackageId : undefined,
+      }),
     }).catch(() => null);
 
     if (!response?.ok) {
@@ -397,6 +427,8 @@ export default function ProviderProfilePage() {
     setVerificationPaymentStatus(payload.payment?.status ?? "paid");
     setVerificationFeePaidAt(payload.payment?.paidAt ?? "");
     setVerificationPaymentReference(payload.payment?.reference ?? "");
+    setVerificationPackageId(payload.payment?.packageId ?? verificationPackageId);
+    setVerificationPackageName(payload.payment?.packageName ?? verificationPackageName);
     setUploadMessage("Verification fee recorded. Upload the required documents to submit.");
     window.setTimeout(() => setUploadMessage(""), 3000);
   };
@@ -507,6 +539,7 @@ export default function ProviderProfilePage() {
                     <SelectItem value="schools">School</SelectItem>
                     <SelectItem value="nurseries">Nursery</SelectItem>
                     <SelectItem value="nannies">Nanny</SelectItem>
+                    <SelectItem value="helpers">Helper</SelectItem>
                     <SelectItem value="babysitters">Babysitter</SelectItem>
                     <SelectItem value="pediatric-clinics">Pediatric Clinic</SelectItem>
                     <SelectItem value="tutors">Tutor</SelectItem>
@@ -628,17 +661,68 @@ export default function ProviderProfilePage() {
                 <div className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
                   <div className="flex items-center gap-2 text-sm font-black text-[var(--brand-ink)]">
                     <CreditCard className="h-4 w-4 text-[var(--brand-leaf)]" />
-                    Verification fee
+                    {hasVettingPackages ? "Nanny/helper vetting package" : "Verification fee"}
                   </div>
-                  <div className="mt-2 text-2xl font-black text-[var(--brand-ink)]">
-                    P {VERIFICATION_FEE.amount}
-                  </div>
-                  <p className="mt-1 text-xs text-[var(--brand-muted)]">
-                    One-time additional review fee for the verification badge.
-                  </p>
+                  {hasVettingPackages ? (
+                    <div className="mt-3 grid gap-2">
+                      {VETTING_PACKAGES.map((plan) => {
+                        const selected = verificationPackageId === plan.id;
+                        return (
+                          <button
+                            key={plan.id}
+                            type="button"
+                            onClick={() => {
+                              if (verificationPaid) return;
+                              setVerificationPackageId(plan.id);
+                              setVerificationPackageName(plan.name);
+                            }}
+                            className={`rounded-lg border p-3 text-left transition-colors ${
+                              selected
+                                ? "border-[var(--brand-leaf)] bg-white"
+                                : "border-[var(--brand-line)] bg-[var(--brand-ivory)] hover:border-[var(--brand-leaf)]"
+                            } ${verificationPaid ? "cursor-default" : "cursor-pointer"}`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-sm font-black text-[var(--brand-ink)]">
+                                {plan.name}
+                              </span>
+                              <span className="text-lg font-black text-[var(--brand-ink)]">
+                                P {plan.price}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs leading-5 text-[var(--brand-muted)]">
+                              {plan.summary}
+                            </p>
+                          </button>
+                        );
+                      })}
+                      <div className="rounded-lg bg-white px-3 py-2">
+                        <div className="text-xs font-black uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+                          {selectedVettingPackage.name} includes
+                        </div>
+                        <ul className="mt-2 space-y-1 text-xs leading-5 text-[var(--brand-muted)]">
+                          {selectedVettingPackage.features.map((feature) => (
+                            <li key={feature} className="flex gap-2">
+                              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand-leaf)]" />
+                              <span>{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mt-2 text-2xl font-black text-[var(--brand-ink)]">
+                        P {VERIFICATION_FEE.amount}
+                      </div>
+                      <p className="mt-1 text-xs text-[var(--brand-muted)]">
+                        One-time additional review fee for the verification badge.
+                      </p>
+                    </>
+                  )}
                   {verificationPaid ? (
                     <Badge className="mt-3 rounded-full border-green-200 bg-green-50 text-green-700">
-                      Paid
+                      Paid{verificationPackageName ? ` · ${verificationPackageName}` : ""}
                     </Badge>
                   ) : (
                     <Button
@@ -646,7 +730,7 @@ export default function ProviderProfilePage() {
                       onClick={payVerificationFee}
                       className="mt-3 h-9 rounded-lg bg-[var(--brand-leaf)] text-xs font-black text-white hover:bg-[var(--brand-ink)]"
                     >
-                      Pay verification fee
+                      Pay P {verificationPrice}
                     </Button>
                   )}
                   {verificationFeePaidAt && (

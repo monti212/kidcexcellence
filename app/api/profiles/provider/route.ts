@@ -98,6 +98,8 @@ export async function POST(request: Request) {
     verificationFeeCurrency: currentProfile?.verificationFeeCurrency,
     verificationFeePaidAt: currentProfile?.verificationFeePaidAt,
     verificationPaymentReference: currentProfile?.verificationPaymentReference,
+    verificationPackageId: currentProfile?.verificationPackageId,
+    verificationPackageName: currentProfile?.verificationPackageName,
     feeRows: Array.isArray(body.profile.feeRows)
       ? body.profile.feeRows.map((row: unknown) => {
           const item = row as Record<string, unknown>;

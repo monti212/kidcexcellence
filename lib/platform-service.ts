@@ -67,6 +67,7 @@ export function getCategoryLabel(categoryId: string) {
       schools: "School",
       nurseries: "Nursery",
       nannies: "Nanny",
+      helpers: "Helper",
       babysitters: "Babysitter",
       "pediatric-clinics": "Pediatric Clinic",
       tutors: "Tutor",

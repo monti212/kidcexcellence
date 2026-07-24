@@ -604,6 +604,65 @@ describe("Kidcellence platform APIs", () => {
     });
     assert.equal(prematureSubmission.status, 400);
 
+    const nannySignup = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "provider",
+        name: "Integration Nanny",
+        email: `nanny-${Date.now()}@example.com`,
+        password: "password123",
+        category: "nannies",
+        location: "gaborone",
+      }),
+    });
+    assert.equal(nannySignup.status, 200);
+    const nannyCookie = cookieFrom(nannySignup);
+    const nannyProfile = await request("/api/profiles/provider", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: nannyCookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        profile: {
+          displayName: "Integration Nanny",
+          category: "nannies",
+          location: "Gaborone",
+          bio: "Experienced household childcare provider.",
+          phone: "+267 71 000 222",
+          whatsapp: "+26771000222",
+          services: ["Nanny care"],
+          experience: "Five years",
+          availability: "Weekdays",
+          price: "3500",
+          priceUnit: "monthly",
+          published: false,
+          liveIn: true,
+          feeRows: [],
+        },
+      }),
+    });
+    assert.equal(nannyProfile.status, 200);
+    const nannyPayment = await request("/api/verifications/payment", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: nannyCookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ packageId: "standard" }),
+    });
+    assert.equal(nannyPayment.status, 200);
+    const nannyPaymentPayload = await json(nannyPayment);
+    assert.equal(nannyPaymentPayload.payment.amount, 795);
+    assert.equal(nannyPaymentPayload.payment.packageName, "Standard");
+
     const payment = await request("/api/verifications/payment", {
       method: "POST",
       headers: { Cookie: cookie, Origin: baseUrl },

@@ -65,6 +65,7 @@ export interface Conversation {
 export const CATEGORIES: Category[] = [
   { id: "babysitters", name: "Find a Babysitter", icon: "🍼", count: 87 },
   { id: "nannies", name: "Find a Nanny", icon: "👩‍👧", count: 112 },
+  { id: "helpers", name: "Find a Helper", icon: "🧹", count: 42 },
   {
     id: "schools",
     name: "Find a School",

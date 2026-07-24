@@ -44,6 +44,8 @@ interface AdminPendingVerification extends PendingVerification {
     currency?: string;
     paidAt?: string;
     reference?: string;
+    packageId?: string;
+    packageName?: string;
   } | null;
 }
 
@@ -241,7 +243,7 @@ function AdminDashboard() {
                                 provider.verificationPayment.amount
                                   ? ` · P ${provider.verificationPayment.amount}`
                                   : ""
-                              }`
+                              }${provider.verificationPayment.packageName ? ` · ${provider.verificationPayment.packageName}` : ""}`
                             : "Verification fee unpaid"}
                         </Badge>
                         {provider.verificationPayment?.reference && (

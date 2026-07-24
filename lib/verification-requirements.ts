@@ -10,7 +10,7 @@ export interface VerificationDocumentRequirement {
   sensitive?: boolean;
 }
 
-const INDIVIDUAL_CATEGORIES = new Set(["nannies", "babysitters", "tutors"]);
+const INDIVIDUAL_CATEGORIES = new Set(["nannies", "helpers", "babysitters", "tutors"]);
 
 export function getVerificationProviderType(category: string) {
   return INDIVIDUAL_CATEGORIES.has(category) ? "individual" : "organisation";

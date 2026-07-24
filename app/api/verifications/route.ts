@@ -12,6 +12,7 @@ import {
   getVerificationProviderType,
   missingVerificationDocuments,
 } from "@/lib/verification-requirements";
+import { getVettingPackagesForCategory } from "@/lib/vetting-packages";
 
 export const runtime = "nodejs";
 
@@ -44,7 +45,10 @@ export async function GET(request: Request) {
       currency: profile?.verificationFeeCurrency,
       paidAt: profile?.verificationFeePaidAt,
       reference: profile?.verificationPaymentReference,
+      packageId: profile?.verificationPackageId,
+      packageName: profile?.verificationPackageName,
     },
+    packages: getVettingPackagesForCategory(category),
     requiredDocuments: getVerificationDocuments(category),
     missingDocuments: missingVerificationDocuments(category, uploadedDocumentKeys),
     pending: pending ?? null,
