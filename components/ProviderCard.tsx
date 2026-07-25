@@ -24,6 +24,7 @@ const categoryStyles: Record<string, string> = {
 
 export default function ProviderCard({ provider, onAddToCompare, inCompare }: ProviderCardProps) {
   const categoryIcon = getCategoryIcon(provider.category);
+  const hasPrice = provider.price > 0;
 
   return (
     <article className="brand-card flex h-full flex-col overflow-hidden transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg">
@@ -78,11 +79,17 @@ export default function ProviderCard({ provider, onAddToCompare, inCompare }: Pr
         <div className="mt-auto flex items-end justify-between gap-3 border-t border-[var(--brand-line)] pt-3">
           <div>
             <div className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--brand-muted)]">
-              From
+              {hasPrice ? "From" : "Pricing"}
             </div>
             <div className="text-lg font-black text-[var(--brand-ink)]">
-              P {provider.price.toLocaleString()}
-              <span className="text-xs font-bold text-[var(--brand-muted)]"> /{provider.priceUnit}</span>
+              {hasPrice ? (
+                <>
+                  P {provider.price.toLocaleString()}
+                  <span className="text-xs font-bold text-[var(--brand-muted)]"> /{provider.priceUnit}</span>
+                </>
+              ) : (
+                <span className="text-sm">Contact for pricing</span>
+              )}
             </div>
           </div>
           <div className="flex gap-2">

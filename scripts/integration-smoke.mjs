@@ -459,6 +459,13 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(signup.status, 200);
     const cookie = cookieFrom(signup);
 
+    const starterDiscovery = await request("/api/providers?q=Integration%20Provider");
+    assert.equal(starterDiscovery.status, 200);
+    const starterDiscoveryPayload = await json(starterDiscovery);
+    assert.equal(starterDiscoveryPayload.providers.length, 1);
+    assert.equal(starterDiscoveryPayload.providers[0].name, "Integration Provider");
+    assert.equal(starterDiscoveryPayload.providers[0].price, 0);
+
     const incompletePublish = await request("/api/profiles/provider", {
       method: "POST",
       headers: {

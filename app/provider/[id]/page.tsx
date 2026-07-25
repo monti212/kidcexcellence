@@ -61,6 +61,7 @@ export default async function ProviderProfilePage({
     [ShieldCheck, "Experience", provider.experience],
   ].filter(Boolean) as Array<[typeof Star, string, string]>;
   const gallery = provider.gallery?.length ? provider.gallery : [provider.image];
+  const hasPrice = provider.price > 0;
 
   return (
     <div className="brand-page min-h-screen">
@@ -217,8 +218,14 @@ export default async function ProviderProfilePage({
                 Contact provider
               </div>
               <div className="mt-3 text-3xl font-black text-[var(--brand-ink)]">
-                P {provider.price.toLocaleString()}
-                <span className="text-sm text-[var(--brand-muted)]"> /{provider.priceUnit}</span>
+                {hasPrice ? (
+                  <>
+                    P {provider.price.toLocaleString()}
+                    <span className="text-sm text-[var(--brand-muted)]"> /{provider.priceUnit}</span>
+                  </>
+                ) : (
+                  "Contact for pricing"
+                )}
               </div>
               <div className="mt-5 grid gap-2">
                 <Link href={`/messages?provider=${provider.id}`}>

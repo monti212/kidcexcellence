@@ -350,6 +350,47 @@ function createSession(user: PlatformUser): PlatformSession {
   };
 }
 
+function createStarterProviderProfile(user: PlatformUser, now: string): ProviderProfileRecord {
+  const category = user.category || "schools";
+  const categoryLabel = getCategoryLabel(category);
+
+  return {
+    userId: user.id,
+    displayName: user.name,
+    category,
+    location: user.location ?? "",
+    bio: `${user.name} has joined Kidcellence as a ${categoryLabel.toLowerCase()} provider and is completing their profile.`,
+    phone: user.phone ?? "",
+    whatsapp: user.phone ?? "",
+    services: [categoryLabel],
+    experience: "Profile started",
+    availability: "Contact provider",
+    price: "",
+    priceUnit: "termly",
+    age: "",
+    stayArrangement: "stay-out",
+    workStartDate: "",
+    willingToRelocate: false,
+    childrenCount: "",
+    workExperienceSummary: "",
+    yearsExperience: "",
+    references: "",
+    nextOfKinName: "",
+    nextOfKinPhone: "",
+    nextOfKinRelationship: "",
+    mission: "",
+    vision: "",
+    values: "",
+    medicalAids: "",
+    liveIn: false,
+    published: true,
+    verificationStatus: "not_submitted",
+    verificationPaymentStatus: "unpaid",
+    feeRows: [],
+    savedAt: now,
+  };
+}
+
 export async function createOrLoginUser(input: {
   mode: "signup" | "login";
   role: UserRole;
@@ -399,6 +440,9 @@ export async function createOrLoginUser(input: {
       lastLoginAt: now,
     };
     store.users.unshift(user);
+    if (user.role === "provider") {
+      store.providerProfiles[user.id] = createStarterProviderProfile(user, now);
+    }
     const session = createSession(user);
     store.sessions.push(session);
     return { user: publicUser(user), session };

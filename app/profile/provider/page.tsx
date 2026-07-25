@@ -259,6 +259,7 @@ export default function ProviderProfilePage() {
     setVerified(Boolean(payload.verified));
     if (!payload.profile) {
       setDisplayName(user?.name ?? "");
+      setCategory(user?.category ?? DEFAULT_PROVIDER_PROFILE.category);
       setLocation(user?.location ?? "");
       setPhone(user?.phone ?? "");
       setWhatsapp(user?.phone ?? "");

@@ -152,8 +152,14 @@ function ComparePageContent() {
                     label: "Price",
                     render: (p: Provider) => (
                       <span className="font-bold text-[var(--brand-ink)]">
-                        P {p.price.toLocaleString()}{" "}
-                        <span className="font-normal text-gray-400 text-xs">/{p.priceUnit}</span>
+                        {p.price > 0 ? (
+                          <>
+                            P {p.price.toLocaleString()}{" "}
+                            <span className="font-normal text-gray-400 text-xs">/{p.priceUnit}</span>
+                          </>
+                        ) : (
+                          "Contact for pricing"
+                        )}
                       </span>
                     ),
                   },
