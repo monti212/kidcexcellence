@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
+import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import path from "node:path";
 import { type Conversation, type Message, type Provider } from "@/lib/mock-data";
@@ -169,12 +170,15 @@ export interface PlatformStore {
   };
 }
 
+const runtimeDataRoot =
+  process.env.PLATFORM_DATA_DIR ??
+  (process.env.NODE_ENV === "production"
+    ? path.join(tmpdir(), "kidcexcellence")
+    : path.join(/*turbopackIgnore: true*/ process.cwd(), "data"));
 const storePath =
-  process.env.PLATFORM_STORE_PATH ??
-  path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "platform-store.json");
+  process.env.PLATFORM_STORE_PATH ?? path.join(runtimeDataRoot, "platform-store.json");
 export const uploadRootPath =
-  process.env.PLATFORM_UPLOADS_DIR ??
-  path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "uploads");
+  process.env.PLATFORM_UPLOADS_DIR ?? path.join(runtimeDataRoot, "uploads");
 const scrypt = promisify(scryptCallback);
 
 function createInitialStore(): PlatformStore {
