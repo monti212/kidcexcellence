@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import {
   allProvidersFromStore,
   filterProviderList,
-  getCategories,
+  getAdditionalPlatformCategories,
+  getCoreServiceCategories,
   type ProviderSort,
 } from "@/lib/platform-service";
 import { readStore } from "@/lib/platform-store";
@@ -17,7 +18,11 @@ export async function GET(request: Request) {
   const allProviders = allProvidersFromStore(store);
 
   return NextResponse.json({
-    categories: getCategories().map((category) => ({
+    categories: getCoreServiceCategories().map((category) => ({
+      ...category,
+      count: allProviders.filter((provider) => provider.category === category.id).length,
+    })),
+    additionalCategories: getAdditionalPlatformCategories().map((category) => ({
       ...category,
       count: allProviders.filter((provider) => provider.category === category.id).length,
     })),

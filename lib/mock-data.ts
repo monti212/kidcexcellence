@@ -166,6 +166,7 @@ export const CATEGORIES: Category[] = [
 export const CORE_SERVICE_CATEGORIES = CATEGORIES.filter(
   (category) => category.placement !== "additional"
 );
+export const CORE_SERVICE_CATEGORY_COUNT = 12;
 
 export const ADDITIONAL_PLATFORM_CATEGORIES = CATEGORIES.filter(
   (category) => category.placement === "additional"

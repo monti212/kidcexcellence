@@ -7,6 +7,7 @@ import ProviderCard from "@/components/ProviderCard";
 import {
   ADDITIONAL_PLATFORM_CATEGORIES,
   CATEGORIES,
+  CORE_SERVICE_CATEGORY_COUNT,
   CORE_SERVICE_CATEGORIES,
   type Provider,
 } from "@/lib/mock-data";
@@ -131,7 +132,7 @@ export default function HomePage() {
             {[
               [String(marketplaceProviders.length), "listed providers"],
               [String(verifiedProviderCount), "verified profiles"],
-              [String(CORE_SERVICE_CATEGORIES.length), "service categories"],
+              [String(CORE_SERVICE_CATEGORY_COUNT), "service categories"],
             ].map(([value, label]) => (
               <div key={label} className="rounded-[1.5rem] border border-[var(--brand-line)] bg-white/80 p-4 shadow-sm">
                 <div className="text-2xl font-black text-[var(--brand-ink)]">{value}</div>
