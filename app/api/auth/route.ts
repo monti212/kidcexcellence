@@ -73,6 +73,10 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (mode === "login") {
+      await getSessionFromRequest(request);
+    }
+
     const { user, session } = await createOrLoginUser({
       mode,
       role,

@@ -470,6 +470,29 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(starterDiscoveryPayload.providers[0].name, "Integration Provider");
     assert.equal(starterDiscoveryPayload.providers[0].price, 0);
 
+    await rm(env.PLATFORM_STORE_PATH, { force: true });
+    const restoredSession = await request("/api/auth", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(restoredSession.status, 200);
+    assert.equal((await json(restoredSession)).user.role, "provider");
+
+    const loginAfterRestore = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "login",
+        role: "provider",
+        email,
+        password: "password123",
+      }),
+    });
+    assert.equal(loginAfterRestore.status, 200);
+
     const incompletePublish = await request("/api/profiles/provider", {
       method: "POST",
       headers: {

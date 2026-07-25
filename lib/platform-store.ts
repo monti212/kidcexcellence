@@ -1,5 +1,14 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  randomUUID,
+  scrypt as scryptCallback,
+  timingSafeEqual,
+} from "node:crypto";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import path from "node:path";
@@ -22,6 +31,7 @@ import {
 
 export type UserRole = "parent" | "provider" | "admin";
 export const SESSION_COOKIE_NAME = "kidcellence_session";
+const SESSION_TOKEN_VERSION = "v2";
 
 export interface PlatformUser {
   id: string;
@@ -56,6 +66,12 @@ export interface PlatformSession {
   role: UserRole;
   createdAt: string;
   expiresAt: string;
+}
+
+interface SignedSessionPayload {
+  user: PublicPlatformUser;
+  passwordHash?: string;
+  session: Omit<PlatformSession, "token">;
 }
 
 export interface AccountTokenRecord {
@@ -158,6 +174,7 @@ export interface StoredConversation extends Conversation {
 export interface PlatformStore {
   users: PlatformUser[];
   sessions: PlatformSession[];
+  revokedSessionTokens: string[];
   accountTokens: AccountTokenRecord[];
   parentProfiles: Record<string, ParentProfileRecord>;
   providerProfiles: Record<string, ProviderProfileRecord>;
@@ -185,6 +202,7 @@ function createInitialStore(): PlatformStore {
   return {
     users: [],
     sessions: [],
+    revokedSessionTokens: [],
     accountTokens: [],
     parentProfiles: {},
     providerProfiles: {},
@@ -251,6 +269,7 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
   return {
     users: store.users ?? initial.users,
     sessions: store.sessions ?? initial.sessions,
+    revokedSessionTokens: store.revokedSessionTokens ?? initial.revokedSessionTokens,
     accountTokens: store.accountTokens ?? initial.accountTokens,
     parentProfiles: Object.fromEntries(
       Object.entries(store.parentProfiles ?? {}).map(([userId, profile]) => [
@@ -336,17 +355,114 @@ async function verifyPassword(password: string, storedHash: string) {
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
+function sessionSecret() {
+  return (
+    process.env.SESSION_SECRET ??
+    process.env.NEXTAUTH_SECRET ??
+    "kidcellence-development-session-secret"
+  );
+}
+
+function signSessionBody(body: string) {
+  return createHmac("sha256", sessionSecret()).update(body).digest("base64url");
+}
+
+function sessionEncryptionKey() {
+  return createHash("sha256").update(sessionSecret()).digest();
+}
+
+function sealSessionPayload(payload: SignedSessionPayload) {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", sessionEncryptionKey(), iv);
+  const ciphertext = Buffer.concat([
+    cipher.update(JSON.stringify(payload), "utf8"),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+  return [
+    SESSION_TOKEN_VERSION,
+    iv.toString("base64url"),
+    ciphertext.toString("base64url"),
+    tag.toString("base64url"),
+  ].join(".");
+}
+
+function openSealedSessionToken(token: string) {
+  const [version, iv, ciphertext, tag] = token.split(".");
+  if (version !== SESSION_TOKEN_VERSION || !iv || !ciphertext || !tag) return null;
+
+  try {
+    const decipher = createDecipheriv(
+      "aes-256-gcm",
+      sessionEncryptionKey(),
+      Buffer.from(iv, "base64url")
+    );
+    decipher.setAuthTag(Buffer.from(tag, "base64url"));
+    const plaintext = Buffer.concat([
+      decipher.update(Buffer.from(ciphertext, "base64url")),
+      decipher.final(),
+    ]);
+    return JSON.parse(plaintext.toString("utf8")) as SignedSessionPayload;
+  } catch {
+    return null;
+  }
+}
+
+function createSignedSessionToken(user: PlatformUser, session: Omit<PlatformSession, "token">) {
+  return sealSessionPayload({
+    user: publicUser(user),
+    passwordHash: user.passwordHash,
+    session,
+  });
+}
+
+function readSignedSessionToken(token: string) {
+  const sealedPayload = openSealedSessionToken(token);
+  if (sealedPayload) {
+    if (
+      !sealedPayload.user?.id ||
+      !sealedPayload.session?.userId ||
+      sealedPayload.user.id !== sealedPayload.session.userId
+    ) {
+      return null;
+    }
+    if (new Date(sealedPayload.session.expiresAt).getTime() <= Date.now()) return null;
+    return sealedPayload;
+  }
+
+  const [version, body, signature] = token.split(".");
+  if (version !== "v1" || !body || !signature) return null;
+
+  const expected = Buffer.from(signSessionBody(body));
+  const actual = Buffer.from(signature);
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as SignedSessionPayload;
+    if (!payload.user?.id || !payload.session?.userId || payload.user.id !== payload.session.userId) {
+      return null;
+    }
+    if (new Date(payload.session.expiresAt).getTime() <= Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 function createSession(user: PlatformUser): PlatformSession {
   const createdAt = new Date();
   const expiresAt = new Date(createdAt);
   expiresAt.setDate(expiresAt.getDate() + 30);
-
-  return {
-    token: randomUUID(),
+  const session = {
     userId: user.id,
     role: user.role,
     createdAt: createdAt.toISOString(),
     expiresAt: expiresAt.toISOString(),
+  };
+
+  return {
+    token: createSignedSessionToken(user, session),
+    ...session,
   };
 }
 
@@ -527,6 +643,14 @@ export async function resetPasswordWithToken(token: string, password: string) {
     const now = new Date().toISOString();
     user.passwordHash = passwordHash;
     accountToken.usedAt = now;
+    store.revokedSessionTokens = [
+      ...new Set([
+        ...(store.revokedSessionTokens ?? []),
+        ...store.sessions
+          .filter((session) => session.userId === user.id)
+          .map((session) => session.token),
+      ]),
+    ];
     store.sessions = store.sessions.filter((session) => session.userId !== user.id);
     return publicUser(user);
   });
@@ -535,11 +659,45 @@ export async function resetPasswordWithToken(token: string, password: string) {
 export async function getSessionByToken(token?: string | null) {
   if (!token) return null;
   const store = await readStore();
+  if (store.revokedSessionTokens.includes(token)) return null;
+  const signedSession = readSignedSessionToken(token);
   const session = store.sessions.find((item) => item.token === token);
-  if (!session || new Date(session.expiresAt).getTime() <= Date.now()) return null;
-  const user = store.users.find((item) => item.id === session.userId);
-  if (!user) return null;
-  return { session, user: publicUser(user) };
+  if (session && new Date(session.expiresAt).getTime() > Date.now()) {
+    const user = store.users.find((item) => item.id === session.userId);
+    if (user) {
+      if (signedSession?.passwordHash && !user.passwordHash.includes(":")) {
+        await updateStore((nextStore) => {
+          const nextUser = nextStore.users.find((item) => item.id === user.id);
+          if (nextUser) nextUser.passwordHash = signedSession.passwordHash ?? nextUser.passwordHash;
+        });
+        user.passwordHash = signedSession.passwordHash;
+      }
+      return { session, user: publicUser(user) };
+    }
+  }
+
+  if (!signedSession) return null;
+
+  await updateStore((nextStore) => {
+    if (!nextStore.users.some((item) => item.id === signedSession.user.id)) {
+      nextStore.users.unshift({
+        ...signedSession.user,
+        passwordHash: signedSession.passwordHash ?? "restored-from-signed-session",
+      });
+    }
+    nextStore.sessions = nextStore.sessions
+      .filter((item) => new Date(item.expiresAt).getTime() > Date.now())
+      .filter((item) => item.token !== token)
+      .concat({ token, ...signedSession.session });
+    nextStore.revokedSessionTokens = nextStore.revokedSessionTokens.filter(
+      (item) => item !== token
+    );
+  });
+
+  return {
+    session: { token, ...signedSession.session },
+    user: signedSession.user,
+  };
 }
 
 export function sessionTokenFromRequest(request: Request) {
@@ -562,6 +720,9 @@ export async function revokeSessionToken(token?: string | null) {
     const decodedToken = decodeURIComponent(token);
     const before = store.sessions.length;
     store.sessions = store.sessions.filter((session) => session.token !== decodedToken);
+    store.revokedSessionTokens = [
+      ...new Set([...(store.revokedSessionTokens ?? []), decodedToken]),
+    ];
     return store.sessions.length !== before;
   });
 }
