@@ -23,13 +23,18 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import ProviderCard from "@/components/ProviderCard";
-import type { Provider } from "@/lib/mock-data";
-import { filterProviderList, getCategories } from "@/lib/platform-service";
+import type { Category, Provider } from "@/lib/mock-data";
+import {
+  filterProviderList,
+  getAdditionalPlatformCategories,
+  getCoreServiceCategories,
+} from "@/lib/platform-service";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import { CheckCircle2, Search, SlidersHorizontal } from "lucide-react";
 
 const LOCATIONS = ["All Locations", "Gaborone", "Francistown", "Maun", "Kasane", "Lobatse", "Serowe"];
-const CATEGORIES = getCategories();
+const CORE_CATEGORIES = getCoreServiceCategories();
+const ADDITIONAL_CATEGORIES = getAdditionalPlatformCategories();
 const SORT_OPTIONS = [
   { value: "rating", label: "Highest Rated" },
   { value: "price_asc", label: "Price: Low to High" },
@@ -88,6 +93,21 @@ function SearchPageContent() {
     (selectedLocation !== "All Locations" ? 1 : 0) +
     (maxPrice < 10000 ? 1 : 0);
 
+  const renderCategoryFilter = (cat: Category) => (
+    <div key={cat.id} className="flex items-center gap-2">
+      <Checkbox
+        id={cat.id}
+        checked={selectedCategories.includes(cat.id)}
+        onCheckedChange={() => toggleCategory(cat.id)}
+        className="border-[var(--brand-line)] data-[state=checked]:bg-[var(--brand-leaf)]"
+      />
+      <label htmlFor={cat.id} className="flex cursor-pointer select-none items-center gap-2 text-sm font-bold text-[var(--brand-muted)]">
+        <span>{cat.icon}</span>
+        {cat.name}
+      </label>
+    </div>
+  );
+
   const filteredProviders = useMemo(() => {
     return filterProviderList(providers, {
       q: searchQuery,
@@ -105,20 +125,11 @@ function SearchPageContent() {
       <div>
         <h3 className="mb-3 font-black text-[var(--brand-ink)]">Category</h3>
         <div className="space-y-2">
-          {CATEGORIES.map((cat) => (
-            <div key={cat.id} className="flex items-center gap-2">
-              <Checkbox
-                id={cat.id}
-                checked={selectedCategories.includes(cat.id)}
-                onCheckedChange={() => toggleCategory(cat.id)}
-                className="border-[var(--brand-line)] data-[state=checked]:bg-[var(--brand-leaf)]"
-              />
-              <label htmlFor={cat.id} className="flex cursor-pointer select-none items-center gap-2 text-sm font-bold text-[var(--brand-muted)]">
-                <span>{cat.icon}</span>
-                {cat.name}
-              </label>
-            </div>
-          ))}
+          {CORE_CATEGORIES.map(renderCategoryFilter)}
+        </div>
+        <h3 className="mb-3 mt-5 font-black text-[var(--brand-ink)]">Additional options</h3>
+        <div className="space-y-2">
+          {ADDITIONAL_CATEGORIES.map(renderCategoryFilter)}
         </div>
       </div>
 

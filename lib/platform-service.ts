@@ -1,6 +1,9 @@
 import {
+  ADDITIONAL_PLATFORM_CATEGORIES,
   CATEGORIES,
+  CORE_SERVICE_CATEGORIES,
   PROVIDERS,
+  getCategoryDisplayName,
   type Provider,
 } from "@/lib/mock-data";
 import type {
@@ -53,6 +56,14 @@ export function getCategories() {
   return CATEGORIES;
 }
 
+export function getCoreServiceCategories() {
+  return CORE_SERVICE_CATEGORIES;
+}
+
+export function getAdditionalPlatformCategories() {
+  return ADDITIONAL_PLATFORM_CATEGORIES;
+}
+
 export function getCategoryById(id: string) {
   return CATEGORIES.find((category) => category.id === id);
 }
@@ -62,18 +73,8 @@ export function getCategoryIcon(categoryId: string) {
 }
 
 export function getCategoryLabel(categoryId: string) {
-  return (
-    {
-      schools: "School",
-      nurseries: "Nursery",
-      nannies: "Nanny",
-      helpers: "Helper",
-      babysitters: "Babysitter",
-      "kiddies-transport": "Kiddies Transport",
-      "pediatric-clinics": "Pediatric Clinic",
-      tutors: "Tutor",
-    }[categoryId] ?? categoryId
-  );
+  const category = getCategoryById(categoryId);
+  return category ? getCategoryDisplayName(category) : categoryId;
 }
 
 export function getProviderById(id: string) {

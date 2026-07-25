@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import ProviderCard from "@/components/ProviderCard";
-import { CATEGORIES, type Provider } from "@/lib/mock-data";
+import {
+  ADDITIONAL_PLATFORM_CATEGORIES,
+  CATEGORIES,
+  CORE_SERVICE_CATEGORIES,
+  type Provider,
+} from "@/lib/mock-data";
 import {
   ArrowRight,
   CheckCircle2,
@@ -126,7 +131,7 @@ export default function HomePage() {
             {[
               [String(marketplaceProviders.length), "listed providers"],
               [String(verifiedProviderCount), "verified profiles"],
-              [String(CATEGORIES.length), "service categories"],
+              [String(CORE_SERVICE_CATEGORIES.length), "service categories"],
             ].map(([value, label]) => (
               <div key={label} className="rounded-[1.5rem] border border-[var(--brand-line)] bg-white/80 p-4 shadow-sm">
                 <div className="text-2xl font-black text-[var(--brand-ink)]">{value}</div>
@@ -173,7 +178,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          {CATEGORIES.map((category) => (
+          {CORE_SERVICE_CATEGORIES.map((category) => (
             <Link key={category.id} href={`/search?category=${category.id}`} className="brand-card p-4 transition-transform hover:-translate-y-1">
               <div className="text-3xl">{category.icon}</div>
               <div className="mt-4 text-sm font-black text-[var(--brand-ink)]">{category.name}</div>
@@ -182,6 +187,28 @@ export default function HomePage() {
               </div>
             </Link>
           ))}
+        </div>
+        <div className="mt-8 border-t border-[var(--brand-line)] pt-6">
+          <p className="brand-label">Additional options</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {ADDITIONAL_PLATFORM_CATEGORIES.map((category) => (
+              <Link
+                key={category.id}
+                href={`/search?category=${category.id}`}
+                className="rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3 transition-colors hover:bg-[var(--brand-ivory)]"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{category.icon}</span>
+                    <span className="text-sm font-black text-[var(--brand-ink)]">{category.name}</span>
+                  </div>
+                  <span className="text-xs font-bold text-[var(--brand-muted)]">
+                    {categoryCounts.get(category.id) ?? 0} providers
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 

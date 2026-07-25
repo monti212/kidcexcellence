@@ -29,6 +29,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
+import { PROVIDER_CATEGORY_OPTIONS } from "@/lib/mock-data";
 import { usePlatformSession } from "@/lib/use-platform-session";
 import {
   VERIFICATION_FEE,
@@ -698,14 +699,11 @@ export default function ProviderProfilePage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="schools">School</SelectItem>
-                    <SelectItem value="nurseries">Nursery</SelectItem>
-                    <SelectItem value="nannies">Nanny</SelectItem>
-                    <SelectItem value="helpers">Helper</SelectItem>
-                    <SelectItem value="babysitters">Babysitter</SelectItem>
-                    <SelectItem value="kiddies-transport">Kiddies Transport</SelectItem>
-                    <SelectItem value="pediatric-clinics">Pediatric Clinic</SelectItem>
-                    <SelectItem value="tutors">Tutor</SelectItem>
+                    {PROVIDER_CATEGORY_OPTIONS.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

@@ -1,8 +1,10 @@
 export interface Category {
   id: string;
   name: string;
+  label?: string;
   icon: string;
   count: number;
+  placement?: "core" | "additional";
   subcategories?: Array<{
     id: string;
     name: string;
@@ -73,12 +75,13 @@ export interface Conversation {
 }
 
 export const CATEGORIES: Category[] = [
-  { id: "babysitters", name: "Find a Babysitter", icon: "🍼", count: 87 },
-  { id: "nannies", name: "Find a Nanny", icon: "👩‍👧", count: 112 },
-  { id: "helpers", name: "Find a Helper", icon: "🧹", count: 42 },
+  { id: "babysitters", name: "Find a Babysitter", label: "Babysitter", icon: "🍼", count: 87 },
+  { id: "nannies", name: "Find a Nanny", label: "Nanny", icon: "👩‍👧", count: 112 },
+  { id: "helpers", name: "Find a Helper", label: "Helper", icon: "🧹", count: 42 },
   {
     id: "schools",
     name: "Find a School",
+    label: "School",
     icon: "🏫",
     count: 48,
     subcategories: [
@@ -88,14 +91,27 @@ export const CATEGORIES: Category[] = [
       { id: "senior", name: "Senior School" },
     ],
   },
-  { id: "nurseries", name: "Find a Nursery", icon: "🌱", count: 63 },
-  { id: "tutors", name: "Find a Tutor", icon: "📚", count: 76 },
-  { id: "pediatric-clinics", name: "Find a Pediatrician", icon: "🏥", count: 24 },
-  { id: "pediatric-therapy", name: "Pediatric Occupational/ speech therapy", icon: "🩺", count: 12 },
-  { id: "child-psychologists", name: "Child Psychologists/ Therapists", icon: "🧠", count: 9 },
+  { id: "nurseries", name: "Find a Nursery", label: "Nursery", icon: "🌱", count: 63 },
+  { id: "tutors", name: "Find a Tutor", label: "Tutor", icon: "📚", count: 76 },
+  { id: "pediatric-clinics", name: "Find a Pediatrician", label: "Pediatrician", icon: "🏥", count: 24 },
+  {
+    id: "pediatric-therapy",
+    name: "Pediatric Occupational/ speech therapy",
+    label: "Pediatric Occupational / Speech Therapy",
+    icon: "🩺",
+    count: 12,
+  },
+  {
+    id: "child-psychologists",
+    name: "Child Psychologists/ Therapists",
+    label: "Child Psychologist / Therapist",
+    icon: "🧠",
+    count: 9,
+  },
   {
     id: "after-school",
     name: "After School and Weekend Programs",
+    label: "After School / Weekend Program",
     icon: "🎯",
     count: 34,
     subcategories: [
@@ -116,6 +132,7 @@ export const CATEGORIES: Category[] = [
   {
     id: "kiddies-transport",
     name: "Kiddies Transport",
+    label: "Kiddies Transport",
     icon: "🚗",
     count: 15,
     subcategories: [
@@ -123,18 +140,45 @@ export const CATEGORIES: Category[] = [
       { id: "private-shuttle", name: "Private Shuttle" },
     ],
   },
-  { id: "kiddies-parties", name: "Kiddies Parties", icon: "🎉", count: 22 },
+  { id: "kiddies-parties", name: "Kiddies Parties", label: "Kiddies Parties", icon: "🎉", count: 22 },
+  {
+    id: "agencies",
+    name: "Agencies",
+    label: "Agency",
+    icon: "🤝",
+    count: 0,
+    placement: "additional",
+  },
   {
     id: "kiddies-entertainment",
     name: "Kids Entertainment & Events",
+    label: "Kids Entertainment & Events",
     icon: "🤹",
     count: 18,
+    placement: "additional",
     subcategories: [
       { id: "theme-parks", name: "Theme Parks" },
       { id: "venues", name: "Entertainment Venues" },
     ],
   },
 ];
+
+export const CORE_SERVICE_CATEGORIES = CATEGORIES.filter(
+  (category) => category.placement !== "additional"
+);
+
+export const ADDITIONAL_PLATFORM_CATEGORIES = CATEGORIES.filter(
+  (category) => category.placement === "additional"
+);
+
+export const PROVIDER_CATEGORY_OPTIONS = CATEGORIES.map((category) => ({
+  id: category.id,
+  name: category.label ?? category.name,
+}));
+
+export function getCategoryDisplayName(category: Category) {
+  return category.label ?? category.name;
+}
 
 export const PROVIDERS: Provider[] = [
   {

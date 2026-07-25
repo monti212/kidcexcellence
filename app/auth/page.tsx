@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { BrandMark } from "@/components/BrandMark";
 import { Eye, EyeOff, Baby, Briefcase } from "lucide-react";
+import { PROVIDER_CATEGORY_OPTIONS } from "@/lib/mock-data";
 import { clearLegacyPlatformSession, notifyPlatformSessionChanged } from "@/lib/use-platform-session";
 
 export default function AuthPage() {
@@ -404,14 +405,11 @@ function SignupForm({
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="schools">School</SelectItem>
-                <SelectItem value="nurseries">Nursery</SelectItem>
-                <SelectItem value="nannies">Nanny</SelectItem>
-                <SelectItem value="helpers">Helper</SelectItem>
-                <SelectItem value="babysitters">Babysitter</SelectItem>
-                <SelectItem value="kiddies-transport">Kiddies Transport</SelectItem>
-                <SelectItem value="pediatric-clinics">Pediatric Clinic</SelectItem>
-                <SelectItem value="tutors">Tutor</SelectItem>
+                {PROVIDER_CATEGORY_OPTIONS.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
