@@ -4,34 +4,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { BrandMark } from "@/components/BrandMark";
 import { usePlatformSession } from "@/lib/use-platform-session";
 import { clsx } from "clsx";
-import { LogIn, LogOut, Menu, ShieldCheck, UserCircle, UserPlus, Search, MapPin } from "lucide-react";
+import { LogIn, LogOut, Menu, UserCircle, UserPlus } from "lucide-react";
 
 const navLinks = [
-  { href: "/", label: "Home" },
   { href: "/search", label: "Browse" },
   { href: "/compare", label: "Compare" },
   { href: "/messages", label: "Messages" },
+  { href: "/safety", label: "Safety" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
   const { user, loading, logout } = usePlatformSession();
-  const LOCATIONS = ["Gaborone", "Francistown", "Maun", "Kasane", "Lobatse", "Serowe"];
   const profileHref =
     user?.role === "provider"
       ? "/profile/provider"
@@ -52,36 +41,7 @@ export default function Navbar() {
             <BrandMark />
           </Link>
 
-          <div className="hidden items-center gap-1 md:flex">
-            <div className="hidden md:flex items-center gap-2 max-w-md w-full">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--brand-muted)]" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
-                  placeholder="Search nurseries, nannies, schools..."
-                  className="h-10 rounded-full pl-10"
-                />
-              </div>
-              <Select value={selectedLocation} onValueChange={(value) => setSelectedLocation(value ?? "")}>
-                <SelectTrigger className="h-10 w-36 rounded-full">
-                  <MapPin className="mr-2 h-4 w-4 text-[var(--brand-coral)]" />
-                  <SelectValue placeholder="Location" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LOCATIONS.map((location) => (
-                    <SelectItem key={location} value={location.toLowerCase()}>
-                      {location}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Link href={`/search?q=${searchQuery}&location=${selectedLocation}`}>
-                <Button className="h-10 rounded-full bg-[var(--brand-ink)] px-4 font-black text-white hover:bg-[var(--brand-sky)]">
-                  Search
-                </Button>
-              </Link>
-            </div>
+          <div className="hidden flex-1 items-center justify-center gap-1 md:flex">
             {navLinks.map((link) => {
               const active = pathname === link.href;
               return (
@@ -102,18 +62,12 @@ export default function Navbar() {
           </div>
 
           <div className="hidden items-center gap-2 md:flex">
-            <Link href="/safety">
-              <Button variant="ghost" className="h-10 rounded-full text-[var(--brand-muted)] hover:text-[var(--brand-ink)]">
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                Safety
-              </Button>
-            </Link>
             {user ? (
               <>
                 <Link href={profileHref}>
-                  <Button variant="outline" className="h-10 rounded-full border-[var(--brand-line)] bg-white px-3 font-extrabold text-[var(--brand-ink)] hover:bg-[var(--brand-cream)]">
+                  <Button variant="outline" className="h-10 max-w-44 rounded-full border-[var(--brand-line)] bg-white px-3 font-extrabold text-[var(--brand-ink)] hover:bg-[var(--brand-cream)]">
                     <UserCircle className="mr-2 h-4 w-4" />
-                    {user.name}
+                    <span className="truncate">{user.name}</span>
                   </Button>
                 </Link>
                 <Button
@@ -177,11 +131,6 @@ export default function Navbar() {
                 })}
               </div>
               <div className="mt-8 grid gap-3">
-                <Link href="/safety" onClick={() => setOpen(false)}>
-                  <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
-                    Safety guidance
-                  </Button>
-                </Link>
                 {user?.role === "admin" && (
                   <Link href="/admin" onClick={() => setOpen(false)}>
                     <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
