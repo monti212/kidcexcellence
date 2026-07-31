@@ -51,11 +51,9 @@ export default function HomePage() {
 
   return (
     <div className="brand-page">
-      <section className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl grid-cols-1 gap-10 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-        <div className="flex flex-col justify-center items-center text-center">
-
-
-          <div className="mt-6 w-full relative min-h-[500px] sm:min-h-[600px] overflow-hidden rounded-2xl bg-[url('/landing-hero.jpeg')] bg-cover bg-center shadow-[0_24px_80px_rgba(35,38,47,0.18)]">
+      <section className="w-full">
+        <div className="flex flex-col items-center text-center">
+          <div className="relative min-h-[calc(100vh-4rem)] w-full overflow-hidden bg-[url('/landing-hero.jpeg')] bg-cover bg-center">
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(16,24,20,0.82)_0%,rgba(16,24,20,0.58)_45%,rgba(16,24,20,0.22)_100%)]" />
             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-[linear-gradient(180deg,transparent_0%,rgba(16,24,20,0.66)_100%)]" />
             <style>{`
@@ -69,7 +67,7 @@ export default function HomePage() {
               .delay-3 { animation-delay: 0.6s; }
               .delay-4 { animation-delay: 0.8s; }
             `}</style>
-            <div className="relative z-10 h-full flex flex-col items-center justify-center px-4 py-16 text-center">
+            <div className="relative z-10 flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4 py-16 text-center">
               <h1 className="max-w-3xl text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight text-white drop-shadow-lg animate-fade-in-up">
                 Child-centered discovery for modern Botswana families.
               </h1>
@@ -108,27 +106,7 @@ export default function HomePage() {
 
           
 
-          {featuredProviders.length > 0 && (
-            <div className="mt-8 w-full">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-black text-[var(--brand-ink)]">Featured Providers</h3>
-                <div className="text-sm text-[var(--brand-muted)]">Sponsored listings — advertise here</div>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {featuredProviders.map((p) => (
-                  <div key={p.id} className="relative">
-                    <div className="absolute right-3 top-3 z-10 rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-black text-white">Sponsored</div>
-                    <ProviderCard provider={p} />
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 p-3 rounded-lg border border-dashed border-[var(--brand-line)] text-center text-sm text-[var(--brand-muted)]">
-                Want to feature your listing? <Link href="/auth?role=provider"><span className="font-bold text-[var(--brand-ink)]">Contact us</span></Link>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-8 grid grid-cols-3 gap-3">
+          <div className="mx-auto mt-8 grid w-full max-w-7xl grid-cols-1 gap-3 px-4 sm:grid-cols-3 sm:px-6 lg:px-8">
             {[
               [String(marketplaceProviders.length), "listed providers"],
               [String(verifiedProviderCount), "verified profiles"],
@@ -142,6 +120,26 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+
+          {featuredProviders.length > 0 && (
+            <div className="mx-auto mt-10 w-full max-w-7xl px-4 pb-12 text-left sm:px-6 lg:px-8">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-lg font-black text-[var(--brand-ink)]">Featured Providers</h3>
+                <div className="text-sm text-[var(--brand-muted)]">Sponsored listings — advertise here</div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {featuredProviders.map((p) => (
+                  <div key={p.id} className="relative">
+                    <div className="absolute right-3 top-3 z-10 rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-black text-white">Sponsored</div>
+                    <ProviderCard provider={p} />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 rounded-lg border border-dashed border-[var(--brand-line)] p-3 text-center text-sm text-[var(--brand-muted)]">
+                Want to feature your listing? <Link href="/auth?role=provider"><span className="font-bold text-[var(--brand-ink)]">Contact us</span></Link>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
