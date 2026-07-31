@@ -193,7 +193,7 @@ export default function FeaturedProvidersAdmin() {
             <Button
               onClick={promoteProviders}
               disabled={selectedProviders.size === 0}
-              className="rounded-full bg-[var(--brand-sky)] px-4 font-black text-white hover:bg-[var(--brand-ink)]"
+              className="rounded-full bg-[var(--brand-sky)] px-4 font-black text-white hover:bg-[var(--brand-coral)]"
             >
               <TrendingUp className="mr-2 h-4 w-4" />
               Promote ({selectedProviders.size})

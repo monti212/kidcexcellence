@@ -35,7 +35,7 @@ export function TrustPage({
             Back to Kidcellence
           </Link>
           <div className="mt-8 flex items-start gap-4">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[var(--brand-ink)] text-[var(--brand-gold)]">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[var(--brand-sky)] text-[var(--brand-gold)]">
               {icon}
             </div>
             <div>

@@ -294,7 +294,7 @@ function MessagesPageContent() {
                 />
                 <Button
                   onClick={sendMessage}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-leaf)] p-0 text-white hover:bg-[var(--brand-ink)]"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-leaf)] p-0 text-white hover:bg-[var(--brand-coral)]"
                   disabled={!newMessage.trim() || loading || !canSendMessage}
                   aria-label="Send message"
                 >
@@ -330,7 +330,7 @@ function MessagesPageContent() {
                 : "Select a conversation from the sidebar, or browse providers to start messaging."}
             </p>
             <Link href={showSignInPrompt ? "/auth?mode=login" : showProviderChatHint ? "/messages" : "/search"}>
-              <Button className="mt-6 rounded-lg bg-[var(--brand-leaf)] text-white hover:bg-[var(--brand-ink)]">
+              <Button className="mt-6 rounded-lg bg-[var(--brand-leaf)] text-white hover:bg-[var(--brand-coral)]">
                 {showSignInPrompt ? "Sign in" : showProviderChatHint ? "Open inbox" : "Browse providers"}
               </Button>
             </Link>

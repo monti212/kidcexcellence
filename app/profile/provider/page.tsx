@@ -583,7 +583,7 @@ export default function ProviderProfilePage() {
               </Button>
             </Link>
             <Link href="/auth?role=provider">
-              <Button className="w-full rounded-full bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)] sm:w-auto">
+              <Button className="w-full rounded-full bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)] sm:w-auto">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Sign up as provider
               </Button>
@@ -1035,7 +1035,7 @@ export default function ProviderProfilePage() {
                     <Button
                       type="button"
                       onClick={payVerificationFee}
-                      className="mt-3 h-9 rounded-lg bg-[var(--brand-leaf)] text-xs font-black text-white hover:bg-[var(--brand-ink)]"
+                      className="mt-3 h-9 rounded-lg bg-[var(--brand-leaf)] text-xs font-black text-white hover:bg-[var(--brand-coral)]"
                     >
                       Pay P {verificationPrice}
                     </Button>

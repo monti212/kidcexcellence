@@ -242,7 +242,7 @@ export default function HomePage() {
       </section>
 
       <section className="px-4 pb-16 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 rounded-lg bg-[var(--brand-ink)] p-6 text-white md:grid-cols-[1fr_auto] md:p-10">
+        <div className="mx-auto grid max-w-7xl gap-8 rounded-lg bg-[var(--brand-sky)] p-6 text-white md:grid-cols-[1fr_auto] md:p-10">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.16em] text-[var(--brand-gold)]">For providers</p>
             <h2 className="mt-3 max-w-2xl text-3xl font-black">List your childcare service and manage trust from one dashboard.</h2>

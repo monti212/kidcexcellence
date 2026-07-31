@@ -278,7 +278,7 @@ function LoginForm({
       </div>
       <Button
         type="submit"
-        className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)]"
+        className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)]"
          
       >
         Login
@@ -385,7 +385,7 @@ function SignupForm({
               </button>
             </div>
           </div>
-          <Button type="submit" className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)]"  >
+          <Button type="submit" className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)]"  >
             Create Parent Account
           </Button>
           <SignupTermsNotice />
@@ -466,7 +466,7 @@ function SignupForm({
               </button>
             </div>
           </div>
-          <Button type="submit" className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)]"  >
+          <Button type="submit" className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)]"  >
             Create Provider Account
           </Button>
           <SignupTermsNotice />

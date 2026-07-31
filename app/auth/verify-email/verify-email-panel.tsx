@@ -119,7 +119,7 @@ export function VerifyEmailPanel({ token }: { token: string }) {
               />
               <Button
                 type="submit"
-                className="mt-4 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)]"
+                className="mt-4 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)]"
               >
                 Send verification link
               </Button>

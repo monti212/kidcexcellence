@@ -166,7 +166,7 @@ export default function ParentProfilePage() {
               </Button>
             </Link>
             <Link href="/auth">
-              <Button className="w-full rounded-full bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)] sm:w-auto">
+              <Button className="w-full rounded-full bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)] sm:w-auto">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Sign up as parent
               </Button>

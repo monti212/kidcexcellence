@@ -47,34 +47,34 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  --color-brand-ink: #23262f;
-  --color-brand-sky: #53afbc;
-  --color-brand-gold: #fecc31;
-  --color-brand-coral: #f1603a;
-  --color-brand-paper: #fbfbf8;
-  --color-brand-cream: #f3efe7;
-  --color-brand-muted: #6b7280;
+  --color-brand-ink: #3f3e44;
+  --color-brand-sky: #54b2bf;
+  --color-brand-gold: #ffcc2f;
+  --color-brand-coral: #f05a3c;
+  --color-brand-paper: #ffffff;
+  --color-brand-cream: #fff5d3;
+  --color-brand-muted: #686973;
 }
 
 :root {
-  --background: #fbfbf8;
-  --foreground: #23262f;
+  --background: #ffffff;
+  --foreground: #3f3e44;
   --card: #ffffff;
-  --card-foreground: #23262f;
+  --card-foreground: #3f3e44;
   --popover: #ffffff;
-  --popover-foreground: #23262f;
-  --primary: #23262f;
+  --popover-foreground: #3f3e44;
+  --primary: #54b2bf;
   --primary-foreground: #ffffff;
-  --secondary: #f3efe7;
-  --secondary-foreground: #23262f;
-  --muted: #f6f4ee;
-  --muted-foreground: #6b7280;
-  --accent: #fecc31;
-  --accent-foreground: #23262f;
+  --secondary: #fff5d3;
+  --secondary-foreground: #3f3e44;
+  --muted: #f4fbfc;
+  --muted-foreground: #686973;
+  --accent: #ffcc2f;
+  --accent-foreground: #3f3e44;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #e8e3d8;
-  --input: #e8e3d8;
-  --ring: #53afbc;
+  --border: #d7edf0;
+  --input: #d7edf0;
+  --ring: #54b2bf;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -83,23 +83,23 @@
   --radius: 0.5rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #23262f;
+  --sidebar-primary: #54b2bf;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: #53afbc;
+  --sidebar-ring: #54b2bf;
 
-  --brand-ink: #23262f;
-  --brand-sky: #53afbc;
-  --brand-leaf: #53afbc;
-  --brand-gold: #fecc31;
-  --brand-coral: #f1603a;
-  --brand-paper: #fbfbf8;
-  --brand-cream: #f3efe7;
-  --brand-ivory: #f3efe7;
-  --brand-line: #e8e3d8;
-  --brand-muted: #6b7280;
+  --brand-ink: #3f3e44;
+  --brand-sky: #54b2bf;
+  --brand-leaf: #54b2bf;
+  --brand-gold: #ffcc2f;
+  --brand-coral: #f05a3c;
+  --brand-paper: #ffffff;
+  --brand-cream: #fff5d3;
+  --brand-ivory: #f4fbfc;
+  --brand-line: #d7edf0;
+  --brand-muted: #686973;
 }
 
 @layer base {
@@ -118,20 +118,20 @@
 @layer components {
   .brand-page {
     background:
-      radial-gradient(circle at top left, rgba(83, 175, 188, 0.08), transparent 28%),
-      radial-gradient(circle at 85% 10%, rgba(254, 204, 49, 0.14), transparent 22%),
-      linear-gradient(180deg, #fffefb 0%, #fbfbf8 52%, #f7f4ed 100%);
+      radial-gradient(circle at top left, rgba(84, 178, 191, 0.12), transparent 28%),
+      radial-gradient(circle at 86% 8%, rgba(255, 204, 47, 0.18), transparent 20%),
+      linear-gradient(180deg, #ffffff 0%, #f7fcfd 52%, #fff8dc 100%);
   }
 
   .brand-card {
     @apply border bg-white shadow-sm;
     border-color: var(--brand-line);
     border-radius: 24px;
-    box-shadow: 0 18px 50px rgba(35, 38, 47, 0.06);
+    box-shadow: 0 18px 50px rgba(63, 62, 68, 0.07);
   }
 
   .brand-button {
-    @apply inline-flex items-center justify-center rounded-full bg-[var(--brand-ink)] px-5 py-2.5 text-sm font-extrabold text-white shadow-sm transition-colors hover:bg-[var(--brand-sky)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-full bg-[var(--brand-sky)] px-5 py-2.5 text-sm font-extrabold text-white shadow-sm transition-colors hover:bg-[var(--brand-coral)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
 
   .brand-button-secondary {

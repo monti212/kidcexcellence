@@ -80,7 +80,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
               />
               <Button
                 type="submit"
-                className="h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)]"
+                className="h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)]"
               >
                 Update password
               </Button>

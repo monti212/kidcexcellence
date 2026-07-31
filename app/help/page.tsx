@@ -43,7 +43,7 @@ export default function HelpPage() {
     <div className="brand-page min-h-screen">
       <header className="border-b border-[var(--brand-line)] bg-white">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid h-11 w-11 place-items-center rounded-lg bg-[var(--brand-ink)] text-[var(--brand-gold)]">
+          <div className="grid h-11 w-11 place-items-center rounded-lg bg-[var(--brand-sky)] text-[var(--brand-gold)]">
             <CircleHelp className="h-5 w-5" />
           </div>
           <p className="brand-label mt-6">Help centre</p>

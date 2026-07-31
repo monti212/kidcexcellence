@@ -231,7 +231,7 @@ function SearchPageContent() {
             </Sheet>
             {compareIds.length > 0 && (
               <Link href="/compare">
-                <Button className="hidden rounded-lg bg-[var(--brand-ink)] font-black text-white hover:bg-[var(--brand-leaf)] sm:inline-flex">
+                <Button className="hidden rounded-lg bg-[var(--brand-sky)] font-black text-white hover:bg-[var(--brand-leaf)] sm:inline-flex">
                   Compare {compareIds.length}
                 </Button>
               </Link>

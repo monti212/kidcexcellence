@@ -69,7 +69,7 @@ function ComparePageContent() {
         <div className="flex items-center gap-3 mb-8">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ background: "var(--brand-ink)" }}
+            style={{ background: "var(--brand-sky)" }}
           >
             <BarChart2 className="w-5 h-5 text-[var(--brand-gold)]" />
           </div>
@@ -250,7 +250,7 @@ function ComparePageContent() {
                 {providers.map((p) => (
                   <div key={`action-${p.id}`} className="bg-white rounded-b-2xl border border-[var(--brand-line)] border-t-0 p-4 mx-1">
                     <Link href={`/provider/${p.id}`}>
-                      <Button className="w-full rounded-lg bg-[var(--brand-leaf)] text-sm font-black text-white hover:bg-[var(--brand-ink)]">
+                      <Button className="w-full rounded-lg bg-[var(--brand-leaf)] text-sm font-black text-white hover:bg-[var(--brand-coral)]">
                         View Profile
                       </Button>
                     </Link>

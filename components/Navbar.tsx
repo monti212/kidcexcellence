@@ -34,7 +34,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[var(--brand-line)] bg-[rgba(251,251,248,0.82)] backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-[var(--brand-line)] bg-white/90 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           <Link href="/" className="shrink-0" aria-label="Kidcellence home">
@@ -51,8 +51,8 @@ export default function Navbar() {
                   className={clsx(
                     "rounded-full px-3.5 py-2 text-sm font-semibold transition-colors",
                     active
-                      ? "bg-[var(--brand-ink)] text-white"
-                      : "text-[var(--brand-muted)] hover:bg-white hover:text-[var(--brand-ink)]"
+                      ? "bg-[var(--brand-sky)] text-white"
+                      : "text-[var(--brand-muted)] hover:bg-[var(--brand-ivory)] hover:text-[var(--brand-ink)]"
                   )}
                 >
                   {link.label}
@@ -88,7 +88,7 @@ export default function Navbar() {
                   </Button>
                 </Link>
                 <Link href="/auth">
-                  <Button className="h-10 rounded-full bg-[var(--brand-ink)] px-4 font-extrabold text-white hover:bg-[var(--brand-sky)]" disabled={loading}>
+                  <Button className="h-10 rounded-full bg-[var(--brand-sky)] px-4 font-extrabold text-white hover:bg-[var(--brand-coral)]" disabled={loading}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     Sign up
                   </Button>
@@ -121,7 +121,7 @@ export default function Navbar() {
                       className={clsx(
                         "rounded-2xl px-4 py-3 text-base font-semibold transition-colors",
                         active
-                          ? "bg-[var(--brand-ink)] text-white"
+                          ? "bg-[var(--brand-sky)] text-white"
                           : "bg-white text-[var(--brand-muted)] hover:text-[var(--brand-ink)]"
                       )}
                     >
@@ -158,7 +158,7 @@ export default function Navbar() {
                       </Button>
                     </Link>
                     <Link href="/auth" onClick={() => setOpen(false)}>
-                      <Button className="w-full rounded-full bg-[var(--brand-ink)] font-extrabold text-white hover:bg-[var(--brand-sky)]" disabled={loading}>
+                      <Button className="w-full rounded-full bg-[var(--brand-sky)] font-extrabold text-white hover:bg-[var(--brand-coral)]" disabled={loading}>
                         <UserPlus className="mr-2 h-4 w-4" />
                         Sign up
                       </Button>

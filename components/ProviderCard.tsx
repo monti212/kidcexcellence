@@ -12,14 +12,14 @@ interface ProviderCardProps {
 }
 
 const categoryStyles: Record<string, string> = {
-  schools: "bg-[#e7f4f6] text-[#2f7f8d]",
-  nurseries: "bg-[#fff4d1] text-[#9c7a07]",
-  nannies: "bg-[#fff0ea] text-[#bf5538]",
-  helpers: "bg-[#edf7ee] text-[#4f7f45]",
-  babysitters: "bg-[#fff6df] text-[#8a6118]",
-  "kiddies-transport": "bg-[#eef3ff] text-[#3c5d9b]",
-  "pediatric-clinics": "bg-[#eaf5f7] text-[#317684]",
-  tutors: "bg-[#fff3e5] text-[#ba6437]",
+  schools: "bg-[rgba(84,178,191,0.16)] text-[var(--brand-sky)]",
+  nurseries: "bg-[rgba(255,204,47,0.24)] text-[#8a6500]",
+  nannies: "bg-[rgba(240,90,60,0.14)] text-[var(--brand-coral)]",
+  helpers: "bg-[rgba(84,178,191,0.16)] text-[var(--brand-sky)]",
+  babysitters: "bg-[rgba(255,204,47,0.24)] text-[#8a6500]",
+  "kiddies-transport": "bg-[rgba(84,178,191,0.16)] text-[var(--brand-sky)]",
+  "pediatric-clinics": "bg-[rgba(84,178,191,0.16)] text-[var(--brand-sky)]",
+  tutors: "bg-[rgba(240,90,60,0.14)] text-[var(--brand-coral)]",
 };
 
 export default function ProviderCard({ provider, onAddToCompare, inCompare }: ProviderCardProps) {
@@ -28,8 +28,8 @@ export default function ProviderCard({ provider, onAddToCompare, inCompare }: Pr
 
   return (
     <article className="brand-card flex h-full flex-col overflow-hidden transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg">
-      <div className="relative h-44 overflow-hidden bg-[#f6f4ee]">
-        <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(83,175,188,0.18),_transparent_38%),linear-gradient(180deg,#ffffff_0%,#f6f4ee_100%)]">
+      <div className="relative h-44 overflow-hidden bg-[var(--brand-ivory)]">
+        <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(84,178,191,0.22),_transparent_38%),linear-gradient(180deg,#ffffff_0%,#f4fbfc_100%)]">
           <div className="grid h-24 w-24 place-items-center rounded-[2rem] border border-white bg-white text-5xl shadow-sm">
             {categoryIcon}
           </div>
@@ -106,7 +106,7 @@ export default function ProviderCard({ provider, onAddToCompare, inCompare }: Pr
               </Button>
             )}
             <Link href={`/provider/${provider.id}`}>
-              <Button size="sm" className="h-9 rounded-full bg-[var(--brand-ink)] px-3 text-xs font-black text-white hover:bg-[var(--brand-sky)]">
+              <Button size="sm" className="h-9 rounded-full bg-[var(--brand-sky)] px-3 text-xs font-black text-white hover:bg-[var(--brand-coral)]">
                 <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
                 Profile
               </Button>

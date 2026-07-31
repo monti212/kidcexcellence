@@ -9,7 +9,7 @@ export default function Footer() {
   if (pathname === "/messages") return null;
 
   return (
-    <footer className="mt-auto border-t border-[var(--brand-line)] bg-[var(--brand-ink)] text-white">
+    <footer className="mt-auto border-t border-[var(--brand-sky)] bg-[var(--brand-sky)] text-white">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div>
@@ -59,7 +59,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-sm text-white/55 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-3 border-t border-white/20 pt-6 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 Kidcellence. All rights reserved.</p>
           <p>Built for Botswana families and trusted local providers.</p>
         </div>

@@ -74,7 +74,7 @@ export default async function ProviderProfilePage({
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <main className="space-y-6">
             <section className="brand-card overflow-hidden">
-              <div className="relative min-h-[30rem] overflow-hidden bg-[var(--brand-ink)] sm:min-h-[34rem]">
+              <div className="relative min-h-[30rem] overflow-hidden bg-[var(--brand-sky)] sm:min-h-[34rem]">
                 <Image
                   src={provider.image}
                   alt={`${provider.name} profile picture`}
@@ -229,7 +229,7 @@ export default async function ProviderProfilePage({
               </div>
               <div className="mt-5 grid gap-2">
                 <Link href={`/messages?provider=${provider.id}`}>
-                  <Button className="w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-ink)]">
+                  <Button className="w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)]">
                     <MessageCircle className="mr-2 h-4 w-4" />
                     Message in app
                   </Button>
