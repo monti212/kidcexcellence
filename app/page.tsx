@@ -19,6 +19,39 @@ import {
   Sparkles,
 } from "lucide-react";
 
+const needCategoryStyles = [
+  {
+    card: "border-[rgba(84,178,191,0.34)] bg-[linear-gradient(180deg,rgba(84,178,191,0.14),rgba(255,255,255,0.96)_48%)]",
+    icon: "bg-[rgba(84,178,191,0.16)]",
+    count: "text-[var(--brand-sky)]",
+  },
+  {
+    card: "border-[rgba(255,204,47,0.48)] bg-[linear-gradient(180deg,rgba(255,204,47,0.18),rgba(255,255,255,0.96)_48%)]",
+    icon: "bg-[rgba(255,204,47,0.22)]",
+    count: "text-[var(--brand-ink)]",
+  },
+  {
+    card: "border-[rgba(240,90,60,0.28)] bg-[linear-gradient(180deg,rgba(240,90,60,0.12),rgba(255,255,255,0.96)_48%)]",
+    icon: "bg-[rgba(240,90,60,0.14)]",
+    count: "text-[var(--brand-coral)]",
+  },
+  {
+    card: "border-[rgba(84,178,191,0.26)] bg-[linear-gradient(180deg,rgba(244,251,252,1),rgba(255,255,255,0.96)_50%)]",
+    icon: "bg-[var(--brand-ivory)]",
+    count: "text-[var(--brand-sky)]",
+  },
+  {
+    card: "border-[rgba(255,204,47,0.38)] bg-[linear-gradient(180deg,rgba(255,245,211,0.86),rgba(255,255,255,0.96)_52%)]",
+    icon: "bg-[var(--brand-cream)]",
+    count: "text-[var(--brand-ink)]",
+  },
+  {
+    card: "border-[rgba(63,62,68,0.18)] bg-[linear-gradient(180deg,rgba(63,62,68,0.08),rgba(255,255,255,0.96)_48%)]",
+    icon: "bg-[rgba(63,62,68,0.08)]",
+    count: "text-[var(--brand-coral)]",
+  },
+];
+
 export default function HomePage() {
   const [featuredProviders, setFeaturedProviders] = useState<Provider[]>([]);
   const [marketplaceProviders, setMarketplaceProviders] = useState<Provider[]>([]);
@@ -177,15 +210,24 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          {CORE_SERVICE_CATEGORIES.map((category) => (
-            <Link key={category.id} href={`/search?category=${category.id}`} className="brand-card p-4 transition-transform hover:-translate-y-1">
-              <div className="text-3xl">{category.icon}</div>
-              <div className="mt-4 text-sm font-black text-[var(--brand-ink)]">{category.name}</div>
-              <div className="mt-1 text-xs font-bold text-[var(--brand-muted)]">
-                {categoryCounts.get(category.id) ?? 0} providers
-              </div>
-            </Link>
-          ))}
+          {CORE_SERVICE_CATEGORIES.map((category, index) => {
+            const accent = needCategoryStyles[index % needCategoryStyles.length];
+
+            return (
+              <Link
+                key={category.id}
+                href={`/search?category=${category.id}`}
+                className={`brand-card relative overflow-hidden p-4 transition-transform hover:-translate-y-1 ${accent.card}`}
+              >
+                <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-[var(--brand-gold)] shadow-[0_0_0_4px_rgba(255,204,47,0.18)]" />
+                <div className={`grid h-12 w-12 place-items-center rounded-lg text-3xl ${accent.icon}`}>{category.icon}</div>
+                <div className="mt-4 text-sm font-black text-[var(--brand-ink)]">{category.name}</div>
+                <div className={`mt-1 text-xs font-black ${accent.count}`}>
+                  {categoryCounts.get(category.id) ?? 0} providers
+                </div>
+              </Link>
+            );
+          })}
         </div>
         <div className="mt-8 border-t border-[var(--brand-line)] pt-6">
           <p className="brand-label">Additional options</p>
