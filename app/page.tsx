@@ -13,44 +13,82 @@ import {
 } from "@/lib/mock-data";
 import {
   ArrowRight,
+  Baby,
+  BookOpen,
+  Brain,
+  Car,
   CheckCircle2,
   ClipboardCheck,
+  Drama,
+  Handshake,
+  HeartHandshake,
+  Hospital,
+  HouseHeart,
+  PartyPopper,
+  School,
   ShieldCheck,
   Sparkles,
+  Sprout,
+  Stethoscope,
+  Target,
+  UserRound,
 } from "lucide-react";
 
 const needCategoryStyles = [
   {
-    card: "border-[rgba(84,178,191,0.34)] bg-[linear-gradient(180deg,rgba(84,178,191,0.14),rgba(255,255,255,0.96)_48%)]",
-    icon: "bg-[rgba(84,178,191,0.16)]",
+    card: "border-[rgba(84,178,191,0.3)] bg-white",
     count: "text-[var(--brand-sky)]",
   },
   {
-    card: "border-[rgba(255,204,47,0.48)] bg-[linear-gradient(180deg,rgba(255,204,47,0.18),rgba(255,255,255,0.96)_48%)]",
-    icon: "bg-[rgba(255,204,47,0.22)]",
+    card: "border-[rgba(255,204,47,0.46)] bg-white",
     count: "text-[var(--brand-ink)]",
   },
   {
-    card: "border-[rgba(240,90,60,0.28)] bg-[linear-gradient(180deg,rgba(240,90,60,0.12),rgba(255,255,255,0.96)_48%)]",
-    icon: "bg-[rgba(240,90,60,0.14)]",
-    count: "text-[var(--brand-coral)]",
-  },
-  {
-    card: "border-[rgba(84,178,191,0.26)] bg-[linear-gradient(180deg,rgba(244,251,252,1),rgba(255,255,255,0.96)_50%)]",
-    icon: "bg-[var(--brand-ivory)]",
+    card: "border-[rgba(84,178,191,0.24)] bg-white",
     count: "text-[var(--brand-sky)]",
   },
   {
-    card: "border-[rgba(255,204,47,0.38)] bg-[linear-gradient(180deg,rgba(255,245,211,0.86),rgba(255,255,255,0.96)_52%)]",
-    icon: "bg-[var(--brand-cream)]",
+    card: "border-[rgba(255,204,47,0.36)] bg-white",
     count: "text-[var(--brand-ink)]",
-  },
-  {
-    card: "border-[rgba(63,62,68,0.18)] bg-[linear-gradient(180deg,rgba(63,62,68,0.08),rgba(255,255,255,0.96)_48%)]",
-    icon: "bg-[rgba(63,62,68,0.08)]",
-    count: "text-[var(--brand-coral)]",
   },
 ];
+
+const categoryIconMap: Record<string, typeof Baby> = {
+  babysitters: Baby,
+  nannies: UserRound,
+  helpers: HouseHeart,
+  schools: School,
+  nurseries: Sprout,
+  tutors: BookOpen,
+  "pediatric-clinics": Hospital,
+  "pediatric-therapy": Stethoscope,
+  "child-psychologists": Brain,
+  "after-school": Target,
+  "kiddies-transport": Car,
+  "kiddies-parties": PartyPopper,
+  agencies: Handshake,
+  "kiddies-entertainment": Drama,
+};
+
+function CategoryIcon({ categoryId }: { categoryId: string }) {
+  const Icon = categoryIconMap[categoryId] ?? HeartHandshake;
+
+  return (
+    <span className="grid h-12 w-12 place-items-center rounded-xl border border-[rgba(84,178,191,0.22)] bg-[var(--brand-cream)] text-[var(--brand-sky)]">
+      <Icon className="h-6 w-6" strokeWidth={1.9} aria-hidden="true" />
+    </span>
+  );
+}
+
+function CompactCategoryIcon({ categoryId }: { categoryId: string }) {
+  const Icon = categoryIconMap[categoryId] ?? HeartHandshake;
+
+  return (
+    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[rgba(84,178,191,0.2)] bg-[var(--brand-cream)] text-[var(--brand-sky)]">
+      <Icon className="h-4 w-4" strokeWidth={1.9} aria-hidden="true" />
+    </span>
+  );
+}
 
 export default function HomePage() {
   const [featuredProviders, setFeaturedProviders] = useState<Provider[]>([]);
@@ -104,10 +142,10 @@ export default function HomePage() {
               <h1 className="max-w-3xl text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight text-white drop-shadow-lg animate-fade-in-up">
                 Child-centered discovery for modern Botswana families.
               </h1>
-              <p className="mt-4 max-w-2xl text-lg sm:text-xl text-white/90 drop-shadow-md animate-fade-in-up delay-1">
-                Search trusted schools, nannies, tutors, clinics, and care services in
-                one refined marketplace. Compare fees, reviews, availability, and safety
-                signals without the noise.
+              <p className="mt-4 max-w-2xl text-lg italic sm:text-xl text-white/90 drop-shadow-md animate-fade-in-up delay-1">
+                Kidcellence is an all-in-one hub that helps you search trusted
+                schools, nannies, tutors, clinics, and care services, compare
+                options, and connect with the right support for your child.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3 justify-center animate-fade-in-up delay-2">
@@ -217,10 +255,9 @@ export default function HomePage() {
               <Link
                 key={category.id}
                 href={`/search?category=${category.id}`}
-                className={`brand-card relative overflow-hidden p-4 transition-transform hover:-translate-y-1 ${accent.card}`}
+                className={`brand-card p-4 transition-transform hover:-translate-y-1 hover:border-[var(--brand-sky)] ${accent.card}`}
               >
-                <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-[var(--brand-gold)] shadow-[0_0_0_4px_rgba(255,204,47,0.18)]" />
-                <div className={`grid h-12 w-12 place-items-center rounded-lg text-3xl ${accent.icon}`}>{category.icon}</div>
+                <CategoryIcon categoryId={category.id} />
                 <div className="mt-4 text-sm font-black text-[var(--brand-ink)]">{category.name}</div>
                 <div className={`mt-1 text-xs font-black ${accent.count}`}>
                   {categoryCounts.get(category.id) ?? 0} providers
@@ -240,7 +277,7 @@ export default function HomePage() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{category.icon}</span>
+                    <CompactCategoryIcon categoryId={category.id} />
                     <span className="text-sm font-black text-[var(--brand-ink)]">{category.name}</span>
                   </div>
                   <span className="text-xs font-bold text-[var(--brand-muted)]">
