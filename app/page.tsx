@@ -175,8 +175,9 @@ export default function HomePage() {
               </h1>
               <p className="mt-4 max-w-2xl text-lg italic sm:text-xl text-white/90 drop-shadow-md animate-fade-in-up delay-1">
                 Kidcellence is an all-in-one hub that helps you search trusted
-                schools, nannies, tutors, clinics, and care services, compare
-                options, and connect with the right support for your child.
+                schools, nannies, tutors, clinics, and other child related service
+                providers by comparing options and connecting with the right support
+                for your child.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3 justify-center animate-fade-in-up delay-2">
