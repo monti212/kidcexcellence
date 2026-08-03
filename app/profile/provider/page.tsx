@@ -64,6 +64,7 @@ interface StoredProviderProfile {
   priceUnit: "monthly" | "per day" | "per hour" | "termly";
   age?: string;
   stayArrangement?: "stay-in" | "stay-out";
+  hasChildren?: "yes" | "no";
   workStartDate?: string;
   willingToRelocate?: boolean;
   childrenCount?: string;
@@ -73,6 +74,10 @@ interface StoredProviderProfile {
   nextOfKinName?: string;
   nextOfKinPhone?: string;
   nextOfKinRelationship?: string;
+  ownerFullName?: string;
+  tradingHours?: string;
+  numberPlate?: string;
+  prdp?: string;
   mission?: string;
   vision?: string;
   values?: string;
@@ -93,7 +98,7 @@ interface StoredProviderProfile {
 
 interface ProviderUpload {
   id: string;
-  type: "document" | "gallery" | "profile-image";
+  type: "document" | "gallery" | "profile-image" | "cover-image";
   documentKey?: string;
   label: string;
   fileName: string;
@@ -117,6 +122,7 @@ const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
   priceUnit: "termly",
   age: "",
   stayArrangement: "stay-out",
+  hasChildren: "no",
   workStartDate: "",
   willingToRelocate: false,
   childrenCount: "",
@@ -126,6 +132,10 @@ const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
   nextOfKinName: "",
   nextOfKinPhone: "",
   nextOfKinRelationship: "",
+  ownerFullName: "",
+  tradingHours: "",
+  numberPlate: "",
+  prdp: "",
   mission: "",
   vision: "",
   values: "",
@@ -209,6 +219,7 @@ function ProviderProfileContent() {
   const [stayArrangement, setStayArrangement] = useState<"stay-in" | "stay-out">(
     storedProfile.stayArrangement ?? "stay-out"
   );
+  const [hasChildren, setHasChildren] = useState<"yes" | "no">(storedProfile.hasChildren ?? "no");
   const [workStartDate, setWorkStartDate] = useState(storedProfile.workStartDate ?? "");
   const [willingToRelocate, setWillingToRelocate] = useState(Boolean(storedProfile.willingToRelocate));
   const [childrenCount, setChildrenCount] = useState(storedProfile.childrenCount ?? "");
@@ -218,6 +229,10 @@ function ProviderProfileContent() {
   const [nextOfKinName, setNextOfKinName] = useState(storedProfile.nextOfKinName ?? "");
   const [nextOfKinPhone, setNextOfKinPhone] = useState(storedProfile.nextOfKinPhone ?? "");
   const [nextOfKinRelationship, setNextOfKinRelationship] = useState(storedProfile.nextOfKinRelationship ?? "");
+  const [ownerFullName, setOwnerFullName] = useState(storedProfile.ownerFullName ?? "");
+  const [tradingHours, setTradingHours] = useState(storedProfile.tradingHours ?? "");
+  const [numberPlate, setNumberPlate] = useState(storedProfile.numberPlate ?? "");
+  const [prdp, setPrdp] = useState(storedProfile.prdp ?? "");
   const [mission, setMission] = useState(storedProfile.mission ?? "");
   const [vision, setVision] = useState(storedProfile.vision ?? "");
   const [values, setValues] = useState(storedProfile.values ?? "");
@@ -251,9 +266,12 @@ function ProviderProfileContent() {
   const isSchool = ["schools", "nurseries"].includes(category);
   const isIndividualCare = ["nannies", "helpers", "babysitters"].includes(category);
   const isPediatric = ["pediatric-clinics", "pediatric-therapy", "child-psychologists"].includes(category);
+  const isTransport = category === "kiddies-transport";
+  const isParty = category === "kiddies-parties";
   const documentUploads = uploads.filter((upload) => upload.type === "document");
   const galleryUploads = uploads.filter((upload) => upload.type === "gallery");
   const profileImageUpload = uploads.find((upload) => upload.type === "profile-image");
+  const coverImageUpload = uploads.find((upload) => upload.type === "cover-image");
   const verificationProviderType = getVerificationProviderType(category);
   const documents = getVerificationDocuments(category);
   const sensitiveDocuments = documents.filter((document) => document.sensitive);
@@ -270,6 +288,7 @@ function ProviderProfileContent() {
       price,
       age,
       stayArrangement,
+      hasChildren,
       workStartDate,
       childrenCount,
       workExperienceSummary,
@@ -278,6 +297,10 @@ function ProviderProfileContent() {
       nextOfKinName,
       nextOfKinPhone,
       nextOfKinRelationship,
+      ownerFullName,
+      tradingHours,
+      numberPlate,
+      prdp,
       mission,
       vision,
       values,
@@ -286,6 +309,7 @@ function ProviderProfileContent() {
     },
     {
       profileImageUploaded: Boolean(profileImageUpload),
+      coverImageUploaded: Boolean(coverImageUpload),
       galleryCount: galleryUploads.length,
     }
   );
@@ -359,6 +383,7 @@ function ProviderProfileContent() {
     setPriceUnit(payload.profile.priceUnit ?? "termly");
     setAge(payload.profile.age ?? "");
     setStayArrangement(payload.profile.stayArrangement ?? "stay-out");
+    setHasChildren(payload.profile.hasChildren ?? "no");
     setWorkStartDate(payload.profile.workStartDate ?? "");
     setWillingToRelocate(Boolean(payload.profile.willingToRelocate));
     setChildrenCount(payload.profile.childrenCount ?? "");
@@ -368,6 +393,10 @@ function ProviderProfileContent() {
     setNextOfKinName(payload.profile.nextOfKinName ?? "");
     setNextOfKinPhone(payload.profile.nextOfKinPhone ?? "");
     setNextOfKinRelationship(payload.profile.nextOfKinRelationship ?? "");
+    setOwnerFullName(payload.profile.ownerFullName ?? "");
+    setTradingHours(payload.profile.tradingHours ?? "");
+    setNumberPlate(payload.profile.numberPlate ?? "");
+    setPrdp(payload.profile.prdp ?? "");
     setMission(payload.profile.mission ?? "");
     setVision(payload.profile.vision ?? "");
     setValues(payload.profile.values ?? "");
@@ -396,6 +425,7 @@ function ProviderProfileContent() {
       priceUnit: payload.profile.priceUnit ?? "termly",
       age: payload.profile.age ?? "",
       stayArrangement: payload.profile.stayArrangement ?? "stay-out",
+      hasChildren: payload.profile.hasChildren ?? "no",
       workStartDate: payload.profile.workStartDate ?? "",
       willingToRelocate: Boolean(payload.profile.willingToRelocate),
       childrenCount: payload.profile.childrenCount ?? "",
@@ -405,6 +435,10 @@ function ProviderProfileContent() {
       nextOfKinName: payload.profile.nextOfKinName ?? "",
       nextOfKinPhone: payload.profile.nextOfKinPhone ?? "",
       nextOfKinRelationship: payload.profile.nextOfKinRelationship ?? "",
+      ownerFullName: payload.profile.ownerFullName ?? "",
+      tradingHours: payload.profile.tradingHours ?? "",
+      numberPlate: payload.profile.numberPlate ?? "",
+      prdp: payload.profile.prdp ?? "",
       mission: payload.profile.mission ?? "",
       vision: payload.profile.vision ?? "",
       values: payload.profile.values ?? "",
@@ -458,6 +492,7 @@ function ProviderProfileContent() {
       priceUnit,
       age,
       stayArrangement,
+      hasChildren,
       workStartDate,
       willingToRelocate,
       childrenCount,
@@ -467,6 +502,10 @@ function ProviderProfileContent() {
       nextOfKinName,
       nextOfKinPhone,
       nextOfKinRelationship,
+      ownerFullName,
+      tradingHours,
+      numberPlate,
+      prdp,
       mission,
       vision,
       values,
@@ -528,7 +567,7 @@ function ProviderProfileContent() {
 
   const uploadFile = async (
     file: File | undefined,
-    type: "document" | "gallery" | "profile-image",
+    type: "document" | "gallery" | "profile-image" | "cover-image",
     label: string,
     documentKey?: string
   ) => {
@@ -566,6 +605,7 @@ function ProviderProfileContent() {
             upload.documentKey === payload.upload.documentKey
           ) &&
           !(payload.upload.type === "profile-image" && upload.type === "profile-image") &&
+          !(payload.upload.type === "cover-image" && upload.type === "cover-image") &&
           upload.id !== payload.upload.id
       ),
     ]);
@@ -686,9 +726,35 @@ function ProviderProfileContent() {
         {/* Cover + Avatar */}
         <div className="bg-white rounded-lg border border-[var(--brand-line)] shadow-sm overflow-hidden mb-6">
           <div
-            className="h-36 relative"
-            style={{ background: "linear-gradient(135deg, var(--brand-leaf), var(--brand-gold))" }}
-          />
+            className="h-36 relative overflow-hidden"
+            style={{
+              background: coverImageUpload
+                ? undefined
+                : "linear-gradient(135deg, var(--brand-leaf), var(--brand-gold))",
+            }}
+          >
+            {coverImageUpload && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={coverImageUpload.url}
+                alt="Provider cover photo"
+                className="h-full w-full object-cover"
+              />
+            )}
+            <label className="absolute bottom-3 right-3 inline-flex cursor-pointer items-center rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-xs font-black text-[var(--brand-ink)] shadow-sm hover:bg-white">
+              <input
+                type="file"
+                className="sr-only"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(event) =>
+                  uploadFile(event.target.files?.[0], "cover-image", "Cover photo")
+                }
+                disabled={loading}
+              />
+              <ImagePlus className="mr-1.5 h-3.5 w-3.5" />
+              Cover photo
+            </label>
+          </div>
           <div className="px-6 pb-5">
             <div className="relative -mt-12 mb-4 w-fit">
               <div className="w-20 h-20 rounded-lg border-4 border-white shadow-md overflow-hidden bg-[var(--brand-ivory)] flex items-center justify-center text-4xl">
@@ -864,16 +930,30 @@ function ProviderProfileContent() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Number of kids</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={childrenCount}
-                      onChange={(event) => setChildrenCount(event.target.value)}
-                      placeholder="e.g. 2"
-                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                    />
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Do you have kids?</Label>
+                    <Select value={hasChildren} onValueChange={(value) => setHasChildren(value === "yes" ? "yes" : "no")}>
+                      <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">No</SelectItem>
+                        <SelectItem value="yes">Yes</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+                  {hasChildren === "yes" && (
+                    <div>
+                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Number of kids</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={childrenCount}
+                        onChange={(event) => setChildrenCount(event.target.value)}
+                        placeholder="e.g. 2"
+                        className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                      />
+                    </div>
+                  )}
                   <div className="sm:col-span-2 flex items-center justify-between rounded-lg border border-[var(--brand-line)] bg-white p-4">
                     <div>
                       <div className="text-sm font-medium text-[var(--brand-ink)]">Willing to relocate</div>
@@ -957,15 +1037,61 @@ function ProviderProfileContent() {
               )}
 
               {isPediatric && (
-                <div className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
-                  <Label className="text-sm font-medium text-[var(--brand-ink)]">Medical aids accepted</Label>
-                  <Textarea
-                    value={medicalAids}
-                    onChange={(event) => setMedicalAids(event.target.value)}
-                    placeholder="All medical aids, or list the specific schemes accepted."
-                    rows={3}
-                    className="mt-1 resize-none rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                  />
+                <div className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Trading hours</Label>
+                    <Input
+                      value={tradingHours}
+                      onChange={(event) => setTradingHours(event.target.value)}
+                      placeholder="Monday to Friday, 8:00 AM - 5:00 PM"
+                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Medical aids accepted</Label>
+                    <Textarea
+                      value={medicalAids}
+                      onChange={(event) => setMedicalAids(event.target.value)}
+                      placeholder="BPOMAS, PULA, ALL, CASH ONLY, or list the accepted schemes."
+                      rows={3}
+                      className="mt-1 resize-none rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {isTransport && (
+                <div className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Company or driver full names</Label>
+                    <Input value={ownerFullName} onChange={(event) => setOwnerFullName(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Number plate</Label>
+                    <Input value={numberPlate} onChange={(event) => setNumberPlate(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">PRDP</Label>
+                    <Input value={prdp} onChange={(event) => setPrdp(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
+                  </div>
+                </div>
+              )}
+
+              {isParty && (
+                <div className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Owner full names</Label>
+                    <Input value={ownerFullName} onChange={(event) => setOwnerFullName(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Trading hours</Label>
+                    <Input
+                      value={tradingHours}
+                      onChange={(event) => setTradingHours(event.target.value)}
+                      placeholder="Saturday to Sunday, 9:00 AM - 6:00 PM"
+                      className="mt-1 rounded-lg border-[var(--brand-line)]"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -1383,12 +1509,24 @@ function ProviderProfileContent() {
               ) : (
                 <div className="space-y-4">
                   <h3 className="mb-2 font-bold text-[var(--brand-ink)]">
-                    {isPediatric ? "Consultation price" : "Starting price"}
+                    {isPediatric
+                      ? "Consultation price"
+                      : isTransport
+                        ? "Price per month"
+                        : isParty
+                          ? "Services and prices"
+                          : "Starting price"}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-medium text-[var(--brand-ink)]">
-                        {isPediatric ? "Consultation price (BWP)" : "Price (BWP)"}
+                        {isPediatric
+                          ? "Consultation price (BWP)"
+                          : isTransport
+                            ? "Monthly transport price (BWP)"
+                            : isParty
+                              ? "Starting package price (BWP)"
+                              : "Price (BWP)"}
                       </Label>
                       <Input
                         type="number"

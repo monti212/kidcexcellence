@@ -37,6 +37,9 @@ export async function GET(request: Request) {
   const profileImageUploaded = store.uploads.some(
     (upload) => upload.userId === auth.session.userId && upload.type === "profile-image"
   );
+  const coverImageUploaded = store.uploads.some(
+    (upload) => upload.userId === auth.session.userId && upload.type === "cover-image"
+  );
   const galleryCount = store.uploads.filter(
     (upload) => upload.userId === auth.session.userId && upload.type === "gallery"
   ).length;
@@ -59,7 +62,7 @@ export async function GET(request: Request) {
     requiredDocuments: getVerificationDocuments(category),
     missingDocuments: missingVerificationDocuments(category, uploadedDocumentKeys),
     missingProfileFields: profile
-      ? missingVerificationProfileFields(profile, { profileImageUploaded, galleryCount })
+      ? missingVerificationProfileFields(profile, { profileImageUploaded, coverImageUploaded, galleryCount })
       : ["Saved provider profile"],
     pending: pending ?? null,
     approved: approved ?? null,

@@ -17,6 +17,7 @@ export interface VerificationProfileDraft {
   price?: string;
   age?: string;
   stayArrangement?: string;
+  hasChildren?: string;
   workStartDate?: string;
   childrenCount?: string;
   workExperienceSummary?: string;
@@ -25,6 +26,10 @@ export interface VerificationProfileDraft {
   nextOfKinName?: string;
   nextOfKinPhone?: string;
   nextOfKinRelationship?: string;
+  ownerFullName?: string;
+  tradingHours?: string;
+  numberPlate?: string;
+  prdp?: string;
   mission?: string;
   vision?: string;
   values?: string;
@@ -38,6 +43,7 @@ export interface VerificationProfileDraft {
 
 export interface VerificationUploadSummary {
   profileImageUploaded: boolean;
+  coverImageUploaded?: boolean;
   galleryCount: number;
 }
 
@@ -59,7 +65,7 @@ export function getVerificationDocuments(category: string): VerificationDocument
     return [
       {
         key: "certified-id",
-        label: "Certified copy of ID",
+        label: "Certified copy of ID / passport",
         hint: "Certified copy of a valid Omang, passport, or national identity document",
         sensitive: true,
       },
@@ -70,8 +76,8 @@ export function getVerificationDocuments(category: string): VerificationDocument
       },
       {
         key: "proof-of-residence-affidavit",
-        label: "Proof of residence affidavit",
-        hint: "Proof of residence or residence affidavit",
+        label: "Certified proof of residence",
+        hint: "Certified proof of residence or residence affidavit",
       },
       {
         key: "police-clearance",
@@ -85,14 +91,9 @@ export function getVerificationDocuments(category: string): VerificationDocument
   if (category === "kiddies-transport") {
     return [
       {
-        key: "registration-certificate",
-        label: "Registration certificate",
-        hint: "Business or operator registration certificate",
-      },
-      {
-        key: "operating-documentation",
-        label: "Relevant operating documentation",
-        hint: "Transport permit, operating licence, or supporting operating document",
+        key: "vehicle-license-disk",
+        label: "Picture of valid car license disk",
+        hint: "Photo or scan of the current vehicle license disk",
       },
       {
         key: "drivers-license",
@@ -101,10 +102,15 @@ export function getVerificationDocuments(category: string): VerificationDocument
         sensitive: true,
       },
       {
-        key: "representative-id",
-        label: "Representative ID",
-        hint: "Valid ID for the owner, director, or authorised representative",
+        key: "prdp",
+        label: "PRDP",
+        hint: "Valid professional driving permit",
         sensitive: true,
+      },
+      {
+        key: "vehicle-picture",
+        label: "Picture of vehicle",
+        hint: "Clear picture of the taxi or combi used for transport",
       },
     ];
   }
@@ -112,25 +118,47 @@ export function getVerificationDocuments(category: string): VerificationDocument
   if (PEDIATRIC_SPECIALIST_CATEGORIES.has(category)) {
     return [
       {
+        key: "practising-license",
+        label: "Practising license",
+        hint: "Current practising license for the specialist in charge",
+        sensitive: true,
+      },
+      {
+        key: "private-practise-license",
+        label: "Private practise license",
+        hint: "Current private practise license where applicable",
+        sensitive: true,
+      },
+      {
+        key: "academic-qualifications",
+        label: "Academic qualifications / certificates",
+        hint: "Academic qualifications, certificates, and specialist credentials",
+        sensitive: true,
+      },
+      {
         key: "trading-license",
         label: "Trading license",
         hint: "Current trading license for the practice or clinic",
       },
       {
-        key: "professional-certificate",
-        label: "Professional certificate / qualifications",
-        hint: "Professional certificate or qualification documents",
+        key: "certificate-of-incorporation",
+        label: "Certificate of incorporation",
+        hint: "Company registration or certificate of incorporation",
       },
       {
-        key: "doctor-certified-id",
-        label: "Certified copy of doctor ID",
-        hint: "Certified ID copy for the doctor in charge",
-        sensitive: true,
+        key: "company-profile",
+        label: "Downloadable company profile",
+        hint: "PDF company profile for parents to download from your listing",
       },
+    ];
+  }
+
+  if (category === "kiddies-parties") {
+    return [
       {
-        key: "practice-license",
-        label: "Practice license",
-        hint: "Practice and private practice licence for the doctor in charge",
+        key: "certificate-of-incorporation",
+        label: "Certificate of incorporation",
+        hint: "Company registration or certificate of incorporation",
         sensitive: true,
       },
     ];
@@ -207,13 +235,15 @@ export function missingVerificationProfileFields(
   const missing: string[] = [];
 
   if (!uploads.profileImageUploaded) missing.push("Display picture");
+  if (!uploads.coverImageUploaded) missing.push("Cover photo");
 
   if (CARE_WORKER_CATEGORIES.has(category)) {
     if (!hasValue(profile.age)) missing.push("Age");
     if (!hasValue(profile.location)) missing.push("Location");
     if (!hasValue(profile.stayArrangement)) missing.push("Stay in or stay out");
     if (!hasValue(profile.workStartDate)) missing.push("Availability / resume work date");
-    if (!hasValue(profile.childrenCount)) missing.push("Number of kids");
+    if (!hasValue(profile.hasChildren)) missing.push("Whether they have kids");
+    if (profile.hasChildren === "yes" && !hasValue(profile.childrenCount)) missing.push("Number of kids");
     if (!hasValue(profile.workExperienceSummary)) missing.push("Brief work experience");
     if (!hasValue(profile.yearsExperience)) missing.push("Years of work experience");
     if (!hasValue(profile.references)) missing.push("References");
@@ -224,6 +254,24 @@ export function missingVerificationProfileFields(
     ) {
       missing.push("Next of kin details");
     }
+    return missing;
+  }
+
+  if (category === "kiddies-transport") {
+    if (!hasValue(profile.ownerFullName)) missing.push("Company name or driver full names");
+    if (!hasValue(profile.location)) missing.push("Location");
+    if (!hasValue(profile.numberPlate)) missing.push("Number plate");
+    if (!hasValue(profile.prdp)) missing.push("PRDP");
+    if (Number(profile.price) <= 0) missing.push("Price per month");
+    if (uploads.galleryCount < 1) missing.push("Vehicle picture");
+    return missing;
+  }
+
+  if (category === "kiddies-parties") {
+    if (!hasValue(profile.ownerFullName)) missing.push("Owner full names");
+    if (!hasValue(profile.location)) missing.push("Location");
+    if (!hasValue(profile.tradingHours)) missing.push("Trading hours");
+    if (!hasValue(profile.price)) missing.push("Services and prices");
     return missing;
   }
 
@@ -242,6 +290,8 @@ export function missingVerificationProfileFields(
     if (Number(profile.price) <= 0) missing.push("Consultation price");
     if (!hasValue(profile.medicalAids)) missing.push("Medical aids accepted");
     if (!hasValue(profile.bio)) missing.push("Background and about");
+    if (!hasValue(profile.tradingHours)) missing.push("Trading hours");
+    if (uploads.galleryCount < 1) missing.push("Facility picture");
     return missing;
   }
 

@@ -118,6 +118,7 @@ export interface ProviderProfileRecord {
   priceUnit: "monthly" | "per day" | "per hour" | "termly";
   age?: string;
   stayArrangement?: "stay-in" | "stay-out";
+  hasChildren?: "yes" | "no";
   workStartDate?: string;
   willingToRelocate?: boolean;
   childrenCount?: string;
@@ -127,6 +128,10 @@ export interface ProviderProfileRecord {
   nextOfKinName?: string;
   nextOfKinPhone?: string;
   nextOfKinRelationship?: string;
+  ownerFullName?: string;
+  tradingHours?: string;
+  numberPlate?: string;
+  prdp?: string;
   mission?: string;
   vision?: string;
   values?: string;
@@ -152,7 +157,7 @@ export interface ProviderProfileRecord {
 export interface PlatformUploadRecord {
   id: string;
   userId: string;
-  type: "document" | "gallery" | "profile-image";
+  type: "document" | "gallery" | "profile-image" | "cover-image";
   documentKey?: string;
   label: string;
   fileName: string;
@@ -839,7 +844,10 @@ export async function getPublishedProviderMediaUpload(id: string) {
   const upload = store.uploads.find(
     (item) =>
       item.id === id &&
-      (item.type === "gallery" || item.type === "profile-image") &&
+      (item.type === "gallery" ||
+        item.type === "profile-image" ||
+        item.type === "cover-image" ||
+        (item.type === "document" && item.documentKey === "company-profile")) &&
       store.providerProfiles[item.userId]?.published
   );
   return upload ?? null;
@@ -865,10 +873,10 @@ export async function recordUpload(upload: PlatformUploadRecord) {
       ...store.uploads.filter(
         (item) =>
           !(
-            (upload.type === "document" || upload.type === "profile-image") &&
+            (upload.type === "document" || upload.type === "profile-image" || upload.type === "cover-image") &&
             item.type === upload.type &&
             item.userId === upload.userId &&
-            (upload.type === "profile-image" || item.documentKey === upload.documentKey)
+            (upload.type === "profile-image" || upload.type === "cover-image" || item.documentKey === upload.documentKey)
           )
       ),
     ];
@@ -1095,11 +1103,15 @@ export async function submitProviderVerification(userId: string) {
     const profileImages = store.uploads.filter(
       (upload) => upload.userId === userId && upload.type === "profile-image"
     );
+    const coverImages = store.uploads.filter(
+      (upload) => upload.userId === userId && upload.type === "cover-image"
+    );
     const galleryImages = store.uploads.filter(
       (upload) => upload.userId === userId && upload.type === "gallery"
     );
     const missingProfileFields = missingVerificationProfileFields(profile, {
       profileImageUploaded: profileImages.length > 0,
+      coverImageUploaded: coverImages.length > 0,
       galleryCount: galleryImages.length,
     });
     if (missingProfileFields.length > 0) {

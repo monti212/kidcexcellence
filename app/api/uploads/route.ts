@@ -65,9 +65,11 @@ export async function GET(request: Request) {
       ? "gallery"
       : searchParams.get("type") === "profile-image"
         ? "profile-image"
-        : searchParams.get("type") === "document"
-          ? "document"
-          : undefined;
+        : searchParams.get("type") === "cover-image"
+          ? "cover-image"
+          : searchParams.get("type") === "document"
+            ? "document"
+            : undefined;
   const uploads = await listUploads(gate.auth.session.userId, type);
   return NextResponse.json({ uploads: uploads.map(uploadResponse) });
 }
@@ -101,7 +103,9 @@ export async function POST(request: Request) {
       ? "gallery"
       : formData?.get("type") === "profile-image"
         ? "profile-image"
-        : "document";
+        : formData?.get("type") === "cover-image"
+          ? "cover-image"
+          : "document";
   const documentKey =
     typeof formData?.get("documentKey") === "string"
       ? String(formData.get("documentKey"))
@@ -110,17 +114,19 @@ export async function POST(request: Request) {
     typeof formData?.get("label") === "string" && String(formData.get("label")).trim()
       ? String(formData.get("label")).trim()
       : type === "gallery"
-        ? "Gallery photo"
-        : type === "profile-image"
-          ? "Profile picture"
+      ? "Gallery photo"
+      : type === "profile-image"
+        ? "Profile picture"
+        : type === "cover-image"
+          ? "Cover photo"
           : "Provider document";
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "A file is required." }, { status: 400 });
   }
 
-  const allowedTypes = type === "gallery" || type === "profile-image" ? GALLERY_TYPES : DOCUMENT_TYPES;
-  const maxBytes = type === "gallery" || type === "profile-image" ? MAX_GALLERY_BYTES : MAX_DOCUMENT_BYTES;
+  const allowedTypes = type === "gallery" || type === "profile-image" || type === "cover-image" ? GALLERY_TYPES : DOCUMENT_TYPES;
+  const maxBytes = type === "gallery" || type === "profile-image" || type === "cover-image" ? MAX_GALLERY_BYTES : MAX_DOCUMENT_BYTES;
   if (!allowedTypes.has(file.type)) {
     return NextResponse.json({ error: "Unsupported file type." }, { status: 400 });
   }

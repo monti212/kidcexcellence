@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,15 @@ import {
   getCategoryById,
   getCategoryIcon,
 } from "@/lib/platform-service";
-import { readStore } from "@/lib/platform-store";
+import {
+  SESSION_COOKIE_NAME,
+  getSessionByToken,
+  readStore,
+} from "@/lib/platform-store";
 import {
   ArrowLeft,
   CalendarDays,
+  Car,
   CheckCircle2,
   GraduationCap,
   Languages,
@@ -34,12 +40,20 @@ export default async function ProviderProfilePage({
   const provider = allProvidersFromStore(store).find((item) => item.id === id);
   if (!provider) notFound();
 
+  const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  const auth = await getSessionByToken(sessionToken);
   const category = getCategoryById(provider.category);
   const categoryIcon = getCategoryIcon(provider.category);
+  const isSpecialist = ["pediatric-clinics", "pediatric-therapy", "child-psychologists"].includes(provider.category);
+  const canViewSpecialistPrice = !isSpecialist || auth?.user.role === "parent" || auth?.user.role === "admin";
   const profileDetails = [
+    provider.ownerFullName ? [UserRound, "Owner / contact person", provider.ownerFullName] : null,
     provider.age ? [UserRound, "Age", `${provider.age} years old`] : null,
     provider.stayArrangement
       ? [UserRound, "Stay arrangement", provider.stayArrangement === "stay-in" ? "Stay in" : "Stay out"]
+      : null,
+    provider.hasChildren
+      ? [UserRound, "Has kids", provider.hasChildren === "yes" ? `Yes${provider.childrenCount ? `, ${provider.childrenCount}` : ""}` : "No"]
       : null,
     typeof provider.willingToRelocate === "boolean"
       ? [MapPin, "Relocation", provider.willingToRelocate ? "Willing to relocate" : "Not relocating"]
@@ -57,11 +71,15 @@ export default async function ProviderProfilePage({
     provider.qualifications?.length
       ? [GraduationCap, "Qualifications", provider.qualifications.join(", ")]
       : null,
+    provider.tradingHours ? [CalendarDays, "Trading hours", provider.tradingHours] : null,
+    provider.numberPlate ? [Car, "Number plate", provider.numberPlate] : null,
+    provider.prdp ? [ShieldCheck, "PRDP", provider.prdp] : null,
     [CalendarDays, "Availability", provider.availability],
     [ShieldCheck, "Experience", provider.experience],
   ].filter(Boolean) as Array<[typeof Star, string, string]>;
   const gallery = provider.gallery?.length ? provider.gallery : [provider.image];
   const hasPrice = provider.price > 0;
+  const showPrice = hasPrice && canViewSpecialistPrice;
   const filledStars = Math.round(provider.rating);
 
   return (
@@ -77,8 +95,8 @@ export default async function ProviderProfilePage({
             <section className="brand-card overflow-hidden">
               <div className="relative min-h-[30rem] overflow-hidden bg-[var(--brand-sky)] sm:min-h-[34rem]">
                 <Image
-                  src={provider.image}
-                  alt={`${provider.name} profile picture`}
+                  src={provider.coverImage ?? provider.image}
+                  alt={`${provider.name} cover photo`}
                   fill
                   priority
                   sizes="(min-width: 1024px) 816px, 100vw"
@@ -187,7 +205,7 @@ export default async function ProviderProfilePage({
               </section>
             )}
 
-            {(provider.mission || provider.vision || provider.values || provider.medicalAids || provider.references) && (
+            {(provider.mission || provider.vision || provider.values || provider.medicalAids || provider.references || provider.companyProfileUrl) && (
               <section className="brand-card p-6">
                 <h2 className="text-2xl font-black text-[var(--brand-ink)]">Additional details</h2>
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -213,6 +231,19 @@ export default async function ProviderProfilePage({
                     <div>
                       <h3 className="text-sm font-black text-[var(--brand-ink)]">Medical aids</h3>
                       <p className="mt-1 text-sm leading-6 text-[var(--brand-muted)]">{provider.medicalAids}</p>
+                    </div>
+                  )}
+                  {provider.companyProfileUrl && (
+                    <div>
+                      <h3 className="text-sm font-black text-[var(--brand-ink)]">Company profile</h3>
+                      <a
+                        href={provider.companyProfileUrl}
+                        className="mt-1 inline-flex text-sm font-black text-[var(--brand-leaf)] hover:underline"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Download company profile
+                      </a>
                     </div>
                   )}
                   {provider.references && (
@@ -256,11 +287,13 @@ export default async function ProviderProfilePage({
                 Contact provider
               </div>
               <div className="mt-3 text-3xl font-black text-[var(--brand-ink)]">
-                {hasPrice ? (
+                {showPrice ? (
                   <>
                     P {provider.price.toLocaleString()}
                     <span className="text-sm text-[var(--brand-muted)]"> /{provider.priceUnit}</span>
                   </>
+                ) : hasPrice && !canViewSpecialistPrice ? (
+                  <span className="text-xl">Sign in as a parent to view pricing</span>
                 ) : (
                   "Contact for pricing"
                 )}
@@ -269,7 +302,7 @@ export default async function ProviderProfilePage({
                 <Link href={`/messages?provider=${provider.id}`}>
                   <Button className="w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)]">
                     <MessageCircle className="mr-2 h-4 w-4" />
-                    Message in app
+                    Book Now
                   </Button>
                 </Link>
                 <a href={`tel:${provider.phone.replace(/\s/g, "")}`}>

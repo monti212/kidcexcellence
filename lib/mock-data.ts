@@ -30,17 +30,24 @@ export interface Provider {
   verified: boolean;
   bio: string;
   image: string;
+  coverImage?: string;
   age?: number;
   stayArrangement?: "stay-in" | "stay-out";
+  hasChildren?: "yes" | "no";
   willingToRelocate?: boolean;
   childrenCount?: number;
   yearsExperience?: number;
   references?: string;
   nextOfKin?: string;
+  ownerFullName?: string;
+  tradingHours?: string;
+  numberPlate?: string;
+  prdp?: string;
   mission?: string;
   vision?: string;
   values?: string;
   medicalAids?: string;
+  companyProfileUrl?: string;
   languages?: string[];
   qualifications?: string[];
   careAges?: string;
@@ -89,10 +96,79 @@ export const CATEGORIES: Category[] = [
       { id: "primary", name: "Primary Schools" },
       { id: "junior", name: "Junior Schools" },
       { id: "senior", name: "Senior Secondary/High Schools" },
+      { id: "tertiary-schools", name: "Tertiary Schools" },
     ],
   },
   { id: "nurseries", name: "Find a Nursery", label: "Nursery", icon: "🌱", count: 63 },
-  { id: "tutors", name: "Find a Tutor", label: "Tutor", icon: "📚", count: 76 },
+  {
+    id: "tutors",
+    name: "Find a Tutor",
+    label: "Tutor",
+    icon: "📚",
+    count: 76,
+    subcategories: [
+      {
+        id: "primary-school-level",
+        name: "Primary School Level",
+        children: [
+          { id: "primary-maths", name: "Maths" },
+          { id: "primary-science", name: "Science" },
+          { id: "primary-english", name: "English" },
+          { id: "primary-setswana", name: "Setswana" },
+          { id: "primary-literature", name: "Literature" },
+        ],
+      },
+      {
+        id: "junior-school-level",
+        name: "Junior School Level",
+        children: [
+          { id: "junior-maths", name: "Maths" },
+          { id: "junior-science", name: "Science" },
+          { id: "junior-english", name: "English" },
+          { id: "junior-setswana", name: "Setswana" },
+          { id: "junior-business-studies", name: "Business Studies" },
+          { id: "junior-literature", name: "Literature" },
+        ],
+      },
+      {
+        id: "senior-high-school-level",
+        name: "Senior/High School Level",
+        children: [
+          { id: "senior-maths", name: "Maths" },
+          { id: "senior-science", name: "Science" },
+          { id: "senior-biology", name: "Biology" },
+          { id: "senior-chemistry", name: "Chemistry" },
+          { id: "senior-physics", name: "Physics" },
+          { id: "senior-accounting", name: "Accounting" },
+          { id: "senior-economics", name: "Economics" },
+          { id: "senior-business-studies", name: "Business Studies" },
+          { id: "senior-english", name: "English" },
+          { id: "senior-setswana", name: "Setswana" },
+          { id: "senior-statistics", name: "Statistics" },
+          { id: "senior-literature", name: "Literature" },
+        ],
+      },
+      {
+        id: "tertiary-school-level",
+        name: "Tertiary School Level",
+        children: [
+          { id: "tertiary-maths", name: "Maths" },
+          { id: "tertiary-science", name: "Science" },
+          { id: "tertiary-biology", name: "Biology" },
+          { id: "tertiary-chemistry", name: "Chemistry" },
+          { id: "tertiary-physics", name: "Physics" },
+          { id: "tertiary-accounting", name: "Accounting" },
+          { id: "tertiary-economics", name: "Economics" },
+          { id: "tertiary-business-studies", name: "Business Studies" },
+          { id: "tertiary-english", name: "English" },
+          { id: "tertiary-setswana", name: "Setswana" },
+          { id: "tertiary-statistics", name: "Statistics" },
+          { id: "tertiary-research-project-support", name: "Research Assistance and Project Support" },
+          { id: "tertiary-literature", name: "Literature" },
+        ],
+      },
+    ],
+  },
   { id: "pediatric-clinics", name: "Find a Pediatrician", label: "Pediatrician", icon: "🏥", count: 24 },
   {
     id: "pediatric-therapy",
@@ -115,18 +191,45 @@ export const CATEGORIES: Category[] = [
     icon: "🎯",
     count: 34,
     subcategories: [
-      {
-        id: "sports",
-        name: "Sports",
-        children: [
-          { id: "football", name: "Football" },
-          { id: "tennis", name: "Tennis" },
-          { id: "rugby", name: "Rugby" },
-        ],
-      },
-      { id: "arts", name: "Arts & Crafts" },
+      { id: "swimming", name: "Swimming" },
+      { id: "football", name: "Football" },
+      { id: "chess", name: "Chess" },
+      { id: "robotics", name: "Robotics" },
+      { id: "visual-arts", name: "Visual Arts" },
+      { id: "hand-crafts", name: "Hand Crafts" },
+      { id: "ballet", name: "Ballet" },
       { id: "music", name: "Music" },
-      { id: "other-activities", name: "Other activities" },
+      { id: "tennis", name: "Tennis" },
+      { id: "badmatin", name: "Badmatin" },
+      { id: "karate", name: "Karate" },
+      { id: "foreign-language", name: "Foreign Language" },
+      { id: "basketball", name: "Basketball" },
+      { id: "gymnastics", name: "Gymnastics" },
+      { id: "netball", name: "Netball" },
+      { id: "drama-theater-acting", name: "Drama, Theater and Acting" },
+      { id: "cooking-baking", name: "Cooking and Baking" },
+      { id: "fashion-design", name: "Fashion Design" },
+      { id: "poetry-creative-writing-storytelling", name: "Poetry, Creative Writting and Story Telling" },
+      { id: "public-speaking", name: "Public Speaking" },
+      { id: "dance-choreography", name: "Dance and Choreography" },
+      { id: "athletics", name: "Athletics" },
+      { id: "rugby", name: "Rugby" },
+      { id: "hockey", name: "Hockey" },
+      { id: "cycling", name: "Cycling" },
+      { id: "boxing", name: "Boxing" },
+      { id: "choir", name: "Choir" },
+      { id: "it-computing", name: "IT and Computing" },
+      { id: "animation", name: "Animation" },
+      { id: "media-television", name: "Media and Television" },
+      { id: "sewing", name: "Sewing" },
+      { id: "comedy", name: "Comedy" },
+      { id: "book-clubs", name: "Book Clubs" },
+      { id: "coding", name: "Coding" },
+      { id: "debate", name: "Debate" },
+      { id: "farming-gardening", name: "Farming and Gardening" },
+      { id: "diy-experiments", name: "DIY and Experiments" },
+      { id: "mentorship-leadership", name: "Mentorship and Leadership Programs" },
+      { id: "volunteering-community-service", name: "Volunteering and Community Service" },
     ],
   },
   {
@@ -136,8 +239,8 @@ export const CATEGORIES: Category[] = [
     icon: "🚗",
     count: 15,
     subcategories: [
-      { id: "school-runs", name: "School Runs" },
-      { id: "private-shuttle", name: "Private Shuttle" },
+      { id: "taxi", name: "Taxi" },
+      { id: "combi", name: "Combi" },
     ],
   },
   { id: "kiddies-parties", name: "Kiddies Parties", label: "Kiddies Parties", icon: "🎉", count: 22 },

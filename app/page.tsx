@@ -105,6 +105,37 @@ function CompactCategoryIcon({ categoryId }: { categoryId: string }) {
   );
 }
 
+function CategorySubcategoryList({
+  subcategories,
+}: {
+  subcategories: NonNullable<(typeof CATEGORIES)[number]["subcategories"]>;
+}) {
+  return (
+    <div className="mt-3 max-h-44 space-y-2 overflow-y-auto pr-1">
+      {subcategories.map((subcategory) => (
+        <div key={subcategory.id}>
+          <div className="flex items-start gap-1.5 text-xs font-bold leading-5 text-[var(--brand-muted)]">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand-sky)]" />
+            <span>{subcategory.name}</span>
+          </div>
+          {subcategory.children?.length ? (
+            <div className="ml-3 mt-1 flex flex-wrap gap-1">
+              {subcategory.children.map((child) => (
+                <span
+                  key={child.id}
+                  className="rounded-full bg-white px-2 py-0.5 text-[0.66rem] font-bold leading-5 text-[var(--brand-muted)]"
+                >
+                  {child.name}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [featuredProviders, setFeaturedProviders] = useState<Provider[]>([]);
   const [marketplaceProviders, setMarketplaceProviders] = useState<Provider[]>([]);
@@ -278,15 +309,8 @@ export default function HomePage() {
               >
                 <CategoryIcon categoryId={category.id} />
                 <div className="mt-4 text-sm font-black text-[var(--brand-ink)]">{category.name}</div>
-                {category.id === "schools" && category.subcategories?.length ? (
-                  <ul className="mt-3 space-y-1 text-xs font-bold leading-5 text-[var(--brand-muted)]">
-                    {category.subcategories.map((subcategory) => (
-                      <li key={subcategory.id} className="flex items-start gap-1.5">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand-sky)]" />
-                        <span>{subcategory.name}</span>
-                      </li>
-                    ))}
-                  </ul>
+                {category.subcategories?.length ? (
+                  <CategorySubcategoryList subcategories={category.subcategories} />
                 ) : null}
                 <div className={`mt-1 text-xs font-black ${accent.count}`}>
                   {displayCount} providers

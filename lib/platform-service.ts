@@ -160,6 +160,15 @@ export function buildAccountProvider(
   const profileImage = uploads.find(
     (upload) => upload.userId === user.id && upload.type === "profile-image"
   );
+  const coverImage = uploads.find(
+    (upload) => upload.userId === user.id && upload.type === "cover-image"
+  );
+  const companyProfile = uploads.find(
+    (upload) =>
+      upload.userId === user.id &&
+      upload.type === "document" &&
+      upload.documentKey === "company-profile"
+  );
   const profilePrice = Number(profile.price) || 0;
 
   return {
@@ -178,8 +187,10 @@ export function buildAccountProvider(
       : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
           profile.displayName || user.name
         )}`,
+    coverImage: coverImage ? `/api/uploads/${coverImage.id}` : undefined,
     age: Number(profile.age) || undefined,
     stayArrangement: profile.stayArrangement,
+    hasChildren: profile.hasChildren,
     willingToRelocate: profile.willingToRelocate,
     childrenCount: Number(profile.childrenCount) || undefined,
     yearsExperience: Number(profile.yearsExperience) || undefined,
@@ -190,10 +201,15 @@ export function buildAccountProvider(
             .filter(Boolean)
             .join(" · ")
         : undefined,
+    ownerFullName: profile.ownerFullName,
+    tradingHours: profile.tradingHours,
+    numberPlate: profile.numberPlate,
+    prdp: profile.prdp,
     mission: profile.mission,
     vision: profile.vision,
     values: profile.values,
     medicalAids: profile.medicalAids,
+    companyProfileUrl: companyProfile ? `/api/uploads/${companyProfile.id}` : undefined,
     services: profile.services,
     experience: profile.yearsExperience
       ? `${profile.yearsExperience} years${profile.experience ? ` · ${profile.experience}` : ""}`
