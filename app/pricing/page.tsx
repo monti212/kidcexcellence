@@ -16,6 +16,20 @@ const familyFeatures = [
   "Contact providers and keep conversations in one place",
 ];
 
+function providerBillingHref(packageId?: string) {
+  const billingParams = new URLSearchParams({ tab: "documents" });
+  const authParams = new URLSearchParams({ role: "provider" });
+
+  if (packageId) {
+    billingParams.set("package", packageId);
+    billingParams.set("category", "nannies");
+    authParams.set("category", "nannies");
+  }
+
+  authParams.set("next", `/profile/provider?${billingParams.toString()}`);
+  return `/auth?${authParams.toString()}`;
+}
+
 export default function PricingPage() {
   return (
     <div className="brand-page min-h-screen">
@@ -67,7 +81,7 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <Link href="/search" className="mt-6 inline-block">
+              <Link href="/search" className="mt-auto inline-block pt-6">
                 <Button className="rounded-full bg-[var(--brand-sky)] px-5 font-black text-white hover:bg-[var(--brand-coral)]">
                   Browse providers
                 </Button>
@@ -95,9 +109,9 @@ export default function PricingPage() {
                 Standard provider verification supports document review before a
                 listing is submitted for approval.
               </p>
-              <Link href="/auth?role=provider" className="mt-6 inline-block">
+              <Link href={providerBillingHref()} className="mt-auto inline-block pt-6">
                 <Button variant="outline" className="rounded-full border-[var(--brand-line)] bg-white px-5 font-black text-[var(--brand-ink)] hover:bg-[var(--brand-cream)]">
-                  Start onboarding
+                  Choose verification
                 </Button>
               </Link>
             </div>
@@ -133,6 +147,11 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
+                <Link href={providerBillingHref(plan.id)} className="mt-auto inline-block pt-6">
+                  <Button className="rounded-full bg-[var(--brand-sky)] px-5 font-black text-white hover:bg-[var(--brand-coral)]">
+                    Choose {plan.name}
+                  </Button>
+                </Link>
               </div>
             ))}
           </div>

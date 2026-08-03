@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -139,8 +140,45 @@ const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
   ],
 };
 
+type ProviderProfileTab = "basic" | "documents" | "pricing" | "gallery";
+
+function isProviderProfileTab(value: string | null): value is ProviderProfileTab {
+  return value === "basic" || value === "documents" || value === "pricing" || value === "gallery";
+}
+
 export default function ProviderProfilePage() {
+  return (
+    <Suspense fallback={<ProviderProfileLoading />}>
+      <ProviderProfileContent />
+    </Suspense>
+  );
+}
+
+function ProviderProfileLoading() {
+  return (
+    <div className="min-h-screen brand-page px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-xl rounded-lg border border-[var(--brand-line)] bg-white p-6 text-center text-sm font-bold text-[var(--brand-muted)] shadow-sm">
+        Checking your provider account...
+      </div>
+    </div>
+  );
+}
+
+function ProviderProfileContent() {
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const requestedCategory = searchParams.get("category");
+  const requestedVettingCategory =
+    requestedCategory && categorySupportsVettingPackages(requestedCategory)
+      ? requestedCategory
+      : "";
+  const requestedPackage = VETTING_PACKAGES.find(
+    (plan) => plan.id === searchParams.get("package")
+  );
   const { user, session, loading } = usePlatformSession();
+  const [activeTab, setActiveTab] = useState<ProviderProfileTab>(
+    isProviderProfileTab(requestedTab) ? requestedTab : "basic"
+  );
   const [storedProfile, setStoredProfile] = useLocalStorageState<StoredProviderProfile>(
     "kidcellence.provider.profile",
     DEFAULT_PROVIDER_PROFILE,
@@ -152,7 +190,7 @@ export default function ProviderProfilePage() {
       "feeRows" in value
   );
   const [displayName, setDisplayName] = useState(storedProfile.displayName ?? "");
-  const [category, setCategory] = useState(storedProfile.category);
+  const [category, setCategory] = useState(requestedVettingCategory || storedProfile.category);
   const [location, setLocation] = useState(storedProfile.location ?? "");
   const [bio, setBio] = useState(storedProfile.bio ?? "");
   const [phone, setPhone] = useState(storedProfile.phone ?? "");
@@ -198,10 +236,10 @@ export default function ProviderProfilePage() {
     storedProfile.verificationPaymentReference ?? ""
   );
   const [verificationPackageId, setVerificationPackageId] = useState(
-    storedProfile.verificationPackageId ?? "standard"
+    requestedPackage?.id ?? storedProfile.verificationPackageId ?? "standard"
   );
   const [verificationPackageName, setVerificationPackageName] = useState(
-    storedProfile.verificationPackageName ?? ""
+    requestedPackage?.name ?? storedProfile.verificationPackageName ?? ""
   );
   const [verified, setVerified] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
@@ -259,15 +297,29 @@ export default function ProviderProfilePage() {
     setVerified(Boolean(payload.verified));
     if (!payload.profile) {
       setDisplayName(user?.name ?? "");
-      setCategory(user?.category ?? DEFAULT_PROVIDER_PROFILE.category);
+      setCategory(requestedVettingCategory || user?.category || DEFAULT_PROVIDER_PROFILE.category);
       setLocation(user?.location ?? "");
       setPhone(user?.phone ?? "");
       setWhatsapp(user?.phone ?? "");
       return;
     }
 
+    const profilePaymentStatus = payload.profile.verificationPaymentStatus ?? "unpaid";
+    const nextCategory =
+      profilePaymentStatus === "paid"
+        ? payload.profile.category ?? DEFAULT_PROVIDER_PROFILE.category
+        : requestedVettingCategory || payload.profile.category || DEFAULT_PROVIDER_PROFILE.category;
+    const nextVerificationPackageId =
+      profilePaymentStatus === "paid"
+        ? payload.profile.verificationPackageId ?? "standard"
+        : requestedPackage?.id ?? payload.profile.verificationPackageId ?? "standard";
+    const nextVerificationPackageName =
+      profilePaymentStatus === "paid"
+        ? payload.profile.verificationPackageName ?? ""
+        : requestedPackage?.name ?? payload.profile.verificationPackageName ?? "";
+
     setDisplayName(payload.profile.displayName ?? user?.name ?? "");
-    setCategory(payload.profile.category ?? DEFAULT_PROVIDER_PROFILE.category);
+    setCategory(nextCategory);
     setLocation(payload.profile.location ?? user?.location ?? "");
     setBio(payload.profile.bio ?? "");
     setPhone(payload.profile.phone ?? user?.phone ?? "");
@@ -295,16 +347,16 @@ export default function ProviderProfilePage() {
     setLiveIn(Boolean(payload.profile.liveIn));
     setPublished(Boolean(payload.profile.published));
     setVerificationStatus(payload.profile.verificationStatus ?? "not_submitted");
-    setVerificationPaymentStatus(payload.profile.verificationPaymentStatus ?? "unpaid");
+    setVerificationPaymentStatus(profilePaymentStatus);
     setVerificationFeePaidAt(payload.profile.verificationFeePaidAt ?? "");
     setVerificationPaymentReference(payload.profile.verificationPaymentReference ?? "");
-    setVerificationPackageId(payload.profile.verificationPackageId ?? "standard");
-    setVerificationPackageName(payload.profile.verificationPackageName ?? "");
+    setVerificationPackageId(nextVerificationPackageId);
+    setVerificationPackageName(nextVerificationPackageName);
     setVerified(Boolean(payload.verified));
     setFeeRows(Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows);
     setStoredProfile({
       displayName: payload.profile.displayName ?? user?.name ?? "",
-      category: payload.profile.category ?? DEFAULT_PROVIDER_PROFILE.category,
+      category: nextCategory,
       location: payload.profile.location ?? user?.location ?? "",
       bio: payload.profile.bio ?? "",
       phone: payload.profile.phone ?? user?.phone ?? "",
@@ -332,17 +384,17 @@ export default function ProviderProfilePage() {
       liveIn: Boolean(payload.profile.liveIn),
       published: Boolean(payload.profile.published),
       verificationStatus: payload.profile.verificationStatus ?? "not_submitted",
-      verificationPaymentStatus: payload.profile.verificationPaymentStatus ?? "unpaid",
+      verificationPaymentStatus: profilePaymentStatus,
       verificationFeeAmount: payload.profile.verificationFeeAmount,
       verificationFeeCurrency: payload.profile.verificationFeeCurrency,
       verificationFeePaidAt: payload.profile.verificationFeePaidAt,
       verificationPaymentReference: payload.profile.verificationPaymentReference,
-      verificationPackageId: payload.profile.verificationPackageId,
-      verificationPackageName: payload.profile.verificationPackageName,
+      verificationPackageId: nextVerificationPackageId,
+      verificationPackageName: nextVerificationPackageName,
       feeRows: Array.isArray(payload.profile.feeRows) ? payload.profile.feeRows : DEFAULT_PROVIDER_PROFILE.feeRows,
       savedAt: payload.profile.savedAt,
     });
-  }, [session, setStoredProfile, user]);
+  }, [requestedPackage, requestedVettingCategory, session, setStoredProfile, user]);
 
   useEffect(() => {
     const refreshTimer = window.setTimeout(() => {
@@ -682,7 +734,7 @@ export default function ProviderProfilePage() {
           )}
         </div>
 
-        <Tabs defaultValue="basic">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ProviderProfileTab)}>
           <TabsList className="grid grid-cols-4 bg-white border border-[var(--brand-line)] rounded-lg p-1 shadow-sm mb-6 w-full">
             <TabsTrigger value="basic" className="rounded-lg text-sm">Basic Info</TabsTrigger>
             <TabsTrigger value="documents" className="rounded-lg text-sm">Documents</TabsTrigger>

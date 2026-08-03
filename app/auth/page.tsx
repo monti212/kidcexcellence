@@ -19,6 +19,18 @@ import { Eye, EyeOff, Baby, Briefcase } from "lucide-react";
 import { PROVIDER_CATEGORY_OPTIONS } from "@/lib/mock-data";
 import { clearLegacyPlatformSession, notifyPlatformSessionChanged } from "@/lib/use-platform-session";
 
+function safeNextPath(next: string | null, role: "parent" | "provider" | "admin") {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) {
+    return role === "provider" ? "/profile/provider" : role === "admin" ? "/admin" : "/profile/parent";
+  }
+
+  if (role === "provider" && next.startsWith("/profile/provider")) return next;
+  if (role === "parent" && next.startsWith("/profile/parent")) return next;
+  if (role === "admin" && next.startsWith("/admin")) return next;
+
+  return role === "provider" ? "/profile/provider" : role === "admin" ? "/admin" : "/profile/parent";
+}
+
 export default function AuthPage() {
   return (
     <Suspense fallback={<div className="brand-page flex min-h-screen items-center justify-center text-sm font-bold text-[var(--brand-muted)]">Loading account access...</div>}>
@@ -32,9 +44,10 @@ function AuthPageContent() {
   const searchParams = useSearchParams();
   const initialMode = searchParams.get("mode") === "login";
   const initialSignupRole = searchParams.get("role") === "provider" ? "provider" : "parent";
+  const requestedProviderCategory = searchParams.get("category") ?? "";
   const [isLogin, setIsLogin] = useState(initialMode);
   const [parentLocation, setParentLocation] = useState("");
-  const [providerCategory, setProviderCategory] = useState("");
+  const [providerCategory, setProviderCategory] = useState(requestedProviderCategory);
   const [providerLocation, setProviderLocation] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -44,6 +57,11 @@ function AuthPageContent() {
 
   useEffect(() => {
     setIsLogin(searchParams.get("mode") === "login");
+  }, [searchParams]);
+
+  useEffect(() => {
+    const nextProviderCategory = searchParams.get("category");
+    if (nextProviderCategory) setProviderCategory(nextProviderCategory);
   }, [searchParams]);
 
   const completeAuth = async (role: "parent" | "provider" | "login", formData: FormData) => {
@@ -81,13 +99,13 @@ function AuthPageContent() {
     notifyPlatformSessionChanged();
     setStatusMessage(
       session.role === "provider"
-        ? "Provider account created. Opening your listing workspace..."
+        ? "Opening your provider workspace..."
         : role === "parent"
           ? "Parent account created. Opening your family profile..."
           : "Welcome back. Opening your parent workspace..."
     );
     window.setTimeout(() => {
-      router.push(session.role === "provider" ? "/profile/provider" : "/profile/parent");
+      router.push(safeNextPath(searchParams.get("next"), session.role));
     }, 600);
   };
 
