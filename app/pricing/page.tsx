@@ -1,0 +1,129 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { CheckCircle2, CreditCard, Search, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { VERIFICATION_FEE } from "@/lib/verification-requirements";
+import { VETTING_PACKAGES } from "@/lib/vetting-packages";
+
+export const metadata: Metadata = {
+  title: "Pricing | Kidcellence",
+  description: "Kidcellence pricing for families and provider verification.",
+};
+
+const familyFeatures = [
+  "Search schools, nannies, tutors, clinics, and care services",
+  "Compare fees, reviews, availability, and verification signals",
+  "Contact providers and keep conversations in one place",
+];
+
+export default function PricingPage() {
+  return (
+    <div className="brand-page min-h-screen">
+      <header className="border-b border-[var(--brand-line)] bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="grid h-11 w-11 place-items-center rounded-lg bg-[var(--brand-sky)] text-[var(--brand-gold)]">
+            <CreditCard className="h-5 w-5" />
+          </div>
+          <p className="brand-label mt-6">Pricing</p>
+          <h1 className="mt-2 text-4xl font-black text-[var(--brand-ink)] sm:text-5xl">
+            Clear costs for finding and verifying care.
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--brand-muted)]">
+            Families can browse Kidcellence for free. Providers pay only when they
+            submit verification or select a nanny/helper vetting package.
+          </p>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+        <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-lg border border-[var(--brand-line)] bg-white p-6">
+            <Search className="h-5 w-5 text-[var(--brand-leaf)]" />
+            <h2 className="mt-4 text-2xl font-black text-[var(--brand-ink)]">
+              Families
+            </h2>
+            <div className="mt-4 text-5xl font-black text-[var(--brand-ink)]">
+              Free
+            </div>
+            <p className="mt-3 text-sm leading-6 text-[var(--brand-muted)]">
+              Browse and compare provider listings before choosing who to contact.
+            </p>
+            <ul className="mt-6 space-y-3 text-sm leading-6 text-[var(--brand-muted)]">
+              {familyFeatures.map((feature) => (
+                <li key={feature} className="flex gap-3">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--brand-leaf)]" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+            <Link href="/search" className="mt-6 inline-block">
+              <Button className="rounded-full bg-[var(--brand-sky)] px-5 font-black text-white hover:bg-[var(--brand-coral)]">
+                Browse providers
+              </Button>
+            </Link>
+          </div>
+
+          <div className="rounded-lg border border-[var(--brand-line)] bg-white p-6">
+            <ShieldCheck className="h-5 w-5 text-[var(--brand-leaf)]" />
+            <h2 className="mt-4 text-2xl font-black text-[var(--brand-ink)]">
+              Provider verification
+            </h2>
+            <div className="mt-4 flex flex-wrap items-end gap-x-2 gap-y-1">
+              <span className="text-5xl font-black text-[var(--brand-ink)]">
+                P {VERIFICATION_FEE.amount}
+              </span>
+              <span className="pb-2 text-sm font-bold text-[var(--brand-muted)]">
+                one-time review fee
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-[var(--brand-muted)]">
+              Standard provider verification supports document review before a
+              listing is submitted for approval.
+            </p>
+            <Link href="/auth?role=provider" className="mt-6 inline-block">
+              <Button variant="outline" className="rounded-full border-[var(--brand-line)] bg-white px-5 font-black text-[var(--brand-ink)] hover:bg-[var(--brand-cream)]">
+                Start provider onboarding
+              </Button>
+            </Link>
+          </div>
+        </section>
+
+        <section className="mt-10">
+          <p className="brand-label">Nanny and helper vetting</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {VETTING_PACKAGES.map((plan) => (
+              <div key={plan.id} className="rounded-lg border border-[var(--brand-line)] bg-white p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-black text-[var(--brand-ink)]">
+                      {plan.name}
+                    </h2>
+                    <p className="mt-2 text-sm leading-6 text-[var(--brand-muted)]">
+                      {plan.summary}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-black text-[var(--brand-ink)]">
+                      P {plan.price}
+                    </div>
+                    <div className="text-xs font-bold text-[var(--brand-muted)]">
+                      {plan.currency}
+                    </div>
+                  </div>
+                </div>
+                <ul className="mt-6 space-y-3 text-sm leading-6 text-[var(--brand-muted)]">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex gap-3">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--brand-leaf)]" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}

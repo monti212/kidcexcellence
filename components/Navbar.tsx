@@ -13,6 +13,7 @@ import { LogIn, LogOut, Menu, UserCircle, UserPlus } from "lucide-react";
 const navLinks = [
   { href: "/search", label: "Browse" },
   { href: "/compare", label: "Compare" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/messages", label: "Messages" },
   { href: "/safety", label: "Safety" },
 ];
