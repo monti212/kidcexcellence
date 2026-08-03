@@ -10,6 +10,27 @@ import { VETTING_PACKAGES } from "@/lib/vetting-packages";
 
 export const runtime = "nodejs";
 
+function configuredStripePaymentLink(packageId?: string) {
+  if (packageId === "standard") {
+    return process.env.STRIPE_STANDARD_VETTING_PAYMENT_LINK;
+  }
+  if (packageId === "vip") {
+    return process.env.STRIPE_VIP_VETTING_PAYMENT_LINK;
+  }
+  return process.env.STRIPE_VERIFICATION_PAYMENT_LINK ?? process.env.STRIPE_PAYMENT_LINK;
+}
+
+function stripeCheckoutUrl(link: string, reference: string, email: string) {
+  try {
+    const url = new URL(link);
+    url.searchParams.set("client_reference_id", reference);
+    url.searchParams.set("prefilled_email", email);
+    return url.toString();
+  } catch {
+    return link;
+  }
+}
+
 export async function GET() {
   return NextResponse.json({ fee: VERIFICATION_FEE, packages: VETTING_PACKAGES });
 }
@@ -38,9 +59,22 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json().catch(() => null);
+    const packageId = typeof body?.packageId === "string" ? body.packageId : undefined;
+    const stripeLink = configuredStripePaymentLink(packageId);
+
+    if (stripeLink) {
+      return NextResponse.json({
+        checkoutUrl: stripeCheckoutUrl(
+          stripeLink,
+          `verification:${auth.session.userId}:${packageId ?? "standard"}`,
+          auth.user.email
+        ),
+      });
+    }
+
     const payment = await recordVerificationPayment(
       auth.session.userId,
-      typeof body?.packageId === "string" ? body.packageId : undefined
+      packageId
     );
     return NextResponse.json({ payment });
   } catch (error) {

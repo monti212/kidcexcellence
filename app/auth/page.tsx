@@ -17,6 +17,7 @@ import {
 import { BrandMark } from "@/components/BrandMark";
 import { Eye, EyeOff, Baby, Briefcase } from "lucide-react";
 import { PROVIDER_CATEGORY_OPTIONS } from "@/lib/mock-data";
+import { BOTSWANA_LOCATIONS } from "@/lib/botswana-locations";
 import { clearLegacyPlatformSession, notifyPlatformSessionChanged } from "@/lib/use-platform-session";
 
 function safeNextPath(next: string | null, role: "parent" | "provider" | "admin") {
@@ -305,6 +306,36 @@ function LoginForm({
   );
 }
 
+function LocationAutocomplete({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <Input
+        id={id}
+        name="location"
+        list={`${id}-options`}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Start typing a place in Botswana"
+        autoComplete="address-level2"
+        className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+      />
+      <datalist id={`${id}-options`}>
+        {BOTSWANA_LOCATIONS.map((location) => (
+          <option key={location} value={location} />
+        ))}
+      </datalist>
+    </>
+  );
+}
+
 function SignupForm({
   defaultRole,
   parentLocation,
@@ -361,19 +392,11 @@ function SignupForm({
           </div>
           <div>
             <Label className="text-[var(--brand-ink)] font-medium text-sm">Location</Label>
-            <Select value={parentLocation} onValueChange={(value) => setParentLocation(value ?? "")}>
-              <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
-                <SelectValue placeholder="Select your city" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gaborone">Gaborone</SelectItem>
-                <SelectItem value="francistown">Francistown</SelectItem>
-                <SelectItem value="maun">Maun</SelectItem>
-                <SelectItem value="kasane">Kasane</SelectItem>
-                <SelectItem value="lobatse">Lobatse</SelectItem>
-                <SelectItem value="serowe">Serowe</SelectItem>
-              </SelectContent>
-            </Select>
+            <LocationAutocomplete
+              id="parent-location"
+              value={parentLocation}
+              onChange={setParentLocation}
+            />
           </div>
           <div>
             <Label className="text-[var(--brand-ink)] font-medium text-sm">Password</Label>
@@ -441,16 +464,11 @@ function SignupForm({
           </div>
           <div>
             <Label className="text-[var(--brand-ink)] font-medium text-sm">Location</Label>
-            <Select value={providerLocation} onValueChange={(value) => setProviderLocation(value ?? "")}>
-              <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
-                <SelectValue placeholder="Select your city" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gaborone">Gaborone</SelectItem>
-                <SelectItem value="francistown">Francistown</SelectItem>
-                <SelectItem value="maun">Maun</SelectItem>
-              </SelectContent>
-            </Select>
+            <LocationAutocomplete
+              id="provider-location"
+              value={providerLocation}
+              onChange={setProviderLocation}
+            />
           </div>
           <div>
             <Label className="text-[var(--brand-ink)] font-medium text-sm">Password</Label>

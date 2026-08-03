@@ -645,6 +645,11 @@ function ProviderProfileContent() {
     }
 
     const payload = await response.json();
+    if (payload.checkoutUrl) {
+      window.location.assign(payload.checkoutUrl);
+      return;
+    }
+
     setVerificationPaymentStatus(payload.payment?.status ?? "paid");
     setVerificationFeePaidAt(payload.payment?.paidAt ?? "");
     setVerificationPaymentReference(payload.payment?.reference ?? "");
@@ -1244,7 +1249,7 @@ function ProviderProfileContent() {
                       onClick={payVerificationFee}
                       className="mt-3 h-9 rounded-lg bg-[var(--brand-leaf)] text-xs font-black text-white hover:bg-[var(--brand-coral)]"
                     >
-                      Pay P {verificationPrice}
+                      Continue to Stripe - P {verificationPrice}
                     </Button>
                   )}
                   {verificationFeePaidAt && (
