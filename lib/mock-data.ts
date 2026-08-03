@@ -246,8 +246,8 @@ export const CATEGORIES: Category[] = [
   { id: "kiddies-parties", name: "Kiddies Parties", label: "Kiddies Parties", icon: "🎉", count: 22 },
   {
     id: "agencies",
-    name: "Independent Agencies",
-    label: "Independent Agency",
+    name: "Agencies",
+    label: "Agency",
     icon: "🤝",
     count: 0,
     placement: "additional",
@@ -272,7 +272,7 @@ export const CORE_SERVICE_CATEGORIES = CATEGORIES.filter(
 export const CORE_SERVICE_CATEGORY_COUNT = CORE_SERVICE_CATEGORIES.length;
 
 export const ADDITIONAL_PLATFORM_CATEGORIES = CATEGORIES.filter(
-  (category) => category.placement === "additional" && category.id === "agencies"
+  (category) => category.placement === "additional"
 );
 
 export const PROVIDER_CATEGORY_OPTIONS = CATEGORIES.map((category) => ({

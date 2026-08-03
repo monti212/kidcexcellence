@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, CreditCard, Search, ShieldCheck } from "lucide-react";
+import { CheckCircle2, CreditCard, MessageCircle, Search, ShieldCheck, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VERIFICATION_FEE } from "@/lib/verification-requirements";
 import { VETTING_PACKAGES } from "@/lib/vetting-packages";
@@ -14,6 +14,19 @@ const familyFeatures = [
   "Search schools, nannies, tutors, clinics, and care services",
   "Compare fees, reviews, availability, and verification signals",
   "Contact providers and keep conversations in one place",
+];
+
+const vetWithUsWhatsAppPackages = [
+  {
+    name: "Standard Package",
+    price: "P795",
+    href: "https://wa.me/26775378699?text=Hi%20Kidcellence%2C%20I%20would%20like%20to%20choose%20the%20Standard%20Vet%20With%20Us%20Package%20for%20P795.",
+  },
+  {
+    name: "VIP Package",
+    price: "P995",
+    href: "https://wa.me/26775378699?text=Hi%20Kidcellence%2C%20I%20would%20like%20to%20choose%20the%20VIP%20Vet%20With%20Us%20Package%20for%20P995.",
+  },
 ];
 
 function providerBillingHref(packageId?: string) {
@@ -153,6 +166,49 @@ export default function PricingPage() {
                   </Button>
                 </Link>
               </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-lg border border-[var(--brand-line)] bg-white p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="brand-label">Vet With Us Packages</p>
+              <h2 className="mt-2 text-2xl font-black text-[var(--brand-ink)]">
+                Choose a nanny/helper vetting option.
+              </h2>
+            </div>
+            <p className="max-w-sm text-sm leading-6 text-[var(--brand-muted)]">
+              These package options connect families to Kidcellence on WhatsApp.
+            </p>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {vetWithUsWhatsAppPackages.map((pkg) => (
+              <a
+                key={pkg.name}
+                href={pkg.href}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-3 transition-colors hover:border-[var(--brand-sky)] hover:bg-white"
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[rgba(84,178,191,0.22)] bg-[var(--brand-cream)] text-[var(--brand-gold)]">
+                    <Star className="h-4 w-4 fill-[var(--brand-gold)]" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-black text-[var(--brand-ink)]">
+                      {pkg.name}
+                    </span>
+                    <span className="block text-xs font-bold text-[var(--brand-muted)]">
+                      Contact +267 75 378 699
+                    </span>
+                  </span>
+                </span>
+                <span className="inline-flex shrink-0 items-center gap-2 text-sm font-black text-[var(--brand-sky)]">
+                  {pkg.price}
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                </span>
+              </a>
             ))}
           </div>
         </section>
