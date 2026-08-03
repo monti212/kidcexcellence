@@ -223,7 +223,7 @@ export default function HomePage() {
 
           
 
-          <div className="mx-auto mt-8 grid w-full max-w-7xl grid-cols-1 gap-3 px-4 sm:grid-cols-3 sm:px-6 lg:px-8">
+          <div className="mx-auto mb-12 mt-8 grid w-full max-w-7xl grid-cols-1 gap-3 px-4 sm:mb-14 sm:grid-cols-3 sm:px-6 lg:px-8">
             {[
               [String(marketplaceProviders.length), "listed providers"],
               [String(verifiedProviderCount), "verified profiles"],
