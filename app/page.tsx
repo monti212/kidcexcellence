@@ -111,7 +111,7 @@ function CategorySubcategoryList({
   subcategories: NonNullable<(typeof CATEGORIES)[number]["subcategories"]>;
 }) {
   return (
-    <div className="pointer-events-none absolute left-4 right-4 top-[7.25rem] z-20 max-h-52 space-y-2 overflow-y-auto rounded-lg border border-[var(--brand-line)] bg-white p-3 opacity-0 shadow-lg transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-visible:pointer-events-auto group-focus-visible:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+    <div className="pointer-events-none absolute left-4 right-4 top-[7.25rem] z-[60] max-h-52 space-y-2 overflow-y-auto rounded-lg border border-[var(--brand-line)] bg-white p-3 opacity-0 shadow-lg transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-visible:pointer-events-auto group-focus-visible:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
       {subcategories.map((subcategory) => (
         <div key={subcategory.id}>
           <div className="flex items-start gap-1.5 text-xs font-bold leading-5 text-[var(--brand-muted)]">
@@ -305,7 +305,7 @@ export default function HomePage() {
               <Link
                 key={category.id}
                 href={`/search?category=${category.id}`}
-                className={`brand-card group relative min-h-48 p-4 transition-transform hover:-translate-y-1 hover:border-[var(--brand-sky)] focus-visible:border-[var(--brand-sky)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-sky)]/30 ${accent.card}`}
+                className={`brand-card group relative min-h-48 p-4 transition-transform hover:z-50 hover:-translate-y-1 hover:border-[var(--brand-sky)] focus:z-50 focus-visible:z-50 focus-visible:border-[var(--brand-sky)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-sky)]/30 ${accent.card}`}
               >
                 <CategoryIcon categoryId={category.id} />
                 <div className="mt-4 text-sm font-black text-[var(--brand-ink)]">{category.name}</div>
