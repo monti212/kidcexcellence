@@ -1249,7 +1249,7 @@ function ProviderProfileContent() {
                       onClick={payVerificationFee}
                       className="mt-3 h-9 rounded-lg bg-[var(--brand-leaf)] text-xs font-black text-white hover:bg-[var(--brand-coral)]"
                     >
-                      Continue to Stripe - P {verificationPrice}
+                      Go to payment page - P {verificationPrice}
                     </Button>
                   )}
                   {verificationFeePaidAt && (

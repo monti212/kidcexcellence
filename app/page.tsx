@@ -170,7 +170,7 @@ export default function HomePage() {
     <div className="brand-page">
       <section className="w-full">
         <div className="flex flex-col items-center text-center">
-          <div className="relative min-h-[calc(100vh-4rem)] w-full overflow-hidden bg-[url('/landing-hero.jpeg')] bg-cover bg-center">
+          <div className="relative min-h-[calc(100vh-4rem)] w-full overflow-hidden bg-[url('/landing-hero-kids.png')] bg-cover bg-center">
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(16,24,20,0.82)_0%,rgba(16,24,20,0.58)_45%,rgba(16,24,20,0.22)_100%)]" />
             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-[linear-gradient(180deg,transparent_0%,rgba(16,24,20,0.66)_100%)]" />
             <style>{`
