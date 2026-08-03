@@ -24,10 +24,12 @@ import {
   HeartHandshake,
   Hospital,
   HouseHeart,
+  MessageCircle,
   PartyPopper,
   School,
   ShieldCheck,
   Sparkles,
+  Star,
   Sprout,
   Stethoscope,
   Target,
@@ -69,6 +71,19 @@ const categoryIconMap: Record<string, typeof Baby> = {
   agencies: Handshake,
   "kiddies-entertainment": Drama,
 };
+
+const vetWithUsPackages = [
+  {
+    name: "Standard Package",
+    price: "P795",
+    href: "https://wa.me/26775378699?text=Hi%20Kidcellence%2C%20I%20would%20like%20to%20choose%20the%20Standard%20Vet%20With%20Us%20Package%20for%20P795.",
+  },
+  {
+    name: "VIP Package",
+    price: "P995",
+    href: "https://wa.me/26775378699?text=Hi%20Kidcellence%2C%20I%20would%20like%20to%20choose%20the%20VIP%20Vet%20With%20Us%20Package%20for%20P995.",
+  },
+];
 
 function CategoryIcon({ categoryId }: { categoryId: string }) {
   const Icon = categoryIconMap[categoryId] ?? HeartHandshake;
@@ -250,6 +265,10 @@ export default function HomePage() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
           {CORE_SERVICE_CATEGORIES.map((category, index) => {
             const accent = needCategoryStyles[index % needCategoryStyles.length];
+            const displayCount =
+              category.id === "schools"
+                ? (categoryCounts.get("schools") ?? 0) + (categoryCounts.get("nurseries") ?? 0)
+                : categoryCounts.get(category.id) ?? 0;
 
             return (
               <Link
@@ -259,8 +278,18 @@ export default function HomePage() {
               >
                 <CategoryIcon categoryId={category.id} />
                 <div className="mt-4 text-sm font-black text-[var(--brand-ink)]">{category.name}</div>
+                {category.id === "schools" && category.subcategories?.length ? (
+                  <ul className="mt-3 space-y-1 text-xs font-bold leading-5 text-[var(--brand-muted)]">
+                    {category.subcategories.map((subcategory) => (
+                      <li key={subcategory.id} className="flex items-start gap-1.5">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand-sky)]" />
+                        <span>{subcategory.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
                 <div className={`mt-1 text-xs font-black ${accent.count}`}>
-                  {categoryCounts.get(category.id) ?? 0} providers
+                  {displayCount} providers
                 </div>
               </Link>
             );
@@ -286,6 +315,34 @@ export default function HomePage() {
                 </div>
               </Link>
             ))}
+            <div className="rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3">
+              <div className="flex items-start gap-3">
+                <CompactCategoryIcon categoryId="nannies" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-black text-[var(--brand-ink)]">Vet With Us Packages</div>
+                  <div className="mt-3 grid gap-2">
+                    {vetWithUsPackages.map((pkg) => (
+                      <a
+                        key={pkg.name}
+                        href={pkg.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-between gap-3 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-3 py-2 text-sm transition-colors hover:border-[var(--brand-sky)] hover:bg-white"
+                      >
+                        <span className="flex items-center gap-2 font-black text-[var(--brand-ink)]">
+                          <Star className="h-3.5 w-3.5 fill-[var(--brand-gold)] text-[var(--brand-gold)]" />
+                          {pkg.name}
+                        </span>
+                        <span className="inline-flex items-center gap-2 font-black text-[var(--brand-sky)]">
+                          {pkg.price}
+                          <MessageCircle className="h-3.5 w-3.5" />
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

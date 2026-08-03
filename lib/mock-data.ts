@@ -80,15 +80,15 @@ export const CATEGORIES: Category[] = [
   { id: "helpers", name: "Find a Helper", label: "Helper", icon: "🧹", count: 42 },
   {
     id: "schools",
-    name: "Find a School",
+    name: "Find A School",
     label: "School",
     icon: "🏫",
     count: 48,
     subcategories: [
-      { id: "preschool", name: "Preschool/Kindergarten" },
-      { id: "primary", name: "Primary School" },
-      { id: "junior", name: "Junior School" },
-      { id: "senior", name: "Senior School" },
+      { id: "nurseries", name: "Preschools" },
+      { id: "primary", name: "Primary Schools" },
+      { id: "junior", name: "Junior Schools" },
+      { id: "senior", name: "Senior Secondary/High Schools" },
     ],
   },
   { id: "nurseries", name: "Find a Nursery", label: "Nursery", icon: "🌱", count: 63 },
@@ -143,8 +143,8 @@ export const CATEGORIES: Category[] = [
   { id: "kiddies-parties", name: "Kiddies Parties", label: "Kiddies Parties", icon: "🎉", count: 22 },
   {
     id: "agencies",
-    name: "Agencies",
-    label: "Agency",
+    name: "Independent Agencies",
+    label: "Independent Agency",
     icon: "🤝",
     count: 0,
     placement: "additional",
@@ -164,12 +164,12 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const CORE_SERVICE_CATEGORIES = CATEGORIES.filter(
-  (category) => category.placement !== "additional"
+  (category) => category.placement !== "additional" && category.id !== "nurseries"
 );
-export const CORE_SERVICE_CATEGORY_COUNT = 12;
+export const CORE_SERVICE_CATEGORY_COUNT = CORE_SERVICE_CATEGORIES.length;
 
 export const ADDITIONAL_PLATFORM_CATEGORIES = CATEGORIES.filter(
-  (category) => category.placement === "additional"
+  (category) => category.placement === "additional" && category.id === "agencies"
 );
 
 export const PROVIDER_CATEGORY_OPTIONS = CATEGORIES.map((category) => ({
