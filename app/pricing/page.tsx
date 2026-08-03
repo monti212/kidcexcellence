@@ -40,12 +40,21 @@ export default function PricingPage() {
           <p className="brand-label">Pricing options</p>
           <div className="mt-4 flex gap-4 overflow-x-auto pb-2">
             <div className="flex min-w-[17rem] flex-1 flex-col rounded-lg border border-[var(--brand-line)] bg-white p-5">
-              <Search className="h-5 w-5 text-[var(--brand-leaf)]" />
-              <h2 className="mt-4 text-xl font-black text-[var(--brand-ink)]">
-                Families
-              </h2>
-              <div className="mt-4 text-4xl font-black text-[var(--brand-ink)]">
-                Free
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <Search className="h-5 w-5 text-[var(--brand-leaf)]" />
+                  <h2 className="mt-4 text-xl font-black text-[var(--brand-ink)]">
+                    Families
+                  </h2>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="whitespace-nowrap text-2xl font-black text-[var(--brand-ink)]">
+                    Free
+                  </div>
+                  <div className="text-xs font-bold text-[var(--brand-muted)]">
+                    browse
+                  </div>
+                </div>
               </div>
               <p className="mt-3 text-sm leading-6 text-[var(--brand-muted)]">
                 Browse and compare provider listings before choosing who to contact.
@@ -66,17 +75,21 @@ export default function PricingPage() {
             </div>
 
             <div className="flex min-w-[17rem] flex-1 flex-col rounded-lg border border-[var(--brand-line)] bg-white p-5">
-              <ShieldCheck className="h-5 w-5 text-[var(--brand-leaf)]" />
-              <h2 className="mt-4 text-xl font-black text-[var(--brand-ink)]">
-                Provider verification
-              </h2>
-              <div className="mt-4 flex flex-wrap items-end gap-x-2 gap-y-1">
-                <span className="text-4xl font-black text-[var(--brand-ink)]">
-                  P {VERIFICATION_FEE.amount}
-                </span>
-                <span className="pb-1 text-xs font-bold text-[var(--brand-muted)]">
-                  one-time review fee
-                </span>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <ShieldCheck className="h-5 w-5 text-[var(--brand-leaf)]" />
+                  <h2 className="mt-4 text-xl font-black text-[var(--brand-ink)]">
+                    Provider verification
+                  </h2>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="whitespace-nowrap text-2xl font-black text-[var(--brand-ink)]">
+                    P {VERIFICATION_FEE.amount}
+                  </div>
+                  <div className="text-xs font-bold text-[var(--brand-muted)]">
+                    one-time
+                  </div>
+                </div>
               </div>
               <p className="mt-3 text-sm leading-6 text-[var(--brand-muted)]">
                 Standard provider verification supports document review before a
@@ -103,8 +116,8 @@ export default function PricingPage() {
                       {plan.summary}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-black text-[var(--brand-ink)]">
+                  <div className="shrink-0 text-right">
+                    <div className="whitespace-nowrap text-2xl font-black text-[var(--brand-ink)]">
                       P {plan.price}
                     </div>
                     <div className="text-xs font-bold text-[var(--brand-muted)]">
