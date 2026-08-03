@@ -25,6 +25,7 @@ const categoryStyles: Record<string, string> = {
 export default function ProviderCard({ provider, onAddToCompare, inCompare }: ProviderCardProps) {
   const categoryIcon = getCategoryIcon(provider.category);
   const hasPrice = provider.price > 0;
+  const filledStars = Math.round(provider.rating);
 
   return (
     <article className="brand-card flex h-full flex-col overflow-hidden transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg">
@@ -52,16 +53,29 @@ export default function ProviderCard({ provider, onAddToCompare, inCompare }: Pr
           <h3 className="text-base font-black leading-tight text-[var(--brand-ink)]">
             {provider.name}
           </h3>
-          <div className="flex shrink-0 items-center gap-1 text-sm font-extrabold text-[var(--brand-ink)]">
-            <Star className="h-4 w-4 fill-[var(--brand-gold)] text-[var(--brand-gold)]" />
-            {provider.rating}
+          <div className="flex shrink-0 flex-col items-end gap-1 text-sm font-extrabold text-[var(--brand-ink)]">
+            <div className="flex" aria-label={`${provider.rating} out of 5 rating`}>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Star
+                  key={index}
+                  className={`h-3.5 w-3.5 ${
+                    index < filledStars
+                      ? "fill-[var(--brand-gold)] text-[var(--brand-gold)]"
+                      : "text-[var(--brand-line)]"
+                  }`}
+                />
+              ))}
+            </div>
+            <span>{provider.rating || "New"}</span>
           </div>
         </div>
 
         <div className="mb-3 flex items-center gap-1.5 text-sm text-[var(--brand-muted)]">
           <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--brand-coral)]" />
           <span className="truncate">{provider.location}</span>
-          <span className="text-xs">({provider.reviewCount} reviews)</span>
+          <span className="text-xs">
+            {provider.reviewCount ? `(${provider.reviewCount} reviews)` : "(No reviews yet)"}
+          </span>
         </div>
 
         <p className="mb-4 line-clamp-2 text-sm leading-6 text-[var(--brand-muted)]">

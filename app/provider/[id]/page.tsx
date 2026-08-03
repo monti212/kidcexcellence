@@ -62,6 +62,7 @@ export default async function ProviderProfilePage({
   ].filter(Boolean) as Array<[typeof Star, string, string]>;
   const gallery = provider.gallery?.length ? provider.gallery : [provider.image];
   const hasPrice = provider.price > 0;
+  const filledStars = Math.round(provider.rating);
 
   return (
     <div className="brand-page min-h-screen">
@@ -117,10 +118,23 @@ export default async function ProviderProfilePage({
               <p className="mt-3 leading-7 text-[var(--brand-muted)]">{provider.bio}</p>
               <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
-                  <Star className="mb-3 h-5 w-5 fill-[var(--brand-gold)] text-[var(--brand-gold)]" />
-                  <div className="text-sm font-black text-[var(--brand-ink)]">{provider.rating} rating</div>
+                  <div className="mb-3 flex" aria-label={`${provider.rating} out of 5 rating`}>
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <Star
+                        key={index}
+                        className={`h-4 w-4 ${
+                          index < filledStars
+                            ? "fill-[var(--brand-gold)] text-[var(--brand-gold)]"
+                            : "text-[var(--brand-line)]"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-sm font-black text-[var(--brand-ink)]">
+                    {provider.rating ? `${provider.rating} rating` : "New provider"}
+                  </div>
                   <div className="mt-1 text-xs leading-5 text-[var(--brand-muted)]">
-                    {provider.reviewCount} parent reviews
+                    {provider.reviewCount ? `${provider.reviewCount} parent reviews` : "No parent reviews yet"}
                   </div>
                 </div>
                 {profileDetails.map(([Icon, title, body]) => {
@@ -210,6 +224,30 @@ export default async function ProviderProfilePage({
                 </div>
               </section>
             )}
+
+            <section className="brand-card p-6">
+              <h2 className="text-2xl font-black text-[var(--brand-ink)]">Reviews</h2>
+              <div className="mt-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Star
+                      key={index}
+                      className={`h-4 w-4 ${
+                        index < filledStars
+                          ? "fill-[var(--brand-gold)] text-[var(--brand-gold)]"
+                          : "text-[var(--brand-line)]"
+                      }`}
+                    />
+                  ))}
+                  <span className="text-sm font-black text-[var(--brand-ink)]">
+                    {provider.reviewCount ? `${provider.reviewCount} reviews` : "No reviews yet"}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-[var(--brand-muted)]">
+                  Parent reviews will appear here once families share feedback after contacting this provider.
+                </p>
+              </div>
+            </section>
           </main>
 
           <aside className="space-y-6">

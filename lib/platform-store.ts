@@ -23,6 +23,7 @@ import {
 import {
   VERIFICATION_FEE,
   missingVerificationDocuments,
+  missingVerificationProfileFields,
 } from "@/lib/verification-requirements";
 import {
   categorySupportsVettingPackages,
@@ -1091,6 +1092,23 @@ export async function submitProviderVerification(userId: string) {
     const documents = store.uploads.filter(
       (upload) => upload.userId === userId && upload.type === "document"
     );
+    const profileImages = store.uploads.filter(
+      (upload) => upload.userId === userId && upload.type === "profile-image"
+    );
+    const galleryImages = store.uploads.filter(
+      (upload) => upload.userId === userId && upload.type === "gallery"
+    );
+    const missingProfileFields = missingVerificationProfileFields(profile, {
+      profileImageUploaded: profileImages.length > 0,
+      galleryCount: galleryImages.length,
+    });
+    if (missingProfileFields.length > 0) {
+      throw new Error(
+        `Complete required verification details before submitting: ${missingProfileFields.join(
+          ", "
+        )}.`
+      );
+    }
     const missingDocuments = missingVerificationDocuments(
       profile.category,
       documents.map((document) => document.documentKey ?? "")

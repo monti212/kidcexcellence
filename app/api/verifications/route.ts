@@ -11,6 +11,7 @@ import {
   getVerificationDocuments,
   getVerificationProviderType,
   missingVerificationDocuments,
+  missingVerificationProfileFields,
 } from "@/lib/verification-requirements";
 import { getVettingPackagesForCategory } from "@/lib/vetting-packages";
 
@@ -33,6 +34,12 @@ export async function GET(request: Request) {
   const uploadedDocumentKeys = store.uploads
     .filter((upload) => upload.userId === auth.session.userId && upload.type === "document")
     .map((upload) => upload.documentKey ?? "");
+  const profileImageUploaded = store.uploads.some(
+    (upload) => upload.userId === auth.session.userId && upload.type === "profile-image"
+  );
+  const galleryCount = store.uploads.filter(
+    (upload) => upload.userId === auth.session.userId && upload.type === "gallery"
+  ).length;
   const category = profile?.category ?? auth.user.category ?? "schools";
 
   return NextResponse.json({
@@ -51,6 +58,9 @@ export async function GET(request: Request) {
     packages: getVettingPackagesForCategory(category),
     requiredDocuments: getVerificationDocuments(category),
     missingDocuments: missingVerificationDocuments(category, uploadedDocumentKeys),
+    missingProfileFields: profile
+      ? missingVerificationProfileFields(profile, { profileImageUploaded, galleryCount })
+      : ["Saved provider profile"],
     pending: pending ?? null,
     approved: approved ?? null,
   });

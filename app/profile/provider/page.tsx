@@ -36,6 +36,7 @@ import {
   VERIFICATION_FEE,
   getVerificationDocuments,
   getVerificationProviderType,
+  missingVerificationProfileFields,
   missingVerificationDocuments,
 } from "@/lib/verification-requirements";
 import {
@@ -249,7 +250,7 @@ function ProviderProfileContent() {
 
   const isSchool = ["schools", "nurseries"].includes(category);
   const isIndividualCare = ["nannies", "helpers", "babysitters"].includes(category);
-  const isPediatric = category === "pediatric-clinics";
+  const isPediatric = ["pediatric-clinics", "pediatric-therapy", "child-psychologists"].includes(category);
   const documentUploads = uploads.filter((upload) => upload.type === "document");
   const galleryUploads = uploads.filter((upload) => upload.type === "gallery");
   const profileImageUpload = uploads.find((upload) => upload.type === "profile-image");
@@ -260,6 +261,33 @@ function ProviderProfileContent() {
   const missingDocuments = missingVerificationDocuments(
     category,
     documentUploads.map((upload) => upload.documentKey ?? "")
+  );
+  const missingProfileFields = missingVerificationProfileFields(
+    {
+      category,
+      location,
+      bio,
+      price,
+      age,
+      stayArrangement,
+      workStartDate,
+      childrenCount,
+      workExperienceSummary,
+      yearsExperience,
+      references,
+      nextOfKinName,
+      nextOfKinPhone,
+      nextOfKinRelationship,
+      mission,
+      vision,
+      values,
+      medicalAids,
+      feeRows,
+    },
+    {
+      profileImageUploaded: Boolean(profileImageUpload),
+      galleryCount: galleryUploads.length,
+    }
   );
   const verificationPaid = verificationPaymentStatus === "paid";
   const hasVettingPackages = categorySupportsVettingPackages(category);
@@ -602,7 +630,8 @@ function ProviderProfileContent() {
     setUploadMessage("Verification submitted for admin review.");
   };
 
-  const canSubmitVerification = verificationPaid && missingDocuments.length === 0;
+  const canSubmitVerification =
+    verificationPaid && missingDocuments.length === 0 && missingProfileFields.length === 0;
 
   if (loading) {
     return (
@@ -809,7 +838,7 @@ function ProviderProfileContent() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Availability date</Label>
+                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Availability / resume work date</Label>
                     <Input
                       type="date"
                       value={workStartDate}
@@ -1102,31 +1131,59 @@ function ProviderProfileContent() {
 
                 <div className="rounded-lg border border-[var(--brand-line)] bg-white p-4">
                   <div className="text-sm font-black text-[var(--brand-ink)]">
-                    Required for {verificationProviderType === "individual" ? "individuals" : "schools and organisations"}
+                    Profile details required
                   </div>
                   <ul className="mt-3 space-y-2 text-xs text-[var(--brand-muted)]">
-                    {documents.map((document) => {
-                      const uploaded = documentUploads.some(
-                        (upload) => upload.documentKey === document.key
-                      );
-                      return (
-                        <li key={document.key} className="flex items-start gap-2">
-                          <CheckCircle2
-                            className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
-                              uploaded ? "text-green-600" : "text-gray-300"
-                            }`}
-                          />
-                          <span>
-                            <span className="font-bold text-[var(--brand-ink)]">
-                              {document.label}
-                            </span>{" "}
-                            {document.hint}
-                          </span>
+                    {missingProfileFields.length ? (
+                      missingProfileFields.map((field) => (
+                        <li key={field} className="flex items-start gap-2">
+                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-300" />
+                          <span>{field}</span>
                         </li>
-                      );
-                    })}
+                      ))
+                    ) : (
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600" />
+                        <span>All profile details for this provider type are complete.</span>
+                      </li>
+                    )}
                   </ul>
                 </div>
+              </div>
+
+              <div className="rounded-lg border border-[var(--brand-line)] bg-white p-4">
+                <div className="text-sm font-black text-[var(--brand-ink)]">
+                  Required documents for{" "}
+                  {verificationProviderType === "individual"
+                    ? "individual care providers"
+                    : isPediatric
+                      ? "paediatric specialists"
+                      : isSchool
+                        ? "schools and nurseries"
+                        : "organisations"}
+                </div>
+                <ul className="mt-3 space-y-2 text-xs text-[var(--brand-muted)]">
+                  {documents.map((document) => {
+                    const uploaded = documentUploads.some(
+                      (upload) => upload.documentKey === document.key
+                    );
+                    return (
+                      <li key={document.key} className="flex items-start gap-2">
+                        <CheckCircle2
+                          className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
+                            uploaded ? "text-green-600" : "text-gray-300"
+                          }`}
+                        />
+                        <span>
+                          <span className="font-bold text-[var(--brand-ink)]">
+                            {document.label}
+                          </span>{" "}
+                          {document.hint}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
 
               <div className="flex flex-col gap-3 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1146,9 +1203,11 @@ function ProviderProfileContent() {
                       "Update your documents, then submit them for another review."}
                     {verificationStatus === "not_submitted" &&
                       (verificationPaid
-                        ? missingDocuments.length
-                          ? `Missing: ${missingDocuments.map((document) => document.label).join(", ")}.`
-                          : "All required documents are uploaded. Submit when ready."
+                        ? missingProfileFields.length
+                          ? `Missing profile details: ${missingProfileFields.join(", ")}.`
+                          : missingDocuments.length
+                            ? `Missing documents: ${missingDocuments.map((document) => document.label).join(", ")}.`
+                            : "All required details and documents are uploaded. Submit when ready."
                         : "Pay the verification fee before submitting for review.")}
                   </p>
                 </div>
@@ -1393,7 +1452,7 @@ function ProviderProfileContent() {
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h3 className="font-bold text-[var(--brand-ink)]">Photo Gallery</h3>
-                  <p className="text-gray-400 text-xs mt-0.5">Upload photos to showcase your facility</p>
+                  <p className="text-gray-400 text-xs mt-0.5">Upload photos to showcase your profile</p>
                 </div>
                 <label className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--brand-line)] px-3 py-2 text-xs font-bold text-[var(--brand-leaf)] hover:bg-[var(--brand-ivory)]">
                   <input
