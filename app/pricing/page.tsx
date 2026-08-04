@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, CreditCard, MessageCircle, Search, ShieldCheck, Star } from "lucide-react";
+import {
+  CheckCircle2,
+  CreditCard,
+  MessageCircle,
+  Search,
+  ShieldCheck,
+  Star,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VERIFICATION_FEE } from "@/lib/verification-requirements";
 import { VETTING_PACKAGES } from "@/lib/vetting-packages";
@@ -11,9 +20,36 @@ export const metadata: Metadata = {
 };
 
 const familyFeatures = [
-  "Search schools, nannies, tutors, clinics, and care services",
+  "Search schools, nannies, tutors, clinics, and other child related service providers",
   "Compare fees, reviews, availability, and verification signals",
   "Contact providers and keep conversations in one place",
+];
+
+const monthlySubscriptions = [
+  {
+    name: "Parents / Guardians",
+    price: "P60",
+    interval: "monthly",
+    note: "For families searching, comparing, and contacting trusted child related service providers.",
+    verification: "No verification fee",
+    href: "/auth?role=parent",
+  },
+  {
+    name: "Nannies / Helpers / Babysitters",
+    price: "P60",
+    interval: "monthly",
+    note: "For individual care providers listing their services and managing enquiries.",
+    verification: "Optional verification fee: P20",
+    href: "/auth?role=provider&category=nannies",
+  },
+  {
+    name: "Other Service Providers",
+    price: "P150",
+    interval: "monthly",
+    note: "For tutors, specialists, transport, parties, agencies, schools, and other providers.",
+    verification: "Optional verification fee: P50",
+    href: "/auth?role=provider",
+  },
 ];
 
 const vetWithUsWhatsAppPackages = [
@@ -56,15 +92,60 @@ export default function PricingPage() {
             Clear costs for finding and verifying care.
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--brand-muted)]">
-            Families can browse Kidcellence for free. Providers pay only when they
-            submit verification or select a nanny/helper vetting package.
+            Kidcellence includes monthly subscription options for parents,
+            individual care providers, and broader service providers, plus managed
+            vetting packages for families who want extra support.
           </p>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <section>
-          <p className="brand-label">Pricing options</p>
+          <p className="brand-label">Monthly subscriptions</p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+            {monthlySubscriptions.map((plan) => (
+              <div
+                key={plan.name}
+                className="flex flex-col rounded-lg border border-[var(--brand-line)] bg-white p-5"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    {plan.href.includes("provider") ? (
+                      <UserRound className="h-5 w-5 text-[var(--brand-leaf)]" />
+                    ) : (
+                      <UsersRound className="h-5 w-5 text-[var(--brand-leaf)]" />
+                    )}
+                    <h2 className="mt-4 text-xl font-black text-[var(--brand-ink)]">
+                      {plan.name}
+                    </h2>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="whitespace-nowrap text-2xl font-black text-[var(--brand-ink)]">
+                      {plan.price}
+                    </div>
+                    <div className="text-xs font-bold text-[var(--brand-muted)]">
+                      {plan.interval}
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-[var(--brand-muted)]">
+                  {plan.note}
+                </p>
+                <p className="mt-5 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-3 py-2 text-sm font-black text-[var(--brand-ink)]">
+                  {plan.verification}
+                </p>
+                <Link href={plan.href} className="mt-auto inline-block pt-6">
+                  <Button className="rounded-full bg-[var(--brand-sky)] px-5 font-black text-white hover:bg-[var(--brand-coral)]">
+                    Choose subscription
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-10">
+          <p className="brand-label">Other pricing options</p>
           <div className="mt-4 flex gap-4 overflow-x-auto pb-2">
             <div className="flex min-w-[17rem] flex-1 flex-col rounded-lg border border-[var(--brand-line)] bg-white p-5">
               <div className="flex items-start justify-between gap-4">
@@ -134,7 +215,7 @@ export default function PricingPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--brand-sky)]">
-                      Nanny/helper vetting
+                      Managed vetting package
                     </p>
                     <h2 className="mt-3 text-xl font-black text-[var(--brand-ink)]">
                       {plan.name}
@@ -175,11 +256,11 @@ export default function PricingPage() {
             <div>
               <p className="brand-label">Vet With Us Packages</p>
               <h2 className="mt-2 text-2xl font-black text-[var(--brand-ink)]">
-                Choose a nanny/helper vetting option.
+                Choose a managed vetting option.
               </h2>
             </div>
             <p className="max-w-sm text-sm leading-6 text-[var(--brand-muted)]">
-              These package options connect families to Kidcellence on WhatsApp.
+              These larger support packages connect families to Kidcellence on WhatsApp.
             </p>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
