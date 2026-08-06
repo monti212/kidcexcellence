@@ -246,8 +246,8 @@ export const CATEGORIES: Category[] = [
   { id: "kiddies-parties", name: "Kiddies Parties", label: "Kiddies Parties", icon: "🎉", count: 22 },
   {
     id: "agencies",
-    name: "Agencies",
-    label: "Agency",
+    name: "Independent Agencies",
+    label: "Independent Agency",
     icon: "🤝",
     count: 0,
     placement: "additional",
@@ -258,7 +258,6 @@ export const CATEGORIES: Category[] = [
     label: "Kids Entertainment & Events",
     icon: "🤹",
     count: 18,
-    placement: "additional",
     subcategories: [
       { id: "theme-parks", name: "Theme Parks" },
       { id: "venues", name: "Entertainment Venues" },
