@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import ProviderCard from "@/components/ProviderCard";
+import { VETTING_PACKAGES } from "@/lib/vetting-packages";
 import {
   ADDITIONAL_PLATFORM_CATEGORIES,
   CATEGORIES,
@@ -24,10 +25,12 @@ import {
   HeartHandshake,
   Hospital,
   HouseHeart,
+  MessageCircle,
   PartyPopper,
   School,
   ShieldCheck,
   Sparkles,
+  Star,
   Sprout,
   Stethoscope,
   Target,
@@ -36,20 +39,20 @@ import {
 
 const needCategoryStyles = [
   {
-    card: "border-[rgba(84,178,191,0.3)] bg-white",
-    count: "text-[var(--brand-sky)]",
+    card: "border-[rgba(240,90,60,0.28)] bg-white hover:bg-[#fff8f5]",
+    count: "text-[var(--brand-coral)]",
   },
   {
-    card: "border-[rgba(255,204,47,0.46)] bg-white",
-    count: "text-[var(--brand-ink)]",
+    card: "border-[rgba(229,107,47,0.28)] bg-white hover:bg-[#fff4ec]",
+    count: "text-[#e56b2f]",
   },
   {
-    card: "border-[rgba(84,178,191,0.24)] bg-white",
-    count: "text-[var(--brand-sky)]",
+    card: "border-[rgba(255,140,84,0.3)] bg-white hover:bg-[#fff7f1]",
+    count: "text-[#d65f26]",
   },
   {
-    card: "border-[rgba(255,204,47,0.36)] bg-white",
-    count: "text-[var(--brand-ink)]",
+    card: "border-[rgba(240,90,60,0.22)] bg-white hover:bg-[#fff0eb]",
+    count: "text-[var(--brand-coral)]",
   },
 ];
 
@@ -70,11 +73,39 @@ const categoryIconMap: Record<string, typeof Baby> = {
   "kiddies-entertainment": Drama,
 };
 
+const categoryIconStyles: Record<string, string> = {
+  babysitters: "border-[#ffd9cc] bg-[#fff0eb] text-[#f05a3c]",
+  nannies: "border-[#ffe48a] bg-[#fff8d8] text-[#c99000]",
+  helpers: "border-[#bdeaf0] bg-[#ecfbfd] text-[#2498a8]",
+  schools: "border-[#ffd4b3] bg-[#fff1e7] text-[#e56b2f]",
+  tutors: "border-[#b6ddff] bg-[#edf7ff] text-[#2676c9]",
+  "pediatric-clinics": "border-[#d8d2ff] bg-[#f2f0ff] text-[#6d5bd0]",
+  "pediatric-therapy": "border-[#bfe9cd] bg-[#eefaf2] text-[#2f9b58]",
+  "child-psychologists": "border-[#ffc6dd] bg-[#fff0f6] text-[#d84d85]",
+  "after-school": "border-[#c9eebf] bg-[#f1fbec] text-[#4f9f33]",
+  "kiddies-transport": "border-[#bae9e7] bg-[#edfbfa] text-[#158f8b]",
+  "kiddies-parties": "border-[#ffe08a] bg-[#fff7d7] text-[#d09a00]",
+  "kiddies-entertainment": "border-[#d4c7ff] bg-[#f3efff] text-[#7955d9]",
+};
+
+const vettingPackageHighlights: Record<string, string[]> = {
+  standard: ["Traceable nanny/helper", "Thorough vetting", "Personalized matching"],
+  vip: ["Everything in Standard", "NDA support", "Priority handling"],
+};
+
+function getVettingWhatsAppHref(packageName: string, price: number) {
+  const message = `Hi Kidcellence, I would like to choose the ${packageName} Vet With Us Package for P${price}.`;
+  return `https://wa.me/26775378699?text=${encodeURIComponent(message)}`;
+}
+
 function CategoryIcon({ categoryId }: { categoryId: string }) {
   const Icon = categoryIconMap[categoryId] ?? HeartHandshake;
+  const iconStyle =
+    categoryIconStyles[categoryId] ??
+    "border-[rgba(84,178,191,0.22)] bg-[var(--brand-cream)] text-[var(--brand-sky)]";
 
   return (
-    <span className="grid h-12 w-12 place-items-center rounded-xl border border-[rgba(84,178,191,0.22)] bg-[var(--brand-cream)] text-[var(--brand-sky)]">
+    <span className={`grid h-12 w-12 place-items-center rounded-xl border shadow-sm ${iconStyle}`}>
       <Icon className="h-6 w-6" strokeWidth={1.9} aria-hidden="true" />
     </span>
   );
@@ -291,7 +322,7 @@ export default function HomePage() {
               <Link
                 key={category.id}
                 href={`/search?category=${category.id}`}
-                className={`brand-card group relative min-h-48 p-4 transition-transform hover:z-50 hover:-translate-y-1 hover:border-[var(--brand-sky)] focus:z-50 focus-visible:z-50 focus-visible:border-[var(--brand-sky)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-sky)]/30 ${accent.card}`}
+                className={`brand-card group relative min-h-48 p-4 transition-transform hover:z-50 hover:-translate-y-1 hover:border-[var(--brand-coral)] focus:z-50 focus-visible:z-50 focus-visible:border-[var(--brand-coral)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-coral)]/30 ${accent.card}`}
               >
                 <CategoryIcon categoryId={category.id} />
                 <div className="mt-4 text-sm font-black text-[var(--brand-ink)]">{category.name}</div>
@@ -325,6 +356,66 @@ export default function HomePage() {
                 </div>
               </Link>
             ))}
+          </div>
+          <div className="mt-8 border-t border-[var(--brand-line)] pt-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="brand-label">Vet With Us Packages</p>
+                <h3 className="mt-2 text-2xl font-black text-[var(--brand-ink)]">
+                  Managed vetting support for families.
+                </h3>
+              </div>
+              <p className="max-w-md text-sm leading-6 text-[var(--brand-muted)]">
+                Choose a Standard or VIP package and connect with Kidcellence on WhatsApp.
+              </p>
+            </div>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {VETTING_PACKAGES.map((pkg) => (
+                <a
+                  key={pkg.id}
+                  href={getVettingWhatsAppHref(pkg.name, pkg.price)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex min-h-[14rem] flex-col rounded-lg border border-[var(--brand-line)] bg-white p-5 transition-colors hover:border-[var(--brand-sky)] hover:bg-[var(--brand-ivory)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-sky)]/30"
+                >
+                  <span className="flex items-start justify-between gap-4">
+                    <span>
+                      <span className="grid h-10 w-10 place-items-center rounded-lg border border-[#ffe08a] bg-[#fff7d7] text-[#d09a00]">
+                        <Star className="h-4 w-4 fill-current" aria-hidden="true" />
+                      </span>
+                      <span className="mt-4 block text-xl font-black text-[var(--brand-ink)]">
+                        {pkg.name} Package
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block whitespace-nowrap text-2xl font-black text-[var(--brand-ink)]">
+                        P{pkg.price}
+                      </span>
+                      <span className="block text-xs font-bold text-[var(--brand-muted)]">
+                        {pkg.currency}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="mt-3 block text-sm leading-6 text-[var(--brand-muted)]">
+                    {pkg.summary}
+                  </span>
+                  <span className="mt-5 flex flex-wrap gap-2">
+                    {(vettingPackageHighlights[pkg.id] ?? pkg.features.slice(0, 3)).map((feature) => (
+                      <span
+                        key={feature}
+                        className="rounded-full border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-3 py-1 text-xs font-bold text-[var(--brand-ink)]"
+                      >
+                        {feature}
+                      </span>
+                    ))}
+                  </span>
+                  <span className="mt-auto inline-flex w-fit items-center gap-2 pt-6 text-sm font-black text-[var(--brand-sky)]">
+                    Message on WhatsApp
+                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </section>

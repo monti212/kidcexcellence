@@ -102,7 +102,7 @@ export default function Navbar() {
             <SheetTrigger
               className="md:hidden"
               render={
-                <button className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--brand-line)] bg-white text-[var(--brand-ink)]" />
+                <button className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[rgba(240,90,60,0.24)] bg-white text-[var(--brand-coral)] transition-colors hover:border-[var(--brand-coral)] hover:bg-[#fff0eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-coral)]/30" />
               }
             >
               <Menu className="h-5 w-5" />
