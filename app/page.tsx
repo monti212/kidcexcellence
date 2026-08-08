@@ -73,21 +73,6 @@ const categoryIconMap: Record<string, typeof Baby> = {
   "kiddies-entertainment": Drama,
 };
 
-const categoryIconStyles: Record<string, string> = {
-  babysitters: "border-[#ffd9cc] bg-[#fff0eb] text-[#f05a3c]",
-  nannies: "border-[#ffe48a] bg-[#fff8d8] text-[#c99000]",
-  helpers: "border-[#bdeaf0] bg-[#ecfbfd] text-[#2498a8]",
-  schools: "border-[#ffd4b3] bg-[#fff1e7] text-[#e56b2f]",
-  tutors: "border-[#b6ddff] bg-[#edf7ff] text-[#2676c9]",
-  "pediatric-clinics": "border-[#d8d2ff] bg-[#f2f0ff] text-[#6d5bd0]",
-  "pediatric-therapy": "border-[#bfe9cd] bg-[#eefaf2] text-[#2f9b58]",
-  "child-psychologists": "border-[#ffc6dd] bg-[#fff0f6] text-[#d84d85]",
-  "after-school": "border-[#c9eebf] bg-[#f1fbec] text-[#4f9f33]",
-  "kiddies-transport": "border-[#bae9e7] bg-[#edfbfa] text-[#158f8b]",
-  "kiddies-parties": "border-[#ffe08a] bg-[#fff7d7] text-[#d09a00]",
-  "kiddies-entertainment": "border-[#d4c7ff] bg-[#f3efff] text-[#7955d9]",
-};
-
 const vettingPackageHighlights: Record<string, string[]> = {
   standard: ["Traceable nanny/helper", "Thorough vetting", "Personalized matching"],
   vip: ["Everything in Standard", "NDA support", "Priority handling"],
@@ -100,12 +85,9 @@ function getVettingWhatsAppHref(packageName: string, price: number) {
 
 function CategoryIcon({ categoryId }: { categoryId: string }) {
   const Icon = categoryIconMap[categoryId] ?? HeartHandshake;
-  const iconStyle =
-    categoryIconStyles[categoryId] ??
-    "border-[rgba(84,178,191,0.22)] bg-[var(--brand-cream)] text-[var(--brand-sky)]";
 
   return (
-    <span className={`grid h-12 w-12 place-items-center rounded-xl border shadow-sm ${iconStyle}`}>
+    <span className="grid h-12 w-12 place-items-center rounded-xl border border-[rgba(240,90,60,0.24)] bg-[var(--brand-cream)] text-[var(--brand-coral)] shadow-sm">
       <Icon className="h-6 w-6" strokeWidth={1.9} aria-hidden="true" />
     </span>
   );
