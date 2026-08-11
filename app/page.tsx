@@ -40,19 +40,19 @@ import {
 const needCategoryStyles = [
   {
     card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
-    count: "text-white/90",
+    count: "text-white",
   },
   {
     card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
-    count: "text-white/90",
+    count: "text-white",
   },
   {
     card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
-    count: "text-white/90",
+    count: "text-white",
   },
   {
     card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
-    count: "text-white/90",
+    count: "text-white",
   },
 ];
 
@@ -87,7 +87,7 @@ function CategoryIcon({ categoryId }: { categoryId: string }) {
   const Icon = categoryIconMap[categoryId] ?? HeartHandshake;
 
   return (
-    <span className="grid h-12 w-12 place-items-center rounded-xl border border-[rgba(240,90,60,0.24)] bg-[var(--brand-cream)] text-[var(--brand-coral)] shadow-sm">
+    <span className="grid h-12 w-12 place-items-center rounded-xl border border-white/45 bg-white/15 text-white shadow-sm">
       <Icon className="h-6 w-6" strokeWidth={1.9} aria-hidden="true" />
     </span>
   );
