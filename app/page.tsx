@@ -39,20 +39,20 @@ import {
 
 const needCategoryStyles = [
   {
-    card: "border-[rgba(255,204,47,0.55)] bg-[var(--brand-gold)] hover:bg-[#f2bd1f]",
-    count: "text-[var(--brand-sky)]",
+    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
+    count: "text-[var(--brand-coral)]",
   },
   {
-    card: "border-[rgba(255,204,47,0.55)] bg-[var(--brand-gold)] hover:bg-[#f2bd1f]",
-    count: "text-[var(--brand-sky)]",
+    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
+    count: "text-[var(--brand-coral)]",
   },
   {
-    card: "border-[rgba(255,204,47,0.55)] bg-[var(--brand-gold)] hover:bg-[#f2bd1f]",
-    count: "text-[var(--brand-sky)]",
+    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
+    count: "text-[var(--brand-coral)]",
   },
   {
-    card: "border-[rgba(255,204,47,0.55)] bg-[var(--brand-gold)] hover:bg-[#f2bd1f]",
-    count: "text-[var(--brand-sky)]",
+    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
+    count: "text-[var(--brand-coral)]",
   },
 ];
 
@@ -87,7 +87,7 @@ function CategoryIcon({ categoryId }: { categoryId: string }) {
   const Icon = categoryIconMap[categoryId] ?? HeartHandshake;
 
   return (
-    <span className="grid h-12 w-12 place-items-center rounded-xl border border-[rgba(84,178,191,0.35)] bg-white/25 text-[var(--brand-sky)] shadow-sm">
+    <span className="grid h-12 w-12 place-items-center rounded-xl border border-[rgba(240,90,60,0.35)] bg-white/25 text-[var(--brand-coral)] shadow-sm">
       <Icon className="h-6 w-6" strokeWidth={1.9} aria-hidden="true" />
     </span>
   );
@@ -307,7 +307,7 @@ export default function HomePage() {
                 className={`brand-card group relative min-h-48 p-4 transition-transform hover:z-50 hover:-translate-y-1 hover:border-[var(--brand-coral)] focus:z-50 focus-visible:z-50 focus-visible:border-[var(--brand-coral)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-coral)]/30 ${accent.card}`}
               >
                 <CategoryIcon categoryId={category.id} />
-                <div className="mt-4 text-sm font-black text-[var(--brand-sky)]">{category.name}</div>
+                <div className="mt-4 text-sm font-black text-[var(--brand-coral)]">{category.name}</div>
                 {category.subcategories?.length ? (
                   <CategorySubcategoryList subcategories={category.subcategories} />
                 ) : null}
