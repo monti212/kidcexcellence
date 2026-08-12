@@ -39,20 +39,20 @@ import {
 
 const needCategoryStyles = [
   {
-    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
-    count: "text-[var(--brand-coral)]",
+    card: "border-[rgba(255,204,47,0.55)] bg-[#ffcc2f] hover:bg-[#f2bd1f]",
+    count: "text-[var(--brand-sky)]",
   },
   {
-    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
-    count: "text-[var(--brand-coral)]",
+    card: "border-[rgba(255,204,47,0.55)] bg-[#ffcc2f] hover:bg-[#f2bd1f]",
+    count: "text-[var(--brand-sky)]",
   },
   {
-    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
-    count: "text-[var(--brand-coral)]",
+    card: "border-[rgba(255,204,47,0.55)] bg-[#ffcc2f] hover:bg-[#f2bd1f]",
+    count: "text-[var(--brand-sky)]",
   },
   {
-    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
-    count: "text-[var(--brand-coral)]",
+    card: "border-[rgba(255,204,47,0.55)] bg-[#ffcc2f] hover:bg-[#f2bd1f]",
+    count: "text-[var(--brand-sky)]",
   },
 ];
 
@@ -82,7 +82,7 @@ function CategoryIcon({ categoryId }: { categoryId: string }) {
   const Icon = categoryIconMap[categoryId] ?? HeartHandshake;
 
   return (
-    <span className="grid h-12 w-12 place-items-center rounded-xl border border-[rgba(240,90,60,0.35)] bg-white/25 text-[var(--brand-coral)] shadow-sm">
+    <span className="grid h-12 w-12 place-items-center rounded-xl border border-[rgba(84,178,191,0.35)] bg-white/25 text-[var(--brand-sky)] shadow-sm">
       <Icon className="h-6 w-6" strokeWidth={1.9} aria-hidden="true" />
     </span>
   );
@@ -302,7 +302,7 @@ export default function HomePage() {
                 className={`brand-card group relative min-h-48 p-4 transition-transform hover:z-50 hover:-translate-y-1 hover:border-[var(--brand-coral)] focus:z-50 focus-visible:z-50 focus-visible:border-[var(--brand-coral)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-coral)]/30 ${accent.card}`}
               >
                 <CategoryIcon categoryId={category.id} />
-                <div className="mt-4 text-sm font-black text-[var(--brand-coral)]">{category.name}</div>
+                <div className="mt-4 text-sm font-black text-[var(--brand-sky)]">{category.name}</div>
                 {category.subcategories?.length ? (
                   <CategorySubcategoryList subcategories={category.subcategories} />
                 ) : null}
@@ -346,14 +346,14 @@ export default function HomePage() {
                 Choose a Standard or VIP package and connect with Kidcellence on WhatsApp.
               </p>
             </div>
-            <div className="mt-5 grid gap-3">
+            <div className="mt-5 grid grid-cols-2 gap-3">
               {VETTING_PACKAGES.map((pkg) => (
                 <a
                   key={pkg.id}
                   href={getVettingWhatsAppHref(pkg.name, pkg.price)}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex min-h-20 items-center justify-between gap-4 rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3 transition-colors hover:border-[var(--brand-sky)] hover:bg-[var(--brand-ivory)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-sky)]/30 sm:px-5"
+                  className="flex min-h-20 flex-col items-start justify-center gap-2 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-3 transition-colors hover:border-[var(--brand-sky)] hover:bg-[#eaf8fa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-sky)]/30 sm:flex-row sm:items-center sm:justify-between sm:px-5"
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <span className="grid h-9 w-9 shrink-0 place-items-center text-[var(--brand-gold)]">
