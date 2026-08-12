@@ -73,11 +73,6 @@ const categoryIconMap: Record<string, typeof Baby> = {
   "kiddies-entertainment": Drama,
 };
 
-const vettingPackageHighlights: Record<string, string[]> = {
-  standard: ["Traceable nanny/helper", "Thorough vetting", "Personalized matching"],
-  vip: ["Everything in Standard", "NDA support", "Priority handling"],
-};
-
 function getVettingWhatsAppHref(packageName: string, price: number) {
   const message = `Hi Kidcellence, I would like to choose the ${packageName} Vet With Us Package for P${price}.`;
   return `https://wa.me/26775378699?text=${encodeURIComponent(message)}`;
@@ -351,49 +346,28 @@ export default function HomePage() {
                 Choose a Standard or VIP package and connect with Kidcellence on WhatsApp.
               </p>
             </div>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div className="mt-5 grid gap-3">
               {VETTING_PACKAGES.map((pkg) => (
                 <a
                   key={pkg.id}
                   href={getVettingWhatsAppHref(pkg.name, pkg.price)}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex min-h-[14rem] flex-col rounded-lg border border-[var(--brand-line)] bg-white p-5 transition-colors hover:border-[var(--brand-sky)] hover:bg-[var(--brand-ivory)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-sky)]/30"
+                  className="flex min-h-20 items-center justify-between gap-4 rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3 transition-colors hover:border-[var(--brand-sky)] hover:bg-[var(--brand-ivory)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-sky)]/30 sm:px-5"
                 >
-                  <span className="flex items-start justify-between gap-4">
-                    <span>
-                      <span className="grid h-10 w-10 place-items-center rounded-lg border border-[#ffe08a] bg-[#fff7d7] text-[#d09a00]">
-                        <Star className="h-4 w-4 fill-current" aria-hidden="true" />
-                      </span>
-                      <span className="mt-4 block text-xl font-black text-[var(--brand-ink)]">
-                        {pkg.name} Package
-                      </span>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center text-[var(--brand-gold)]">
+                      <Star className="h-6 w-6 fill-current" aria-hidden="true" />
                     </span>
-                    <span className="shrink-0 text-right">
-                      <span className="block whitespace-nowrap text-2xl font-black text-[var(--brand-ink)]">
-                        P{pkg.price}
-                      </span>
-                      <span className="block text-xs font-bold text-[var(--brand-muted)]">
-                        {pkg.currency}
-                      </span>
+                    <span className="min-w-0 truncate text-lg font-black text-[var(--brand-ink)] sm:text-xl">
+                      {pkg.name} Package
                     </span>
                   </span>
-                  <span className="mt-3 block text-sm leading-6 text-[var(--brand-muted)]">
-                    {pkg.summary}
-                  </span>
-                  <span className="mt-5 flex flex-wrap gap-2">
-                    {(vettingPackageHighlights[pkg.id] ?? pkg.features.slice(0, 3)).map((feature) => (
-                      <span
-                        key={feature}
-                        className="rounded-full border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-3 py-1 text-xs font-bold text-[var(--brand-ink)]"
-                      >
-                        {feature}
-                      </span>
-                    ))}
-                  </span>
-                  <span className="mt-auto inline-flex w-fit items-center gap-2 pt-6 text-sm font-black text-[var(--brand-sky)]">
-                    Message on WhatsApp
-                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                  <span className="flex shrink-0 items-center gap-3 text-[var(--brand-sky)]">
+                    <span className="whitespace-nowrap text-xl font-black sm:text-2xl">
+                      P{pkg.price}
+                    </span>
+                    <MessageCircle className="h-6 w-6" aria-label={`Message Kidcellence about the ${pkg.name} Package`} />
                   </span>
                 </a>
               ))}
