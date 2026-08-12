@@ -39,19 +39,19 @@ import {
 
 const needCategoryStyles = [
   {
-    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
+    card: "border-[rgba(255,204,47,0.55)] bg-[var(--brand-gold)] hover:bg-[#f2bd1f]",
     count: "text-white",
   },
   {
-    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
+    card: "border-[rgba(255,204,47,0.55)] bg-[var(--brand-gold)] hover:bg-[#f2bd1f]",
     count: "text-white",
   },
   {
-    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
+    card: "border-[rgba(255,204,47,0.55)] bg-[var(--brand-gold)] hover:bg-[#f2bd1f]",
     count: "text-white",
   },
   {
-    card: "border-[rgba(84,178,191,0.45)] bg-[var(--brand-sky)] hover:bg-[#4aa8b4]",
+    card: "border-[rgba(255,204,47,0.55)] bg-[var(--brand-gold)] hover:bg-[#f2bd1f]",
     count: "text-white",
   },
 ];
