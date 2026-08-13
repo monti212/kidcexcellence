@@ -65,7 +65,7 @@ Do not rely on the repository working directory as durable storage on serverless
 
 ## Admin Access
 
-Set `ADMIN_EMAILS` to a comma-separated list of emails allowed to create or use admin accounts. The first successful admin sign-in for an allowlisted email creates the admin account in the runtime store.
+Set `ADMIN_EMAILS` to a comma-separated list of emails allowed to create or use admin accounts. The first successful admin sign-in for an allowlisted email creates the admin account in the runtime store. Kidcellence also includes built-in admin access for `monti@uhuruai.co`, `gaone@uhuruai.co`, and `katlotarniah@gmail.com`.
 
 ## API Routes
 

@@ -33,6 +33,11 @@ import {
 export type UserRole = "parent" | "provider" | "admin";
 export const SESSION_COOKIE_NAME = "kidcellence_session";
 const SESSION_TOKEN_VERSION = "v2";
+const BUILT_IN_ADMIN_EMAILS = [
+  "monti@uhuruai.co",
+  "gaone@uhuruai.co",
+  "katlotarniah@gmail.com",
+];
 
 export interface PlatformUser {
   id: string;
@@ -537,6 +542,9 @@ export async function createOrLoginUser(input: {
       if (!passwordMatches) {
         throw new Error("Incorrect email or password.");
       }
+      if (input.role === "admin" && user.role !== "admin" && isAdminEmail(email)) {
+        user.role = "admin";
+      }
       user.lastLoginAt = now;
       const session = createSession(user);
       store.sessions = store.sessions
@@ -734,11 +742,14 @@ export async function revokeSessionToken(token?: string | null) {
 }
 
 export function isAdminEmail(email: string) {
-  return (process.env.ADMIN_EMAILS ?? "")
+  const configuredEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((item) => item.trim().toLowerCase())
-    .filter(Boolean)
-    .includes(email.trim().toLowerCase());
+    .filter(Boolean);
+
+  return [...BUILT_IN_ADMIN_EMAILS, ...configuredEmails].includes(
+    email.trim().toLowerCase()
+  );
 }
 
 export async function saveParentProfile(

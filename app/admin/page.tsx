@@ -408,7 +408,9 @@ function AdminGate() {
             <Shield className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-extrabold text-[var(--brand-ink)] mb-1">Admin Access</h1>
-          <p className="text-[var(--brand-muted)] text-sm mb-6">Sign in with an allowed admin account</p>
+          <p className="text-[var(--brand-muted)] text-sm mb-6">
+            Sign in with an allowed admin email. First sign-in creates your admin password.
+          </p>
           <Separator className="mb-5" />
           <div className="space-y-3">
             <Input
@@ -439,7 +441,9 @@ function AdminGate() {
               Login
             </Button>
           </div>
-          <p className="text-gray-400 text-xs mt-4">Admin emails must be listed in ADMIN_EMAILS.</p>
+          <p className="text-gray-400 text-xs mt-4">
+            Admin emails must be built in or listed in ADMIN_EMAILS.
+          </p>
         </div>
       </div>
     </div>
