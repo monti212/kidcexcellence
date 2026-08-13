@@ -15,10 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BrandMark } from "@/components/BrandMark";
-import { Eye, EyeOff, Baby, Briefcase } from "lucide-react";
+import { Eye, EyeOff, Baby, Briefcase, ShieldCheck } from "lucide-react";
 import { PROVIDER_CATEGORY_OPTIONS } from "@/lib/mock-data";
 import { BOTSWANA_LOCATIONS } from "@/lib/botswana-locations";
 import { clearLegacyPlatformSession, notifyPlatformSessionChanged } from "@/lib/use-platform-session";
+
+type SignupRole = "parent" | "provider" | "admin";
 
 function safeNextPath(next: string | null, role: "parent" | "provider" | "admin") {
   if (!next || !next.startsWith("/") || next.startsWith("//")) {
@@ -44,7 +46,9 @@ function AuthPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialMode = searchParams.get("mode") === "login";
-  const initialSignupRole = searchParams.get("role") === "provider" ? "provider" : "parent";
+  const requestedRole = searchParams.get("role");
+  const initialSignupRole: SignupRole =
+    requestedRole === "provider" ? "provider" : requestedRole === "admin" ? "admin" : "parent";
   const requestedProviderCategory = searchParams.get("category") ?? "";
   const [isLogin, setIsLogin] = useState(initialMode);
   const [parentLocation, setParentLocation] = useState("");
@@ -65,7 +69,7 @@ function AuthPageContent() {
     if (nextProviderCategory) setProviderCategory(nextProviderCategory);
   }, [searchParams]);
 
-  const completeAuth = async (role: "parent" | "provider" | "login", formData: FormData) => {
+  const completeAuth = async (role: SignupRole | "login", formData: FormData) => {
     const password = String(formData.get("password") ?? "");
     const confirmPassword = String(formData.get("confirmPassword") ?? "");
     if (role !== "login" && password !== confirmPassword) {
@@ -85,7 +89,7 @@ function AuthPageContent() {
         email: formData.get("email"),
         password,
         phone: formData.get("phone"),
-        location: nextRole === "provider" ? providerLocation : parentLocation,
+        location: nextRole === "provider" ? providerLocation : nextRole === "parent" ? parentLocation : undefined,
         category: nextRole === "provider" ? providerCategory : undefined,
       }),
     });
@@ -101,6 +105,8 @@ function AuthPageContent() {
     setStatusMessage(
       session.role === "provider"
         ? "Opening your provider workspace..."
+        : session.role === "admin"
+          ? "Admin account ready. Opening verification dashboard..."
         : role === "parent"
           ? "Parent account created. Opening your family profile..."
           : "Welcome back. Opening your parent workspace..."
@@ -350,7 +356,7 @@ function SignupForm({
   setShowConfirmPassword,
   onComplete,
 }: {
-  defaultRole: "parent" | "provider";
+  defaultRole: SignupRole;
   parentLocation: string;
   setParentLocation: (value: string) => void;
   providerCategory: string;
@@ -361,18 +367,25 @@ function SignupForm({
   setShowPassword: (v: boolean) => void;
   showConfirmPassword: boolean;
   setShowConfirmPassword: (v: boolean) => void;
-  onComplete: (role: "parent" | "provider", formData: FormData) => void;
+  onComplete: (role: SignupRole, formData: FormData) => void;
 }) {
   return (
     <Tabs key={defaultRole} defaultValue={defaultRole}>
-      <TabsList className="grid w-full grid-cols-2 mb-6 rounded-lg bg-[var(--brand-ivory)]">
+      <TabsList className="grid w-full grid-cols-3 mb-6 rounded-lg bg-[var(--brand-ivory)]">
         <TabsTrigger value="parent" className="rounded-lg flex items-center gap-2 data-[state=active]:bg-white">
           <Baby className="w-4 h-4" />
-          I&apos;m a Parent
+          <span className="hidden sm:inline">I&apos;m a Parent</span>
+          <span className="sm:hidden">Parent</span>
         </TabsTrigger>
         <TabsTrigger value="provider" className="rounded-lg flex items-center gap-2 data-[state=active]:bg-white">
           <Briefcase className="w-4 h-4" />
-          I&apos;m a Provider
+          <span className="hidden sm:inline">I&apos;m a Provider</span>
+          <span className="sm:hidden">Provider</span>
+        </TabsTrigger>
+        <TabsTrigger value="admin" className="rounded-lg flex items-center gap-2 data-[state=active]:bg-white">
+          <ShieldCheck className="w-4 h-4" />
+          <span className="hidden sm:inline">I&apos;m an Admin</span>
+          <span className="sm:hidden">Admin</span>
         </TabsTrigger>
       </TabsList>
 
@@ -504,6 +517,58 @@ function SignupForm({
           </div>
           <Button type="submit" className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)]"  >
             Create Provider Account
+          </Button>
+          <SignupTermsNotice />
+        </form>
+      </TabsContent>
+
+      <TabsContent value="admin">
+        <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); onComplete("admin", new FormData(event.currentTarget)); }}>
+          <div>
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Full Name</Label>
+            <Input name="name" placeholder="Admin name" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+          </div>
+          <div>
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Admin Email</Label>
+            <Input name="email" type="email" placeholder="admin@email.com" className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]" />
+          </div>
+          <div>
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Password</Label>
+            <div className="relative mt-1">
+              <Input
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Min. 8 characters"
+                className="rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)] pr-10"
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div>
+            <Label className="text-[var(--brand-ink)] font-medium text-sm">Confirm Password</Label>
+            <div className="relative mt-1">
+              <Input
+                name="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Repeat password"
+                className="rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)] pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <p className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-3 py-2 text-xs font-bold leading-5 text-[var(--brand-muted)]">
+            Admin signup is only available for emails enabled by Kidcellence.
+          </p>
+          <Button type="submit" className="mt-2 h-11 w-full rounded-lg bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)]"  >
+            Create Admin Account
           </Button>
           <SignupTermsNotice />
         </form>

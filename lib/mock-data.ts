@@ -99,7 +99,14 @@ export const CATEGORIES: Category[] = [
       { id: "tertiary-schools", name: "Tertiary Schools" },
     ],
   },
-  { id: "nurseries", name: "Find a Nursery", label: "Nursery", icon: "🌱", count: 63 },
+  {
+    id: "nurseries",
+    name: "Find a Nursery",
+    label: "Nursery",
+    icon: "🌱",
+    count: 63,
+    placement: "additional",
+  },
   {
     id: "tutors",
     name: "Find a Tutor",

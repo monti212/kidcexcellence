@@ -87,7 +87,8 @@ describe("Kidcellence platform APIs", () => {
     const authMarkup = await authPage.text();
     assert.equal(authMarkup.includes("Continue with Google"), false);
     const authSource = await readFile(path.join(process.cwd(), "app", "auth", "page.tsx"), "utf8");
-    assert.equal(authSource.match(/Confirm Password/g)?.length, 2);
+    assert.equal(authSource.match(/Confirm Password/g)?.length, 3);
+    assert.match(authSource, /I&?apos;m an Admin|Create Admin Account/);
 
     const resetPage = await request("/auth/reset-password?token=development-token");
     assert.equal(resetPage.status, 200);
@@ -309,6 +310,29 @@ describe("Kidcellence platform APIs", () => {
     });
     assert.equal(denied.status, 403);
 
+    const builtInAdminSignup = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "admin",
+        name: "Built In Admin",
+        email: "monti@uhuruai.co",
+        password: "password123",
+      }),
+    });
+    assert.equal(builtInAdminSignup.status, 200);
+    const builtInAdminPayload = await json(builtInAdminSignup);
+    assert.equal(builtInAdminPayload.user.role, "admin");
+    const builtInAdminCookie = cookieFrom(builtInAdminSignup);
+    const builtInAdminQueue = await request("/api/admin/verifications", {
+      headers: { Cookie: builtInAdminCookie },
+    });
+    assert.equal(builtInAdminQueue.status, 200);
+
     const login = await request("/api/auth", {
       method: "POST",
       headers: {
@@ -524,6 +548,9 @@ describe("Kidcellence platform APIs", () => {
           services: ["Reception", "Aftercare"],
           experience: "Ten years serving families",
           availability: "Monday to Friday",
+          mission: "Help children grow with confidence.",
+          vision: "A trusted early learning community.",
+          values: "Safety, care, and curiosity.",
           published: true,
           verificationStatus: "approved",
           liveIn: true,
@@ -706,6 +733,39 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(paymentPayload.payment.status, "paid");
     assert.equal(paymentPayload.payment.amount, 250);
 
+    const profileImageForm = new FormData();
+    profileImageForm.set("type", "profile-image");
+    profileImageForm.set("label", "Profile picture");
+    profileImageForm.set("file", new Blob(["test profile image"], { type: "image/png" }), "profile.png");
+    const profileImageUpload = await request("/api/uploads", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+      body: profileImageForm,
+    });
+    assert.equal(profileImageUpload.status, 200);
+
+    const coverImageForm = new FormData();
+    coverImageForm.set("type", "cover-image");
+    coverImageForm.set("label", "Cover photo");
+    coverImageForm.set("file", new Blob(["test cover image"], { type: "image/png" }), "cover.png");
+    const coverImageUpload = await request("/api/uploads", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+      body: coverImageForm,
+    });
+    assert.equal(coverImageUpload.status, 200);
+
+    const galleryForm = new FormData();
+    galleryForm.set("type", "gallery");
+    galleryForm.set("label", "School gallery photo");
+    galleryForm.set("file", new Blob(["test gallery image"], { type: "image/png" }), "gallery.png");
+    const galleryUpload = await request("/api/uploads", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+      body: galleryForm,
+    });
+    assert.equal(galleryUpload.status, 200);
+
     const identityForm = new FormData();
     identityForm.set("type", "document");
     identityForm.set("documentKey", "registration-certificate");
@@ -773,7 +833,7 @@ describe("Kidcellence platform APIs", () => {
       headers: { Cookie: cookie },
     });
     assert.equal(list.status, 200);
-    assert.equal((await json(list)).uploads.length, 4);
+    assert.equal((await json(list)).uploads.length, 7);
 
     const submitted = await request("/api/verifications", {
       method: "POST",
