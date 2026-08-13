@@ -1,4 +1,9 @@
-import { PROVIDERS } from "@/lib/mock-data";
+import { accountProvidersFromStore } from "@/lib/platform-service";
+import {
+  getSessionFromRequest,
+  readStore,
+} from "@/lib/platform-store";
+import { isSameOriginMutation } from "@/lib/request-guard";
 
 interface RequestBody {
   action: "promote" | "demote";
@@ -13,25 +18,24 @@ interface FeaturedProviderResponse {
   verified: boolean;
   featured: boolean;
   promotionExpiresAt?: string;
-  fee?: number;
 }
 
-// In-memory store for featured status (in production, use a database)
 const featuredStore = new Map<string, { featured: boolean; expiresAt?: Date }>();
 
-// Initialize with providers marked as featured in mock-data
-PROVIDERS.forEach((p) => {
-  if (p.featured) {
-    featuredStore.set(p.id, {
-      featured: true,
-      expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
-    });
-  }
-});
+async function requireAdmin(request: Request) {
+  const auth = await getSessionFromRequest(request);
+  return auth?.session.role === "admin" ? auth : null;
+}
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const providers: FeaturedProviderResponse[] = PROVIDERS.map((p) => {
+    const auth = await requireAdmin(request);
+    if (!auth) {
+      return Response.json({ error: "Admin authentication required" }, { status: 401 });
+    }
+
+    const store = await readStore();
+    const providers: FeaturedProviderResponse[] = accountProvidersFromStore(store).map((p) => {
       const featuredData = featuredStore.get(p.id);
       return {
         id: p.id,
@@ -39,9 +43,8 @@ export async function GET() {
         category: p.category,
         rating: p.rating,
         verified: p.verified,
-        featured: featuredData?.featured ?? p.featured ?? false,
+        featured: featuredData?.featured ?? false,
         promotionExpiresAt: featuredData?.expiresAt?.toISOString(),
-        fee: 500, // Mock pricing per month
       };
     });
 
@@ -57,6 +60,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!isSameOriginMutation(request)) {
+      return Response.json({ error: "Cross-origin request rejected" }, { status: 403 });
+    }
+
+    const auth = await requireAdmin(request);
+    if (!auth) {
+      return Response.json({ error: "Admin authentication required" }, { status: 401 });
+    }
+
     const body = (await request.json()) as RequestBody;
     const { action, providerIds } = body;
 
@@ -68,7 +80,6 @@ export async function POST(request: Request) {
     }
 
     if (action === "promote") {
-      // Set featured status for 90 days
       const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
       providerIds.forEach((id) => {
         featuredStore.set(id, { featured: true, expiresAt });
@@ -80,7 +91,6 @@ export async function POST(request: Request) {
         count: providerIds.length,
       });
     } else if (action === "demote") {
-      // Remove featured status
       providerIds.forEach((id) => {
         featuredStore.delete(id);
       });

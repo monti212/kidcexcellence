@@ -29,9 +29,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-`ENABLE_DEMO_PROVIDERS=true` exposes the bundled sample listings for local
-demonstrations. Leave it unset or set it to `false` in production so only
-published provider-owned profiles appear publicly.
+`ENABLE_DEMO_PROVIDERS=false` keeps the marketplace on real provider-owned
+profiles only. Set it to `true` only when you intentionally want bundled sample
+listings for local demonstrations.
 
 ## Verification
 

@@ -14,7 +14,6 @@ import { promisify } from "node:util";
 import path from "node:path";
 import { type Conversation, type Message, type Provider } from "@/lib/mock-data";
 import {
-  APPROVED_VERIFICATIONS,
   allProvidersFromStore,
   getCategoryLabel,
   type ApprovedVerification,
@@ -38,6 +37,7 @@ const BUILT_IN_ADMIN_EMAILS = [
   "gaone@uhuruai.co",
   "katlotarniah@gmail.com",
 ];
+const LEGACY_DEMO_APPROVED_VERIFICATION_IDS = new Set(["a1", "a2", "a3", "a4", "a5"]);
 
 export interface PlatformUser {
   id: string;
@@ -221,7 +221,7 @@ function createInitialStore(): PlatformStore {
     conversations: [],
     verifications: {
       pendingProviders: [],
-      approvedProviders: APPROVED_VERIFICATIONS,
+      approvedProviders: [],
       rejectedCount: 0,
     },
   };
@@ -311,7 +311,9 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
           (pending) => Boolean(pending.userId)
         ),
       approvedProviders:
-        store.verifications?.approvedProviders ?? initial.verifications.approvedProviders,
+        (store.verifications?.approvedProviders ?? initial.verifications.approvedProviders).filter(
+          (approved) => approved.userId || !LEGACY_DEMO_APPROVED_VERIFICATION_IDS.has(approved.id)
+        ),
       rejectedCount: store.verifications?.rejectedCount ?? initial.verifications.rejectedCount,
     },
   };

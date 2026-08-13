@@ -4,7 +4,7 @@ import {
   getSessionFromRequest,
   readStore,
 } from "@/lib/platform-store";
-import { allProvidersFromStore } from "@/lib/platform-service";
+import { accountProvidersFromStore } from "@/lib/platform-service";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
 
@@ -52,7 +52,7 @@ function dashboardPayload(
         : [],
     })),
     stats: {
-      totalProviders: allProvidersFromStore(store).length,
+      totalProviders: accountProvidersFromStore(store).length,
       totalParents: store.users.filter((user) => user.role === "parent").length,
       registeredProviders: store.users.filter((user) => user.role === "provider").length,
     },

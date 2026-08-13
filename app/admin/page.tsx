@@ -85,6 +85,9 @@ function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [actionError, setActionError] = useState("");
   const [dashboardLoading, setDashboardLoading] = useState(true);
+  const filteredApprovedProviders = approvedProviders.filter((provider) =>
+    provider.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     fetch("/api/admin/verifications", { credentials: "same-origin", cache: "no-store" })
@@ -206,7 +209,7 @@ function AdminDashboard() {
           ) : pendingProviders.length === 0 ? (
             <div className="text-center py-10">
               <CheckCircle2 className="w-10 h-10 text-green-400 mx-auto mb-2" />
-              <p className="text-[var(--brand-muted)] font-medium">All providers verified!</p>
+              <p className="text-[var(--brand-muted)] font-medium">No pending verification submissions</p>
               <p className="text-gray-400 text-sm">No pending verifications at this time.</p>
             </div>
           ) : (
@@ -319,6 +322,17 @@ function AdminDashboard() {
             </div>
           </div>
 
+          {filteredApprovedProviders.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-10 text-center">
+              <CheckCircle2 className="mx-auto h-8 w-8 text-[var(--brand-muted)]" />
+              <p className="mt-2 font-bold text-[var(--brand-muted)]">
+                No approved providers yet.
+              </p>
+              <p className="mt-1 text-sm text-gray-400">
+                Providers will appear here after documents are submitted and approved.
+              </p>
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -330,9 +344,7 @@ function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {approvedProviders.filter((p) =>
-                  p.name.toLowerCase().includes(searchQuery.toLowerCase())
-                ).map((p) => (
+                {filteredApprovedProviders.map((p) => (
                   <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="py-3 pr-4 font-medium text-[var(--brand-ink)]">{p.name}</td>
                     <td className="py-3 pr-4">
@@ -350,6 +362,7 @@ function AdminDashboard() {
               </tbody>
             </table>
           </div>
+          )}
         </div>
       </div>
     </div>

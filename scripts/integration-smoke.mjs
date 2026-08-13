@@ -355,8 +355,9 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(queue.status, 200);
     const queuePayload = await json(queue);
     assert.equal(queuePayload.pendingProviders.length, 0);
-    assert.ok(queuePayload.stats.totalProviders > 0);
+    assert.equal(queuePayload.stats.totalProviders, 0);
     assert.ok(queuePayload.stats.totalParents > 0);
+    assert.equal(queuePayload.approvedProviders.length, 0);
     assert.equal(queuePayload.admin.email, "admin-test@example.com");
 
     const decision = await request("/api/admin/verifications", {

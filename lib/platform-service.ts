@@ -44,14 +44,6 @@ export interface ApprovedVerification {
   date: string;
 }
 
-export const APPROVED_VERIFICATIONS: ApprovedVerification[] = [
-  { id: "a1", name: "Sunshine Early Learning Centre", category: "School", verified: true, date: "2025-03-15" },
-  { id: "a2", name: "Little Stars Nursery", category: "Nursery", verified: true, date: "2025-03-20" },
-  { id: "a3", name: "Kefilwe Modise", category: "Nanny", verified: true, date: "2025-03-25" },
-  { id: "a4", name: "Dr. Mpho Ramodupi", category: "Pediatric Clinic", verified: true, date: "2025-03-28" },
-  { id: "a5", name: "Naledi Kgomotso", category: "Tutor", verified: true, date: "2025-04-01" },
-];
-
 export function getCategories() {
   return CATEGORIES;
 }
@@ -259,10 +251,7 @@ export function allProvidersFromStore(store: {
     approvedProviders: ApprovedVerification[];
   };
 }) {
-  const includeDemoProviders =
-    process.env.ENABLE_DEMO_PROVIDERS === "true" ||
-    (process.env.ENABLE_DEMO_PROVIDERS === undefined &&
-      process.env.NODE_ENV === "development");
+  const includeDemoProviders = process.env.ENABLE_DEMO_PROVIDERS === "true";
   return [
     ...accountProvidersFromStore(store),
     ...(includeDemoProviders ? PROVIDERS : []),
