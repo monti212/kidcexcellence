@@ -108,6 +108,13 @@ interface ProviderUpload {
   url: string;
 }
 
+interface PublishRequirementIssue {
+  section: string;
+  field: string;
+  tab: ProviderProfileTab;
+  hint: string;
+}
+
 const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
   displayName: "",
   category: "schools",
@@ -259,6 +266,7 @@ function ProviderProfileContent() {
   );
   const [verified, setVerified] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [publishRequirements, setPublishRequirements] = useState<PublishRequirementIssue[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
   const [uploads, setUploads] = useState<ProviderUpload[]>([]);
   const [feeRows, setFeeRows] = useState<FeeRow[]>(storedProfile.feeRows);
@@ -532,6 +540,19 @@ function ProviderProfileContent() {
 
     if (!response?.ok) {
       const payload = await response?.json().catch(() => null);
+      const nextRequirements = Array.isArray(payload?.publishRequirements)
+        ? payload.publishRequirements.filter(
+            (issue: Partial<PublishRequirementIssue>) =>
+              typeof issue.section === "string" &&
+              typeof issue.field === "string" &&
+              isProviderProfileTab(issue.tab ?? null) &&
+              typeof issue.hint === "string"
+          ) as PublishRequirementIssue[]
+        : [];
+      setPublishRequirements(nextRequirements);
+      if (nextRequirements[0]) {
+        setActiveTab(nextRequirements[0].tab);
+      }
       setSaveMessage(payload?.error ?? "Could not save profile.");
       return;
     }
@@ -547,6 +568,7 @@ function ProviderProfileContent() {
     setVerificationPackageId(payload.profile.verificationPackageId ?? "standard");
     setVerificationPackageName(payload.profile.verificationPackageName ?? "");
     setVerified(Boolean(payload.verified));
+    setPublishRequirements([]);
     setSaveMessage(payload.profile.published ? "Published!" : "Saved!");
     setTimeout(() => setSaveMessage(""), 3000);
   };
@@ -1676,8 +1698,22 @@ function ProviderProfileContent() {
           </Button>
         </div>
         {saveMessage && (
-          <div className="mt-4 rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3 text-sm font-bold text-[var(--brand-muted)]">
-            {saveMessage}
+          <div className="mt-4 rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3 text-sm text-[var(--brand-muted)]">
+            <div className="font-bold">{saveMessage}</div>
+            {publishRequirements.length > 0 && (
+              <ul className="mt-3 space-y-2">
+                {publishRequirements.map((issue) => (
+                  <li key={`${issue.section}-${issue.field}`} className="rounded-lg bg-[var(--brand-ivory)] px-3 py-2">
+                    <span className="font-black text-[var(--brand-ink)]">
+                      {issue.section}: {issue.field}
+                    </span>
+                    <span className="block text-xs leading-5 text-[var(--brand-muted)]">
+                      {issue.hint}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </div>

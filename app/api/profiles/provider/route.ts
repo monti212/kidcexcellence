@@ -10,6 +10,86 @@ import { isSameOriginMutation } from "@/lib/request-guard";
 
 export const runtime = "nodejs";
 
+interface PublishRequirementIssue {
+  section: string;
+  field: string;
+  tab: "basic" | "pricing";
+  hint: string;
+}
+
+function hasStartingPrice(profile: {
+  price: string;
+  feeRows: Array<{ termly: string; annually: string }>;
+}) {
+  return (
+    Number(profile.price) > 0 ||
+    profile.feeRows.some((row) => Number(row.termly) > 0 || Number(row.annually) > 0)
+  );
+}
+
+function missingPublishRequirements(profile: {
+  displayName: string;
+  location: string;
+  bio: string;
+  phone: string;
+  services: string[];
+  price: string;
+  feeRows: Array<{ termly: string; annually: string }>;
+}): PublishRequirementIssue[] {
+  const missing: PublishRequirementIssue[] = [];
+
+  if (!profile.displayName) {
+    missing.push({
+      section: "Basic Info",
+      field: "Public display name",
+      tab: "basic",
+      hint: "Enter the name families should see on your listing.",
+    });
+  }
+  if (!profile.location) {
+    missing.push({
+      section: "Basic Info",
+      field: "Location / Area",
+      tab: "basic",
+      hint: "Add the area or city where you provide care.",
+    });
+  }
+  if (!profile.bio) {
+    missing.push({
+      section: "Basic Info",
+      field: "About / Description",
+      tab: "basic",
+      hint: "Describe your service so families understand what you offer.",
+    });
+  }
+  if (profile.services.length === 0) {
+    missing.push({
+      section: "Basic Info",
+      field: "Services",
+      tab: "basic",
+      hint: "Add at least one service. Separate multiple services with commas.",
+    });
+  }
+  if (!profile.phone) {
+    missing.push({
+      section: "Basic Info > Contact Information",
+      field: "Phone Number",
+      tab: "basic",
+      hint: "Add the phone number families can use to contact you.",
+    });
+  }
+  if (!hasStartingPrice(profile)) {
+    missing.push({
+      section: "Pricing",
+      field: "Starting price",
+      tab: "pricing",
+      hint: "For schools/nurseries, fill a Per Term or Per Year fee. For other providers, fill the Price field.",
+    });
+  }
+
+  return missing;
+}
+
 export async function GET(request: Request) {
   const auth = await getSessionFromRequest(request);
   if (!auth) {
@@ -132,20 +212,15 @@ export async function POST(request: Request) {
       : [],
   };
 
-  if (
-    requestedPublish &&
-    (!normalized.displayName ||
-      !normalized.location ||
-      !normalized.bio ||
-      !normalized.phone ||
-      normalized.services.length === 0 ||
-      (normalized.feeRows.every((row: { termly: string }) => !Number(row.termly)) &&
-        !Number(normalized.price)))
-  ) {
+  const publishRequirements = requestedPublish
+    ? missingPublishRequirements(normalized)
+    : [];
+
+  if (publishRequirements.length > 0) {
     return NextResponse.json(
       {
-        error:
-          "Complete the public details, at least one service, and a starting price before publishing.",
+        error: "Complete the highlighted fields before publishing.",
+        publishRequirements,
       },
       { status: 400 }
     );

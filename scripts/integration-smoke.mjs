@@ -530,6 +530,23 @@ describe("Kidcellence platform APIs", () => {
       }),
     });
     assert.equal(incompletePublish.status, 400);
+    const incompletePublishPayload = await json(incompletePublish);
+    assert.equal(incompletePublishPayload.error, "Complete the highlighted fields before publishing.");
+    assert.ok(
+      incompletePublishPayload.publishRequirements.some(
+        (issue) => issue.section === "Basic Info" && issue.field === "About / Description"
+      )
+    );
+    assert.ok(
+      incompletePublishPayload.publishRequirements.some(
+        (issue) => issue.section === "Basic Info" && issue.field === "Services"
+      )
+    );
+    assert.ok(
+      incompletePublishPayload.publishRequirements.some(
+        (issue) => issue.section === "Pricing" && issue.field === "Starting price"
+      )
+    );
 
     const profile = await request("/api/profiles/provider", {
       method: "POST",
