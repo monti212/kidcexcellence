@@ -4,9 +4,13 @@ import {
   getSessionFromRequest,
   readStore,
 } from "@/lib/platform-store";
-import { accountProvidersFromStore } from "@/lib/platform-service";
+import { accountProvidersFromStore, getCategoryLabel } from "@/lib/platform-service";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import {
+  missingVerificationDocuments,
+  missingVerificationProfileFields,
+} from "@/lib/verification-requirements";
 
 export const runtime = "nodejs";
 
@@ -15,10 +19,92 @@ async function requireAdmin(request: Request) {
   return auth?.session.role === "admin" ? auth : null;
 }
 
+function publicUpload(upload: Awaited<ReturnType<typeof readStore>>["uploads"][number]) {
+  return {
+    id: upload.id,
+    type: upload.type,
+    documentKey: upload.documentKey,
+    label: upload.label,
+    fileName: upload.fileName,
+    contentType: upload.contentType,
+    size: upload.size,
+    createdAt: upload.createdAt,
+    url: `/api/uploads/${upload.id}`,
+  };
+}
+
+function providerUploads(store: Awaited<ReturnType<typeof readStore>>, userId: string) {
+  return store.uploads.filter((upload) => upload.userId === userId);
+}
+
 function dashboardPayload(
   store: Awaited<ReturnType<typeof readStore>>,
   admin: { name: string; email: string }
 ) {
+  const registeredProviders = store.users
+    .filter((user) => user.role === "provider")
+    .map((user) => {
+      const profile = store.providerProfiles[user.id];
+      const uploads = providerUploads(store, user.id);
+      const documents = uploads.filter((upload) => upload.type === "document");
+      const profileImages = uploads.filter((upload) => upload.type === "profile-image");
+      const coverImages = uploads.filter((upload) => upload.type === "cover-image");
+      const galleryImages = uploads.filter((upload) => upload.type === "gallery");
+      const pending = store.verifications.pendingProviders.find(
+        (item) => item.userId === user.id
+      );
+      const approved = store.verifications.approvedProviders.find(
+        (item) => item.userId === user.id
+      );
+      const category = profile?.category ?? user.category ?? "";
+
+      return {
+        userId: user.id,
+        name: profile?.displayName || user.name,
+        email: user.email,
+        category: category ? getCategoryLabel(category) : "Provider",
+        rawCategory: category,
+        location: profile?.location || user.location || "Botswana",
+        published: profile?.published ?? false,
+        createdAt: user.createdAt,
+        savedAt: profile?.savedAt,
+        verificationStatus:
+          approved ? "approved" : pending ? "pending" : profile?.verificationStatus ?? "not_submitted",
+        verificationPayment: {
+          status: profile?.verificationPaymentStatus ?? "unpaid",
+          amount: profile?.verificationFeeAmount,
+          currency: profile?.verificationFeeCurrency,
+          paidAt: profile?.verificationFeePaidAt,
+          reference: profile?.verificationPaymentReference,
+          packageId: profile?.verificationPackageId,
+          packageName: profile?.verificationPackageName,
+        },
+        pendingId: pending?.id,
+        approvedDate: approved?.date,
+        documentCount: documents.length,
+        imageCount: profileImages.length + coverImages.length + galleryImages.length,
+        uploads: uploads.map(publicUpload),
+        missingDocuments: profile
+          ? missingVerificationDocuments(
+              category,
+              documents.map((document) => document.documentKey ?? "")
+            ).map((document) => document.label)
+          : [],
+        missingProfileFields: profile
+          ? missingVerificationProfileFields(profile, {
+              profileImageUploaded: profileImages.length > 0,
+              coverImageUploaded: coverImages.length > 0,
+              galleryCount: galleryImages.length,
+            })
+          : ["Saved provider profile"],
+      };
+    })
+    .sort((a, b) => {
+      const aTime = new Date(a.savedAt ?? a.createdAt).getTime();
+      const bTime = new Date(b.savedAt ?? b.createdAt).getTime();
+      return bTime - aTime;
+    });
+
   return {
     ...store.verifications,
     pendingProviders: store.verifications.pendingProviders.map((pending) => ({
@@ -36,21 +122,12 @@ function dashboardPayload(
           }
         : null,
       uploads: pending.userId
-        ? store.uploads
-            .filter(
-              (upload) =>
-                upload.userId === pending.userId && upload.type === "document"
-            )
-            .map((upload) => ({
-              id: upload.id,
-              label: upload.label,
-              fileName: upload.fileName,
-              contentType: upload.contentType,
-              size: upload.size,
-              url: `/api/uploads/${upload.id}`,
-            }))
+        ? providerUploads(store, pending.userId)
+            .filter((upload) => upload.type === "document")
+            .map(publicUpload)
         : [],
     })),
+    registeredProviders,
     stats: {
       totalProviders: accountProvidersFromStore(store).length,
       totalParents: store.users.filter((user) => user.role === "parent").length,

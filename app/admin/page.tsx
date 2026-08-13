@@ -29,10 +29,13 @@ import {
 
 interface AdminUpload {
   id: string;
+  type: "document" | "gallery" | "profile-image" | "cover-image";
+  documentKey?: string;
   label: string;
   fileName: string;
   contentType: string;
   size: number;
+  createdAt?: string;
   url: string;
 }
 
@@ -49,8 +52,38 @@ interface AdminPendingVerification extends PendingVerification {
   } | null;
 }
 
+interface AdminRegisteredProvider {
+  userId: string;
+  name: string;
+  email: string;
+  category: string;
+  rawCategory: string;
+  location: string;
+  published: boolean;
+  createdAt: string;
+  savedAt?: string;
+  verificationStatus: "not_submitted" | "pending" | "approved" | "rejected";
+  verificationPayment: {
+    status: "unpaid" | "paid";
+    amount?: number;
+    currency?: string;
+    paidAt?: string;
+    reference?: string;
+    packageId?: string;
+    packageName?: string;
+  };
+  pendingId?: string;
+  approvedDate?: string;
+  documentCount: number;
+  imageCount: number;
+  uploads: AdminUpload[];
+  missingDocuments: string[];
+  missingProfileFields: string[];
+}
+
 interface AdminState {
   pendingProviders: AdminPendingVerification[];
+  registeredProviders: AdminRegisteredProvider[];
   approvedProviders: ApprovedVerification[];
   rejectedCount: number;
   stats: {
@@ -66,6 +99,7 @@ interface AdminState {
 
 const DEFAULT_ADMIN_STATE: AdminState = {
   pendingProviders: [],
+  registeredProviders: [],
   approvedProviders: [],
   rejectedCount: 0,
   stats: {
@@ -81,7 +115,14 @@ const DEFAULT_ADMIN_STATE: AdminState = {
 
 function AdminDashboard() {
   const [adminState, setAdminState] = useState<AdminState>(DEFAULT_ADMIN_STATE);
-  const { pendingProviders, approvedProviders, rejectedCount, stats, admin } = adminState;
+  const {
+    pendingProviders,
+    registeredProviders,
+    approvedProviders,
+    rejectedCount,
+    stats,
+    admin,
+  } = adminState;
   const [searchQuery, setSearchQuery] = useState("");
   const [actionError, setActionError] = useState("");
   const [dashboardLoading, setDashboardLoading] = useState(true);
@@ -135,6 +176,18 @@ function AdminDashboard() {
     : category.toLowerCase().includes("clinic") ? "🏥"
     : category.toLowerCase().includes("tutor") ? "📚"
     : "🏫";
+
+  const statusBadgeClass = (status: AdminRegisteredProvider["verificationStatus"]) =>
+    status === "approved" ? "bg-green-100 text-green-700"
+    : status === "pending" ? "bg-orange-100 text-orange-700"
+    : status === "rejected" ? "bg-red-100 text-red-700"
+    : "bg-gray-100 text-gray-700";
+
+  const statusLabel = (provider: AdminRegisteredProvider) =>
+    provider.verificationStatus === "pending" ? "Submitted for admin review"
+    : provider.verificationStatus === "approved" ? "Approved"
+    : provider.verificationStatus === "rejected" ? "Rejected"
+    : "Waiting for provider to submit";
 
   return (
     <div className="min-h-screen brand-page">
@@ -300,6 +353,119 @@ function AdminDashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Registered Providers */}
+        <div className="bg-white rounded-lg border border-[var(--brand-line)] shadow-sm p-6 mb-8">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-violet-500" />
+              <h2 className="text-lg font-black text-[var(--brand-ink)]">Registered Providers</h2>
+              {registeredProviders.length > 0 && (
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-xs font-black text-violet-700">
+                  {registeredProviders.length}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {dashboardLoading ? (
+            <div className="py-10 text-center text-sm text-[var(--brand-muted)]">
+              Loading registered providers...
+            </div>
+          ) : registeredProviders.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-8 text-center">
+              <Users className="mx-auto h-8 w-8 text-[var(--brand-muted)]" />
+              <p className="mt-2 font-bold text-[var(--brand-muted)]">No registered providers yet.</p>
+              <p className="mt-1 text-sm text-gray-400">Provider accounts will appear here after signup.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {registeredProviders.map((provider) => {
+                const needsProviderAction =
+                  provider.verificationStatus === "not_submitted" ||
+                  provider.verificationStatus === "rejected";
+                const blockers = [
+                  ...provider.missingProfileFields,
+                  ...provider.missingDocuments,
+                  provider.verificationPayment.status === "paid" ? "" : "Verification payment",
+                  provider.pendingId ? "" : "Click Submit for review on the provider Documents tab",
+                ].filter(Boolean);
+
+                return (
+                  <div key={provider.userId} className="rounded-lg border border-[var(--brand-line)] p-5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+                      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] text-xl">
+                        {categoryIcon(provider.category)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-black text-[var(--brand-ink)]">{provider.name}</h3>
+                          <Badge className="rounded-full bg-emerald-50 text-emerald-700 border-0 text-xs">
+                            {provider.category}
+                          </Badge>
+                          <Badge className={`rounded-full border-0 text-xs ${statusBadgeClass(provider.verificationStatus)}`}>
+                            {statusLabel(provider)}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-sm text-[var(--brand-muted)]">
+                          {provider.email} · {provider.location}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                          <Badge
+                            className={`rounded-full border ${
+                              provider.verificationPayment.status === "paid"
+                                ? "border-green-200 bg-green-50 text-green-700"
+                                : "border-red-200 bg-red-50 text-red-700"
+                            }`}
+                          >
+                            {provider.verificationPayment.status === "paid" ? "Payment paid" : "Payment unpaid"}
+                          </Badge>
+                          <Badge className="rounded-full border border-blue-100 bg-blue-50 text-blue-700">
+                            {provider.documentCount} document{provider.documentCount === 1 ? "" : "s"}
+                          </Badge>
+                          <Badge className="rounded-full border border-cyan-100 bg-cyan-50 text-cyan-700">
+                            {provider.imageCount} image{provider.imageCount === 1 ? "" : "s"}
+                          </Badge>
+                          <Badge className="rounded-full border border-[var(--brand-line)] bg-white text-[var(--brand-muted)]">
+                            {provider.published ? "Published listing" : "Draft listing"}
+                          </Badge>
+                        </div>
+
+                        {provider.uploads.length > 0 && (
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {provider.uploads.map((upload) => (
+                              <a
+                                key={upload.id}
+                                href={upload.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-3 py-2 text-xs font-bold text-[var(--brand-ink)] hover:border-[var(--brand-leaf)]"
+                              >
+                                <FileText className="h-3.5 w-3.5 text-[var(--brand-leaf)]" />
+                                {upload.label}
+                                <ExternalLink className="h-3 w-3 text-[var(--brand-muted)]" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+
+                        {needsProviderAction && blockers.length > 0 && (
+                          <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
+                            <p className="font-black">Still waiting on the provider</p>
+                            <p className="mt-1 text-xs font-semibold">
+                              Missing: {blockers.slice(0, 8).join(", ")}
+                              {blockers.length > 8 ? `, and ${blockers.length - 8} more` : ""}.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
