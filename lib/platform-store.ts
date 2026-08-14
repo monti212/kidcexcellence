@@ -571,6 +571,9 @@ export async function createOrLoginUser(input: {
         if (input.mode === "signup" && hasRecoverablePasswordPlaceholder(user.passwordHash)) {
           user.passwordHash = await hashPassword(normalizedPassword);
           user.email = email;
+          if (isAdminEmail(email) && user.role !== "admin") {
+            user.role = "admin";
+          }
           user.lastLoginAt = now;
           const session = createSession(user);
           store.sessions = store.sessions
@@ -588,7 +591,7 @@ export async function createOrLoginUser(input: {
         user.passwordHash = await hashPassword(normalizedPassword);
       }
       user.email = email;
-      if (input.role === "admin" && user.role !== "admin" && isAdminEmail(email)) {
+      if (isAdminEmail(email) && user.role !== "admin") {
         user.role = "admin";
       }
       user.lastLoginAt = now;

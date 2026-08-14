@@ -333,6 +333,45 @@ describe("Kidcellence platform APIs", () => {
     });
     assert.equal(builtInAdminQueue.status, 200);
 
+    const regularAuthAdminSignup = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "parent",
+        name: "Regular Auth Admin",
+        email: "gaone@uhuruai.co",
+        password: "password123",
+      }),
+    });
+    assert.equal(regularAuthAdminSignup.status, 200);
+    const regularAuthAdminPayload = await json(regularAuthAdminSignup);
+    assert.equal(regularAuthAdminPayload.user.role, "admin");
+    const regularAuthAdminCookie = cookieFrom(regularAuthAdminSignup);
+    const regularAuthAdminQueue = await request("/api/admin/verifications", {
+      headers: { Cookie: regularAuthAdminCookie },
+    });
+    assert.equal(regularAuthAdminQueue.status, 200);
+
+    const regularAuthAdminLogin = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "login",
+        role: "parent",
+        email: "gaone@uhuruai.co",
+        password: "password123",
+      }),
+    });
+    assert.equal(regularAuthAdminLogin.status, 200);
+    assert.equal((await json(regularAuthAdminLogin)).user.role, "admin");
+
     const login = await request("/api/auth", {
       method: "POST",
       headers: {

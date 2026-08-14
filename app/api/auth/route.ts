@@ -37,9 +37,10 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const mode = body?.mode === "login" ? "login" : "signup";
-  const role: UserRole =
-    body?.role === "admin" ? "admin" : body?.role === "provider" ? "provider" : "parent";
   const email = typeof body?.email === "string" ? body.email : "";
+  const requestedRole: UserRole =
+    body?.role === "admin" ? "admin" : body?.role === "provider" ? "provider" : "parent";
+  const role: UserRole = isAdminEmail(email) ? "admin" : requestedRole;
   const password = typeof body?.password === "string" ? body.password : "";
   const normalizedPassword = password.trim();
   const rateLimit = consumeRateLimit({
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (role === "admin" && !isAdminEmail(email)) {
+  if (requestedRole === "admin" && !isAdminEmail(email)) {
     return NextResponse.json({ error: "Admin access is not enabled for this email." }, { status: 403 });
   }
 
