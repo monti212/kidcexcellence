@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -462,6 +462,64 @@ describe("Kidcellence platform APIs", () => {
       body: JSON.stringify({ mode: "login", role: "parent", email, password: "newpassword123" }),
     });
     assert.equal(newPassword.status, 200);
+
+    const duplicateSignupWithPassword = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "parent",
+        name: "Lifecycle Parent",
+        email,
+        password: "newpassword123",
+        location: "gaborone",
+      }),
+    });
+    assert.equal(duplicateSignupWithPassword.status, 200);
+
+    const spacedPassword = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "login",
+        role: "parent",
+        email,
+        password: "  newpassword123  ",
+      }),
+    });
+    assert.equal(spacedPassword.status, 200);
+
+    const store = JSON.parse(await readFile(env.PLATFORM_STORE_PATH, "utf8"));
+    const lifecycleUser = store.users.find((user) => user.email === email);
+    assert.ok(lifecycleUser);
+    lifecycleUser.passwordHash = "legacysecret123";
+    await writeFile(env.PLATFORM_STORE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+
+    const legacyPassword = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "login",
+        role: "parent",
+        email,
+        password: "legacysecret123",
+      }),
+    });
+    assert.equal(legacyPassword.status, 200);
+    const migratedStore = JSON.parse(await readFile(env.PLATFORM_STORE_PATH, "utf8"));
+    assert.match(
+      migratedStore.users.find((user) => user.email === email).passwordHash,
+      /^[^:]+:[0-9a-f]+$/
+    );
 
     const oldSession = await request("/api/auth", { headers: { Cookie: cookie } });
     assert.equal(oldSession.status, 401);

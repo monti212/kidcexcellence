@@ -360,12 +360,28 @@ async function hashPassword(password: string) {
   return `${salt}:${derivedKey.toString("hex")}`;
 }
 
+function uniquePasswordAttempts(password: string) {
+  return [...new Set([password, password.trim()])];
+}
+
 async function verifyPassword(password: string, storedHash: string) {
   const [salt, key] = storedHash.split(":");
-  if (!salt || !key) return false;
-  const expected = Buffer.from(key, "hex");
-  const actual = (await scrypt(password, salt, 64)) as Buffer;
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
+  if (!salt || !key) {
+    return uniquePasswordAttempts(password).some((attempt) => {
+      const expected = Buffer.from(storedHash);
+      const actual = Buffer.from(attempt);
+      return expected.length === actual.length && timingSafeEqual(expected, actual);
+    });
+  }
+
+  for (const attempt of uniquePasswordAttempts(password)) {
+    const expected = Buffer.from(key, "hex");
+    const actual = (await scrypt(attempt, salt, 64)) as Buffer;
+    if (expected.length === actual.length && timingSafeEqual(expected, actual)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function sessionSecret() {
@@ -532,17 +548,21 @@ export async function createOrLoginUser(input: {
 }) {
   const email = input.email.trim().toLowerCase();
   const now = new Date().toISOString();
-  const passwordHash = await hashPassword(input.password);
+  const normalizedPassword = input.password.trim();
 
   return updateStore(async (store) => {
     let user = store.users.find((item) => item.email === email);
     if (user) {
-      if (input.mode === "signup") {
-        throw new Error("An account already exists for this email.");
-      }
       const passwordMatches = await verifyPassword(input.password, user.passwordHash);
       if (!passwordMatches) {
-        throw new Error("Incorrect email or password.");
+        throw new Error(
+          input.mode === "signup"
+            ? "An account already exists for this email. Log in instead or reset your password."
+            : "Incorrect email or password. Use Forgot password if this account already exists."
+        );
+      }
+      if (!user.passwordHash.includes(":")) {
+        user.passwordHash = await hashPassword(normalizedPassword);
       }
       if (input.role === "admin" && user.role !== "admin" && isAdminEmail(email)) {
         user.role = "admin";
@@ -567,7 +587,7 @@ export async function createOrLoginUser(input: {
       phone: input.phone?.trim(),
       location: input.location,
       category: input.category,
-      passwordHash,
+      passwordHash: await hashPassword(normalizedPassword),
       createdAt: now,
       lastLoginAt: now,
     };

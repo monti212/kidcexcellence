@@ -17,6 +17,7 @@ export async function POST(request: Request) {
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   const token = typeof body?.token === "string" ? body.token : "";
   const password = typeof body?.password === "string" ? body.password : "";
+  const normalizedPassword = password.trim();
   const rateLimit = consumeRateLimit({
     key: `password-reset:${requestIp(request)}:${email || token.slice(0, 12) || "unknown"}`,
     limit: 10,
@@ -31,14 +32,14 @@ export async function POST(request: Request) {
   }
 
   if (token) {
-    if (password.length < 8) {
+    if (normalizedPassword.length < 8) {
       return NextResponse.json(
         { error: "Password must be at least 8 characters." },
         { status: 400 }
       );
     }
 
-    const user = await resetPasswordWithToken(token, password);
+    const user = await resetPasswordWithToken(token, normalizedPassword);
     if (!user) {
       return NextResponse.json({ error: "Reset link is invalid or expired." }, { status: 400 });
     }
