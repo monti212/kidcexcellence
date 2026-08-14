@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       role,
       name: typeof body?.name === "string" ? body.name : undefined,
       email,
-      password: normalizedPassword,
+      password,
       phone: typeof body?.phone === "string" ? body.phone : undefined,
       location: typeof body?.location === "string" ? body.location : undefined,
       category: typeof body?.category === "string" ? body.category : undefined,

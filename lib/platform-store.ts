@@ -393,6 +393,10 @@ async function verifyPassword(password: string, storedHash: string) {
   return false;
 }
 
+function hasRecoverablePasswordPlaceholder(storedHash: string) {
+  return !storedHash || storedHash === "restored-from-signed-session";
+}
+
 function sessionSecret() {
   return (
     process.env.SESSION_SECRET ??
@@ -564,6 +568,16 @@ export async function createOrLoginUser(input: {
     if (user) {
       const passwordMatches = await verifyPassword(input.password, user.passwordHash);
       if (!passwordMatches) {
+        if (input.mode === "signup" && hasRecoverablePasswordPlaceholder(user.passwordHash)) {
+          user.passwordHash = await hashPassword(normalizedPassword);
+          user.email = email;
+          user.lastLoginAt = now;
+          const session = createSession(user);
+          store.sessions = store.sessions
+            .filter((item) => new Date(item.expiresAt).getTime() > Date.now())
+            .concat(session);
+          return { user: publicUser(user), session };
+        }
         throw new Error(
           input.mode === "signup"
             ? "An account already exists for this email. Log in instead or reset your password."

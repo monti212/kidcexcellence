@@ -532,6 +532,47 @@ describe("Kidcellence platform APIs", () => {
       /^[^:]+:[0-9a-f]+$/
     );
 
+    const placeholderStore = JSON.parse(await readFile(env.PLATFORM_STORE_PATH, "utf8"));
+    const placeholderUser = placeholderStore.users.find((user) => user.email === email);
+    assert.ok(placeholderUser);
+    placeholderUser.passwordHash = "restored-from-signed-session";
+    await writeFile(
+      env.PLATFORM_STORE_PATH,
+      `${JSON.stringify(placeholderStore, null, 2)}\n`,
+      "utf8"
+    );
+
+    const recoveredSignup = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "parent",
+        name: "Lifecycle Parent",
+        email,
+        password: "claimedpassword123",
+      }),
+    });
+    assert.equal(recoveredSignup.status, 200);
+
+    const recoveredLogin = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "login",
+        role: "parent",
+        email,
+        password: "claimedpassword123",
+      }),
+    });
+    assert.equal(recoveredLogin.status, 200);
+
     const oldSession = await request("/api/auth", { headers: { Cookie: cookie } });
     assert.equal(oldSession.status, 401);
   });
