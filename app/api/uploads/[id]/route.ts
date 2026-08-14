@@ -1,10 +1,11 @@
-import { readFile, rm } from "node:fs/promises";
 import { NextResponse } from "next/server";
 import {
+  deleteUploadFile,
   getSessionFromRequest,
   getPublishedProviderMediaUpload,
   getUploadForUser,
   getVerificationUploadForAdmin,
+  readUploadFile,
   removeUpload,
 } from "@/lib/platform-store";
 import { isSameOriginMutation } from "@/lib/request-guard";
@@ -32,7 +33,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
-  const file = await readFile(gate.upload.path).catch(() => null);
+  const file = await readUploadFile(gate.upload.path);
   if (!file) {
     return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
@@ -62,6 +63,6 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     return NextResponse.json({ error: "Upload not found" }, { status: 404 });
   }
 
-  await rm(upload.path, { force: true });
+  await deleteUploadFile(upload.path);
   return NextResponse.json({ ok: true });
 }

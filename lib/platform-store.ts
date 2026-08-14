@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import {
   createCipheriv,
   createDecipheriv,
@@ -12,6 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import path from "node:path";
+import { getStore } from "@netlify/blobs";
 import { type Conversation, type Message, type Provider } from "@/lib/mock-data";
 import {
   allProvidersFromStore,
@@ -208,6 +209,27 @@ const storePath =
 export const uploadRootPath =
   process.env.PLATFORM_UPLOADS_DIR ?? path.join(runtimeDataRoot, "uploads");
 const scrypt = promisify(scryptCallback);
+const PLATFORM_STORE_BLOB_KEY = "platform-store.json";
+const UPLOAD_BLOB_PREFIX = "uploads/";
+const BLOB_PATH_PREFIX = "blob:";
+
+function shouldUseNetlifyBlobs() {
+  return (
+    process.env.PLATFORM_STORAGE_DRIVER === "netlify-blobs" ||
+    (process.env.NETLIFY === "true" &&
+      !process.env.PLATFORM_STORE_PATH &&
+      !process.env.PLATFORM_DATA_DIR &&
+      !process.env.PLATFORM_UPLOADS_DIR)
+  );
+}
+
+function platformBlobStore() {
+  return getStore("kidcellence-platform");
+}
+
+function uploadBlobStore() {
+  return getStore("kidcellence-uploads");
+}
 
 function createInitialStore(): PlatformStore {
   return {
@@ -228,6 +250,11 @@ function createInitialStore(): PlatformStore {
 }
 
 async function persistStore(store: PlatformStore) {
+  if (shouldUseNetlifyBlobs()) {
+    await platformBlobStore().setJSON(PLATFORM_STORE_BLOB_KEY, store);
+    return;
+  }
+
   await mkdir(path.dirname(storePath), { recursive: true });
   await writeFile(storePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
 }
@@ -320,6 +347,17 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
 }
 
 export async function readStore(): Promise<PlatformStore> {
+  if (shouldUseNetlifyBlobs()) {
+    const stored = await platformBlobStore().get(PLATFORM_STORE_BLOB_KEY, {
+      type: "json",
+    });
+    const store = stored ? normalizeStore(stored as Partial<PlatformStore>) : createInitialStore();
+    if (!stored) {
+      await persistStore(store);
+    }
+    return store;
+  }
+
   try {
     const contents = await readFile(storePath, "utf8");
     const store = normalizeStore(JSON.parse(contents));
@@ -922,6 +960,51 @@ export async function getVerificationUploadForAdmin(id: string) {
       )
   );
   return upload ?? null;
+}
+
+function uploadBlobKey(storagePath: string) {
+  return storagePath.startsWith(BLOB_PATH_PREFIX)
+    ? storagePath.slice(BLOB_PATH_PREFIX.length)
+    : storagePath;
+}
+
+export function uploadStoragePath(userId: string, id: string, fileName: string) {
+  if (shouldUseNetlifyBlobs()) {
+    return `${BLOB_PATH_PREFIX}${UPLOAD_BLOB_PREFIX}${userId}/${id}-${fileName}`;
+  }
+
+  return path.join(uploadRootPath, userId, `${id}-${fileName}`);
+}
+
+export async function saveUploadFile(storagePath: string, contents: Buffer) {
+  if (storagePath.startsWith(BLOB_PATH_PREFIX)) {
+    const arrayBuffer = new Uint8Array(contents).buffer;
+    await uploadBlobStore().set(uploadBlobKey(storagePath), arrayBuffer);
+    return;
+  }
+
+  await mkdir(path.dirname(storagePath), { recursive: true });
+  await writeFile(storagePath, contents);
+}
+
+export async function readUploadFile(storagePath: string) {
+  if (storagePath.startsWith(BLOB_PATH_PREFIX)) {
+    const file = await uploadBlobStore().get(uploadBlobKey(storagePath), {
+      type: "arrayBuffer",
+    });
+    return file ? Buffer.from(file as ArrayBuffer) : null;
+  }
+
+  return readFile(storagePath).catch(() => null);
+}
+
+export async function deleteUploadFile(storagePath: string) {
+  if (storagePath.startsWith(BLOB_PATH_PREFIX)) {
+    await uploadBlobStore().delete(uploadBlobKey(storagePath));
+    return;
+  }
+
+  await rm(storagePath, { force: true });
 }
 
 export async function recordUpload(upload: PlatformUploadRecord) {

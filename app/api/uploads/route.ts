@@ -1,12 +1,11 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import {
   getSessionFromRequest,
   listUploads,
   recordUpload,
-  uploadRootPath,
+  saveUploadFile,
+  uploadStoragePath,
   type PlatformUploadRecord,
 } from "@/lib/platform-store";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -136,11 +135,9 @@ export async function POST(request: Request) {
 
   const id = `upload-${randomUUID()}`;
   const fileName = safeFileName(file.name || `${id}.bin`);
-  const userUploadDir = path.join(uploadRootPath, gate.auth.session.userId);
-  const filePath = path.join(userUploadDir, `${id}-${fileName}`);
+  const filePath = uploadStoragePath(gate.auth.session.userId, id, fileName);
 
-  await mkdir(userUploadDir, { recursive: true });
-  await writeFile(filePath, Buffer.from(await file.arrayBuffer()));
+  await saveUploadFile(filePath, Buffer.from(await file.arrayBuffer()));
 
   const upload = await recordUpload({
     id,
