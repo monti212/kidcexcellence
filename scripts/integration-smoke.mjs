@@ -463,6 +463,16 @@ describe("Kidcellence platform APIs", () => {
     });
     assert.equal(newPassword.status, 200);
 
+    const mixedEmailStore = JSON.parse(await readFile(env.PLATFORM_STORE_PATH, "utf8"));
+    const mixedEmailUser = mixedEmailStore.users.find((user) => user.email === email);
+    assert.ok(mixedEmailUser);
+    mixedEmailUser.email = `  ${email.toUpperCase()}  `;
+    await writeFile(
+      env.PLATFORM_STORE_PATH,
+      `${JSON.stringify(mixedEmailStore, null, 2)}\n`,
+      "utf8"
+    );
+
     const duplicateSignupWithPassword = await request("/api/auth", {
       method: "POST",
       headers: {
@@ -479,6 +489,7 @@ describe("Kidcellence platform APIs", () => {
       }),
     });
     assert.equal(duplicateSignupWithPassword.status, 200);
+    assert.equal((await json(duplicateSignupWithPassword)).user.email, email);
 
     const spacedPassword = await request("/api/auth", {
       method: "POST",

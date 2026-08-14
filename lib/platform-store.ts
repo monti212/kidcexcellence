@@ -354,6 +354,15 @@ function publicUser(user: PlatformUser): PublicPlatformUser {
   };
 }
 
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+function findUserByEmail(store: PlatformStore, email: string) {
+  const normalizedEmail = normalizeEmail(email);
+  return store.users.find((item) => normalizeEmail(item.email) === normalizedEmail);
+}
+
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const derivedKey = (await scrypt(password, salt, 64)) as Buffer;
@@ -546,12 +555,12 @@ export async function createOrLoginUser(input: {
   location?: string;
   category?: string;
 }) {
-  const email = input.email.trim().toLowerCase();
+  const email = normalizeEmail(input.email);
   const now = new Date().toISOString();
   const normalizedPassword = input.password.trim();
 
   return updateStore(async (store) => {
-    let user = store.users.find((item) => item.email === email);
+    let user = findUserByEmail(store, email);
     if (user) {
       const passwordMatches = await verifyPassword(input.password, user.passwordHash);
       if (!passwordMatches) {
@@ -564,6 +573,7 @@ export async function createOrLoginUser(input: {
       if (!user.passwordHash.includes(":")) {
         user.passwordHash = await hashPassword(normalizedPassword);
       }
+      user.email = email;
       if (input.role === "admin" && user.role !== "admin" && isAdminEmail(email)) {
         user.role = "admin";
       }
@@ -616,9 +626,8 @@ function createAccountToken(userId: string, type: AccountTokenRecord["type"]) {
 }
 
 export async function requestEmailVerification(email: string) {
-  const normalizedEmail = email.trim().toLowerCase();
   return updateStore((store) => {
-    const user = store.users.find((item) => item.email === normalizedEmail);
+    const user = findUserByEmail(store, email);
     if (!user) return null;
     if (user.emailVerifiedAt) return { token: null, alreadyVerified: true };
 
@@ -650,9 +659,8 @@ export async function verifyEmailToken(token: string) {
 }
 
 export async function requestPasswordReset(email: string) {
-  const normalizedEmail = email.trim().toLowerCase();
   return updateStore((store) => {
-    const user = store.users.find((item) => item.email === normalizedEmail);
+    const user = findUserByEmail(store, email);
     if (!user) return null;
 
     const token = createAccountToken(user.id, "password-reset");
