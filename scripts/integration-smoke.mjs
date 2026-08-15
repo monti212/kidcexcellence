@@ -29,6 +29,20 @@ async function json(response) {
   return payload;
 }
 
+async function markVerificationPaid(userId, payment) {
+  const store = JSON.parse(await readFile(env.PLATFORM_STORE_PATH, "utf8"));
+  const profile = store.providerProfiles?.[userId];
+  assert.ok(profile, `expected provider profile for ${userId}`);
+  profile.verificationPaymentStatus = "paid";
+  profile.verificationFeeAmount = payment.amount;
+  profile.verificationFeeCurrency = payment.currency ?? "BWP";
+  profile.verificationFeePaidAt = payment.paidAt ?? new Date().toISOString();
+  profile.verificationPaymentReference = payment.reference;
+  profile.verificationPackageId = payment.packageId;
+  profile.verificationPackageName = payment.packageName;
+  await writeFile(env.PLATFORM_STORE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+}
+
 async function request(pathname, options = {}) {
   return fetch(`${baseUrl}${pathname}`, options);
 }
@@ -432,8 +446,9 @@ describe("Kidcellence platform APIs", () => {
       }),
     });
     assert.equal(signup.status, 200);
+    const signupPayload = await json(signup);
     const cookie = cookieFrom(signup);
-    assert.equal((await json(signup)).user.emailVerifiedAt, undefined);
+    assert.equal(signupPayload.user.emailVerifiedAt, undefined);
 
     const verification = await request("/api/auth/verify-email", {
       method: "POST",
@@ -635,6 +650,8 @@ describe("Kidcellence platform APIs", () => {
       }),
     });
     assert.equal(signup.status, 200);
+    const signupPayload = await json(signup);
+    const providerUserId = signupPayload.user.id;
     const cookie = cookieFrom(signup);
 
     const starterDiscovery = await request("/api/providers?q=Integration%20Provider");
@@ -886,19 +903,21 @@ describe("Kidcellence platform APIs", () => {
       },
       body: JSON.stringify({ packageId: "standard" }),
     });
-    assert.equal(nannyPayment.status, 200);
+    assert.equal(nannyPayment.status, 503);
     const nannyPaymentPayload = await json(nannyPayment);
-    assert.equal(nannyPaymentPayload.payment.amount, 795);
-    assert.equal(nannyPaymentPayload.payment.packageName, "Standard");
+    assert.match(nannyPaymentPayload.error, /Payment checkout is not configured yet/);
 
     const payment = await request("/api/verifications/payment", {
       method: "POST",
       headers: { Cookie: cookie, Origin: baseUrl },
     });
-    assert.equal(payment.status, 200);
+    assert.equal(payment.status, 503);
     const paymentPayload = await json(payment);
-    assert.equal(paymentPayload.payment.status, "paid");
-    assert.equal(paymentPayload.payment.amount, 250);
+    assert.match(paymentPayload.error, /Payment checkout is not configured yet/);
+    await markVerificationPaid(providerUserId, {
+      amount: 250,
+      reference: `verify-${providerUserId}-test`,
+    });
 
     const profileImageForm = new FormData();
     profileImageForm.set("type", "profile-image");

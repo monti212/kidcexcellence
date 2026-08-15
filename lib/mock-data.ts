@@ -278,7 +278,7 @@ export const CORE_SERVICE_CATEGORIES = CATEGORIES.filter(
 export const CORE_SERVICE_CATEGORY_COUNT = CORE_SERVICE_CATEGORIES.length;
 
 export const ADDITIONAL_PLATFORM_CATEGORIES = CATEGORIES.filter(
-  (category) => category.placement === "additional"
+  (category) => category.placement === "additional" && category.id !== "nurseries"
 );
 
 export const PROVIDER_CATEGORY_OPTIONS = CATEGORIES.map((category) => ({

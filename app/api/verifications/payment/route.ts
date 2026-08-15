@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  getSessionFromRequest,
-  recordVerificationPayment,
-} from "@/lib/platform-store";
+import { getSessionFromRequest } from "@/lib/platform-store";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
 import { VERIFICATION_FEE } from "@/lib/verification-requirements";
@@ -62,24 +59,23 @@ export async function POST(request: Request) {
     const packageId = typeof body?.packageId === "string" ? body.packageId : undefined;
     const stripeLink = configuredStripePaymentLink(packageId);
 
-    if (stripeLink) {
-      return NextResponse.json({
-        checkoutUrl: stripeCheckoutUrl(
-          stripeLink,
-          `verification:${auth.session.userId}:${packageId ?? "standard"}`,
-          auth.user.email
-        ),
-      });
+    if (!stripeLink) {
+      return NextResponse.json(
+        { error: "Payment checkout is not configured yet. Please contact Kidcellence before paying." },
+        { status: 503 }
+      );
     }
 
-    const payment = await recordVerificationPayment(
-      auth.session.userId,
-      packageId
-    );
-    return NextResponse.json({ payment });
+    return NextResponse.json({
+      checkoutUrl: stripeCheckoutUrl(
+        stripeLink,
+        `verification:${auth.session.userId}:${packageId ?? "standard"}`,
+        auth.user.email
+      ),
+    });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Could not record verification payment." },
+      { error: error instanceof Error ? error.message : "Could not open the payment page." },
       { status: 400 }
     );
   }

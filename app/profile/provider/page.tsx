@@ -662,7 +662,7 @@ function ProviderProfileContent() {
 
     if (!response?.ok) {
       const payload = await response?.json().catch(() => null);
-      setUploadMessage(payload?.error ?? "Could not record verification payment.");
+      setUploadMessage(payload?.error ?? "Could not open the payment page.");
       return;
     }
 
@@ -672,13 +672,7 @@ function ProviderProfileContent() {
       return;
     }
 
-    setVerificationPaymentStatus(payload.payment?.status ?? "paid");
-    setVerificationFeePaidAt(payload.payment?.paidAt ?? "");
-    setVerificationPaymentReference(payload.payment?.reference ?? "");
-    setVerificationPackageId(payload.payment?.packageId ?? verificationPackageId);
-    setVerificationPackageName(payload.payment?.packageName ?? verificationPackageName);
-    setUploadMessage("Verification fee recorded. Upload the required documents to submit.");
-    window.setTimeout(() => setUploadMessage(""), 3000);
+    setUploadMessage("Payment page was not returned. Please contact Kidcellence before paying.");
   };
 
   const submitVerification = async () => {
