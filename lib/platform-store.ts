@@ -37,6 +37,7 @@ const BUILT_IN_ADMIN_EMAILS = [
   "monti@uhuruai.co",
   "gaone@uhuruai.co",
   "katlotarniah@gmail.com",
+  "kidcellencebw@gmail.com",
 ];
 const LEGACY_DEMO_APPROVED_VERIFICATION_IDS = new Set(["a1", "a2", "a3", "a4", "a5"]);
 
