@@ -39,20 +39,20 @@ import {
 
 const needCategoryStyles = [
   {
-    card: "border-[rgba(255,204,47,0.55)] bg-[#ffcc2f] hover:bg-[#f2bd1f]",
-    count: "text-[var(--brand-sky)]",
+    card: "border-[#fff6d3] bg-[#54b2bf]",
+    count: "text-[#fff6d3]",
   },
   {
-    card: "border-[rgba(255,204,47,0.55)] bg-[#ffcc2f] hover:bg-[#f2bd1f]",
-    count: "text-[var(--brand-sky)]",
+    card: "border-[#fff6d3] bg-[#54b2bf]",
+    count: "text-[#fff6d3]",
   },
   {
-    card: "border-[rgba(255,204,47,0.55)] bg-[#ffcc2f] hover:bg-[#f2bd1f]",
-    count: "text-[var(--brand-sky)]",
+    card: "border-[#fff6d3] bg-[#54b2bf]",
+    count: "text-[#fff6d3]",
   },
   {
-    card: "border-[rgba(255,204,47,0.55)] bg-[#ffcc2f] hover:bg-[#f2bd1f]",
-    count: "text-[var(--brand-sky)]",
+    card: "border-[#fff6d3] bg-[#54b2bf]",
+    count: "text-[#fff6d3]",
   },
 ];
 
@@ -82,7 +82,7 @@ function CategoryIcon({ categoryId }: { categoryId: string }) {
   const Icon = categoryIconMap[categoryId] ?? HeartHandshake;
 
   return (
-    <span className="grid h-12 w-12 place-items-center rounded-xl border border-[rgba(84,178,191,0.35)] bg-white/25 text-[var(--brand-sky)] shadow-sm">
+    <span className="grid h-12 w-12 place-items-center rounded-xl border border-[#fff6d3] text-[#fff6d3] shadow-sm">
       <Icon className="h-6 w-6" strokeWidth={1.9} aria-hidden="true" />
     </span>
   );
@@ -299,10 +299,10 @@ export default function HomePage() {
               <Link
                 key={category.id}
                 href={`/search?category=${category.id}`}
-                className={`brand-card group relative min-h-48 p-4 transition-transform hover:z-50 hover:-translate-y-1 hover:border-[var(--brand-coral)] focus:z-50 focus-visible:z-50 focus-visible:border-[var(--brand-coral)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-coral)]/30 ${accent.card}`}
+                className={`brand-card group relative min-h-48 p-4 transition-transform hover:z-50 hover:-translate-y-1 hover:border-[#fff6d3] focus:z-50 focus-visible:z-50 focus-visible:border-[#fff6d3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fff6d3] ${accent.card}`}
               >
                 <CategoryIcon categoryId={category.id} />
-                <div className="mt-4 text-sm font-black text-[var(--brand-sky)]">{category.name}</div>
+                <div className="mt-4 text-sm font-black text-[#fff6d3]">{category.name}</div>
                 {category.subcategories?.length ? (
                   <CategorySubcategoryList subcategories={category.subcategories} />
                 ) : null}
