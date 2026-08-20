@@ -12,6 +12,7 @@ const env = {
   ...process.env,
   ADMIN_EMAILS: "admin-test@example.com",
   ENABLE_DEMO_PROVIDERS: "true",
+  PLATFORM_STORAGE_DRIVER: "filesystem",
   PLATFORM_STORE_PATH: path.join(tmpRoot, "platform-store.json"),
   PLATFORM_UPLOADS_DIR: path.join(tmpRoot, "uploads"),
 };

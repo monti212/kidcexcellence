@@ -213,15 +213,20 @@ const scrypt = promisify(scryptCallback);
 const PLATFORM_STORE_BLOB_KEY = "platform-store.json";
 const UPLOAD_BLOB_PREFIX = "uploads/";
 const BLOB_PATH_PREFIX = "blob:";
+type PlatformStorageDriver = "filesystem" | "netlify-blobs";
+
+export function platformStorageDriver(): PlatformStorageDriver {
+  const configuredDriver = process.env.PLATFORM_STORAGE_DRIVER?.trim().toLowerCase();
+  if (configuredDriver === "netlify-blobs") return "netlify-blobs";
+  if (configuredDriver === "filesystem") return "filesystem";
+
+  if (process.env.NETLIFY === "true") return "netlify-blobs";
+
+  return "filesystem";
+}
 
 function shouldUseNetlifyBlobs() {
-  return (
-    process.env.PLATFORM_STORAGE_DRIVER === "netlify-blobs" ||
-    (process.env.NETLIFY === "true" &&
-      !process.env.PLATFORM_STORE_PATH &&
-      !process.env.PLATFORM_DATA_DIR &&
-      !process.env.PLATFORM_UPLOADS_DIR)
-  );
+  return platformStorageDriver() === "netlify-blobs";
 }
 
 function platformBlobStore() {
@@ -347,28 +352,39 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
   };
 }
 
+async function readFilesystemStoreSnapshot() {
+  try {
+    const contents = await readFile(storePath, "utf8");
+    return normalizeStore(JSON.parse(contents));
+  } catch {
+    return null;
+  }
+}
+
 export async function readStore(): Promise<PlatformStore> {
   if (shouldUseNetlifyBlobs()) {
     const stored = await platformBlobStore().get(PLATFORM_STORE_BLOB_KEY, {
       type: "json",
     });
-    const store = stored ? normalizeStore(stored as Partial<PlatformStore>) : createInitialStore();
+    const store = stored
+      ? normalizeStore(stored as Partial<PlatformStore>)
+      : (await readFilesystemStoreSnapshot()) ?? createInitialStore();
     if (!stored) {
       await persistStore(store);
     }
     return store;
   }
 
-  try {
-    const contents = await readFile(storePath, "utf8");
-    const store = normalizeStore(JSON.parse(contents));
-    await persistStore(store);
-    return store;
-  } catch {
-    const store = createInitialStore();
+  const existingStore = await readFilesystemStoreSnapshot();
+  if (existingStore) {
+    const store = existingStore;
     await persistStore(store);
     return store;
   }
+
+  const store = createInitialStore();
+  await persistStore(store);
+  return store;
 }
 
 export async function updateStore<T>(updater: (store: PlatformStore) => T | Promise<T>) {

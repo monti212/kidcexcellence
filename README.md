@@ -46,22 +46,41 @@ The integration test starts a temporary Next dev server, uses isolated runtime d
 
 ## Runtime Data
 
-The app writes runtime data to `PLATFORM_STORE_PATH` and uploaded provider files to `PLATFORM_UPLOADS_DIR`.
+The app writes runtime data through the configured `PLATFORM_STORAGE_DRIVER`.
 
-Default:
+Local development uses filesystem storage:
 
 ```bash
+PLATFORM_STORAGE_DRIVER=filesystem
 ./data/platform-store.json
 ```
 
-For production hosts, set `PLATFORM_STORE_PATH` to a writable mounted path, for example:
+Netlify production and deploy previews are configured in `netlify.toml` to use
+Netlify Blobs:
 
 ```bash
+PLATFORM_STORAGE_DRIVER=netlify-blobs
+```
+
+That keeps signup, provider profiles, uploads, and the admin dashboard on the
+same durable backend across serverless function instances. If old
+`PLATFORM_STORE_PATH` or `PLATFORM_UPLOADS_DIR` values are still present in the
+Netlify UI, `netlify-blobs` still wins unless `PLATFORM_STORAGE_DRIVER` is
+explicitly set to `filesystem`.
+
+For non-Netlify production hosts, set `PLATFORM_STORAGE_DRIVER=filesystem` only
+when `PLATFORM_STORE_PATH` and `PLATFORM_UPLOADS_DIR` point to a durable mounted
+volume, for example:
+
+```bash
+PLATFORM_STORAGE_DRIVER=filesystem
 PLATFORM_STORE_PATH=/var/lib/kidcellence/platform-store.json
 PLATFORM_UPLOADS_DIR=/var/lib/kidcellence/uploads
 ```
 
-Do not rely on the repository working directory as durable storage on serverless platforms. Use a mounted volume or migrate `lib/platform-store.ts` to a real database and object storage.
+Do not rely on the repository working directory or `/tmp` as durable storage on
+serverless platforms. Use Netlify Blobs, a mounted volume, or migrate
+`lib/platform-store.ts` to a real database and object storage.
 
 ## Admin Access
 

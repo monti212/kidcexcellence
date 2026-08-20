@@ -1,0 +1,6 @@
+[context.production.environment]
+  PLATFORM_STORAGE_DRIVER = "netlify-blobs"
+
+[context.deploy-preview.environment]
+  PLATFORM_STORAGE_DRIVER = "netlify-blobs"
+
