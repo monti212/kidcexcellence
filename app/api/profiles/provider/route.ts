@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   getSessionFromRequest,
+  providerAnalyticsSummary,
   readStore,
   saveProviderProfile,
 } from "@/lib/platform-store";
@@ -90,6 +91,28 @@ function missingPublishRequirements(profile: {
   return missing;
 }
 
+function publishCompletion(profile: {
+  displayName: string;
+  location: string;
+  bio: string;
+  phone: string;
+  services: string[];
+  price: string;
+  feeRows: Array<{ termly: string; annually: string }>;
+} | null) {
+  if (!profile) return 0;
+  const checks = [
+    Boolean(profile.displayName),
+    Boolean(profile.location),
+    Boolean(profile.bio),
+    profile.services.length > 0,
+    Boolean(profile.phone),
+    hasStartingPrice(profile),
+  ];
+  const complete = checks.filter(Boolean).length;
+  return Math.round((complete / checks.length) * 100);
+}
+
 export async function GET(request: Request) {
   const auth = await getSessionFromRequest(request);
   if (!auth) {
@@ -108,6 +131,10 @@ export async function GET(request: Request) {
       displayName,
       auth.session.userId
     ),
+    analytics: {
+      ...providerAnalyticsSummary(store, auth.session.userId),
+      profileCompletion: publishCompletion(profile),
+    },
   });
 }
 

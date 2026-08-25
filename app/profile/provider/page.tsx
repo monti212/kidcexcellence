@@ -18,12 +18,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
+  BarChart3,
   CheckCircle2,
   CreditCard,
+  Eye,
   Lock,
   Upload,
   ImagePlus,
   LogIn,
+  MessageSquare,
+  TrendingUp,
   X,
   ToggleLeft,
   ToggleRight,
@@ -108,6 +112,29 @@ interface ProviderUpload {
   url: string;
 }
 
+interface ProviderAnalyticsDay {
+  date: string;
+  profileViews: number;
+  enquiries: number;
+  messagesReceived: number;
+}
+
+interface ProviderAnalytics {
+  profileViews: number;
+  enquiries: number;
+  messagesReceived: number;
+  engagement: number;
+  todayViews: number;
+  last7DaysViews: number;
+  last28DaysViews: number;
+  previous28DaysViews: number;
+  profileCompletion: number;
+  lastViewedAt?: string;
+  lastEnquiryAt?: string;
+  lastMessageAt?: string;
+  daily: ProviderAnalyticsDay[];
+}
+
 interface PublishRequirementIssue {
   section: string;
   field: string;
@@ -156,6 +183,19 @@ const DEFAULT_PROVIDER_PROFILE: StoredProviderProfile = {
     { grade: "Toddler Class", termly: "3000", annually: "9000" },
     { grade: "Nursery", termly: "3200", annually: "9600" },
   ],
+};
+
+const DEFAULT_PROVIDER_ANALYTICS: ProviderAnalytics = {
+  profileViews: 0,
+  enquiries: 0,
+  messagesReceived: 0,
+  engagement: 0,
+  todayViews: 0,
+  last7DaysViews: 0,
+  last28DaysViews: 0,
+  previous28DaysViews: 0,
+  profileCompletion: 0,
+  daily: [],
 };
 
 type ProviderProfileTab = "basic" | "documents" | "pricing" | "gallery";
@@ -270,6 +310,7 @@ function ProviderProfileContent() {
   const [uploadMessage, setUploadMessage] = useState("");
   const [uploads, setUploads] = useState<ProviderUpload[]>([]);
   const [feeRows, setFeeRows] = useState<FeeRow[]>(storedProfile.feeRows);
+  const [analytics, setAnalytics] = useState<ProviderAnalytics>(DEFAULT_PROVIDER_ANALYTICS);
 
   const isSchool = ["schools", "nurseries"].includes(category);
   const isIndividualCare = ["nannies", "helpers", "babysitters"].includes(category);
@@ -328,6 +369,28 @@ function ProviderProfileContent() {
   const verificationPrice = hasVettingPackages
     ? selectedVettingPackage.price
     : VERIFICATION_FEE.amount;
+  const analyticsTrend =
+    analytics.previous28DaysViews > 0
+      ? Math.round(
+          ((analytics.last28DaysViews - analytics.previous28DaysViews) /
+            analytics.previous28DaysViews) *
+            100
+        )
+      : analytics.last28DaysViews > 0
+        ? 100
+        : 0;
+  const analyticsSparklineMax = Math.max(
+    1,
+    ...analytics.daily.map((day) => day.profileViews)
+  );
+  const analyticsBars = analytics.daily.length
+    ? analytics.daily.slice(-14)
+    : Array.from({ length: 7 }, (_, index) => ({
+        date: `empty-${index}`,
+        profileViews: 0,
+        enquiries: 0,
+        messagesReceived: 0,
+      }));
 
   const refreshUploads = useCallback(async () => {
     if (!session) {
@@ -355,6 +418,11 @@ function ProviderProfileContent() {
 
     const payload = await response.json();
     setVerified(Boolean(payload.verified));
+    setAnalytics({
+      ...DEFAULT_PROVIDER_ANALYTICS,
+      ...(payload.analytics ?? {}),
+      daily: Array.isArray(payload.analytics?.daily) ? payload.analytics.daily : [],
+    });
     if (!payload.profile) {
       setDisplayName(user?.name ?? "");
       setCategory(requestedVettingCategory || user?.category || DEFAULT_PROVIDER_PROFILE.category);
@@ -849,6 +917,127 @@ function ProviderProfileContent() {
             </a>
           )}
         </div>
+
+        <section className="mb-6">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-black uppercase text-[var(--brand-leaf)]">
+                <BarChart3 className="h-4 w-4" />
+                Analytics
+              </div>
+              <h2 className="mt-1 text-2xl font-black text-[var(--brand-ink)]">
+                Your listing performance
+              </h2>
+            </div>
+            <div className="min-w-44">
+              <div className="flex items-center justify-between text-xs font-black text-[var(--brand-muted)]">
+                <span>Profile readiness</span>
+                <span>{analytics.profileCompletion}%</span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+                <div
+                  className="h-full rounded-full bg-[var(--brand-leaf)]"
+                  style={{ width: `${analytics.profileCompletion}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              {
+                label: "Views",
+                value: analytics.last28DaysViews,
+                detail: `${analytics.todayViews} today · ${analytics.last7DaysViews} this week`,
+                icon: Eye,
+                accent: "text-[var(--brand-sky)]",
+              },
+              {
+                label: "Engagement",
+                value: analytics.engagement,
+                detail: "Enquiries and parent messages",
+                icon: TrendingUp,
+                accent: "text-[var(--brand-coral)]",
+              },
+              {
+                label: "Enquiries",
+                value: analytics.enquiries,
+                detail: "New parent conversations started",
+                icon: MessageSquare,
+                accent: "text-[var(--brand-leaf)]",
+              },
+              {
+                label: "Messages",
+                value: analytics.messagesReceived,
+                detail: "Inbound parent messages",
+                icon: MessageSquare,
+                accent: "text-[var(--brand-gold)]",
+              },
+            ].map((metric) => {
+              const MetricIcon = metric.icon;
+              return (
+                <div
+                  key={metric.label}
+                  className="rounded-lg border border-[var(--brand-line)] bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-bold text-[var(--brand-muted)]">
+                        {metric.label}
+                      </div>
+                      <div className="mt-1 text-3xl font-black text-[var(--brand-ink)]">
+                        {metric.value.toLocaleString()}
+                      </div>
+                    </div>
+                    <MetricIcon className={`h-5 w-5 ${metric.accent}`} />
+                  </div>
+                  <div className="mt-2 text-xs font-bold text-[var(--brand-muted)]">
+                    {metric.detail}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 rounded-lg border border-[var(--brand-line)] bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-black text-[var(--brand-ink)]">
+                  28-day view trend
+                </div>
+                <div className="mt-1 text-xs font-bold text-[var(--brand-muted)]">
+                  {analytics.profileViews.toLocaleString()} lifetime views
+                  {analytics.lastViewedAt
+                    ? ` · last viewed ${new Date(analytics.lastViewedAt).toLocaleDateString()}`
+                    : ""}
+                </div>
+              </div>
+              <Badge
+                className={`w-fit rounded-full border ${
+                  analyticsTrend >= 0
+                    ? "border-green-200 bg-green-50 text-green-700"
+                    : "border-red-200 bg-red-50 text-red-700"
+                }`}
+              >
+                {analyticsTrend >= 0 ? "+" : ""}
+                {analyticsTrend}%
+              </Badge>
+            </div>
+            <div className="mt-4 flex h-20 items-end gap-1">
+              {analyticsBars.map((day) => (
+                <div
+                  key={day.date}
+                  className="flex-1 rounded-t bg-[var(--brand-sky)]/70"
+                  title={`${day.date}: ${day.profileViews} view${day.profileViews === 1 ? "" : "s"}`}
+                  style={{
+                    height: `${Math.max(8, (day.profileViews / analyticsSparklineMax) * 80)}px`,
+                    opacity: day.profileViews ? 1 : 0.22,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ProviderProfileTab)}>
           <TabsList className="grid grid-cols-4 bg-white border border-[var(--brand-line)] rounded-lg p-1 shadow-sm mb-6 w-full">

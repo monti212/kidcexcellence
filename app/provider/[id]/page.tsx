@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ProviderAnalyticsTracker } from "@/components/ProviderAnalyticsTracker";
 import {
   allProvidersFromStore,
   getCategoryById,
@@ -84,6 +85,7 @@ export default async function ProviderProfilePage({
 
   return (
     <div className="brand-page min-h-screen">
+      <ProviderAnalyticsTracker providerId={provider.id} />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Link href="/search" className="mb-6 inline-flex items-center gap-2 text-sm font-black text-[var(--brand-leaf)]">
           <ArrowLeft className="h-4 w-4" />

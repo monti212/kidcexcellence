@@ -174,6 +174,39 @@ export interface PlatformUploadRecord {
   createdAt: string;
 }
 
+export interface ProviderAnalyticsDay {
+  date: string;
+  profileViews: number;
+  enquiries: number;
+  messagesReceived: number;
+}
+
+export interface ProviderAnalyticsRecord {
+  userId: string;
+  profileViews: number;
+  enquiries: number;
+  messagesReceived: number;
+  lastViewedAt?: string;
+  lastEnquiryAt?: string;
+  lastMessageAt?: string;
+  daily: ProviderAnalyticsDay[];
+}
+
+export interface ProviderAnalyticsSummary {
+  profileViews: number;
+  enquiries: number;
+  messagesReceived: number;
+  engagement: number;
+  todayViews: number;
+  last7DaysViews: number;
+  last28DaysViews: number;
+  previous28DaysViews: number;
+  lastViewedAt?: string;
+  lastEnquiryAt?: string;
+  lastMessageAt?: string;
+  daily: ProviderAnalyticsDay[];
+}
+
 export interface StoredConversation extends Conversation {
   parentUserId: string;
   parentName: string;
@@ -191,6 +224,7 @@ export interface PlatformStore {
   accountTokens: AccountTokenRecord[];
   parentProfiles: Record<string, ParentProfileRecord>;
   providerProfiles: Record<string, ProviderProfileRecord>;
+  providerAnalytics: Record<string, ProviderAnalyticsRecord>;
   uploads: PlatformUploadRecord[];
   conversations: StoredConversation[];
   verifications: {
@@ -245,6 +279,7 @@ function createInitialStore(): PlatformStore {
     accountTokens: [],
     parentProfiles: {},
     providerProfiles: {},
+    providerAnalytics: {},
     uploads: [],
     conversations: [],
     verifications: {
@@ -252,6 +287,40 @@ function createInitialStore(): PlatformStore {
       approvedProviders: [],
       rejectedCount: 0,
     },
+  };
+}
+
+function dateKey(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
+function normalizeProviderAnalyticsDay(day: Partial<ProviderAnalyticsDay>): ProviderAnalyticsDay | null {
+  if (!day.date) return null;
+  return {
+    date: day.date,
+    profileViews: Number(day.profileViews) || 0,
+    enquiries: Number(day.enquiries) || 0,
+    messagesReceived: Number(day.messagesReceived) || 0,
+  };
+}
+
+function normalizeProviderAnalyticsRecord(
+  userId: string,
+  analytics?: Partial<ProviderAnalyticsRecord>
+): ProviderAnalyticsRecord {
+  return {
+    userId,
+    profileViews: Number(analytics?.profileViews) || 0,
+    enquiries: Number(analytics?.enquiries) || 0,
+    messagesReceived: Number(analytics?.messagesReceived) || 0,
+    lastViewedAt: analytics?.lastViewedAt,
+    lastEnquiryAt: analytics?.lastEnquiryAt,
+    lastMessageAt: analytics?.lastMessageAt,
+    daily: (analytics?.daily ?? [])
+      .map(normalizeProviderAnalyticsDay)
+      .filter((day): day is ProviderAnalyticsDay => Boolean(day))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-90),
   };
 }
 
@@ -332,6 +401,12 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
       ])
     ),
     providerProfiles,
+    providerAnalytics: Object.fromEntries(
+      Object.entries(store.providerAnalytics ?? {}).map(([userId, analytics]) => [
+        userId,
+        normalizeProviderAnalyticsRecord(userId, analytics),
+      ])
+    ),
     uploads: store.uploads ?? initial.uploads,
     conversations: (store.conversations ?? []).filter(
       (conversation): conversation is StoredConversation =>
@@ -854,6 +929,108 @@ export function isAdminEmail(email: string) {
   );
 }
 
+type ProviderAnalyticsEvent = "profile-view" | "enquiry" | "message-received";
+
+function ensureProviderAnalytics(store: PlatformStore, userId: string) {
+  store.providerAnalytics[userId] = normalizeProviderAnalyticsRecord(
+    userId,
+    store.providerAnalytics[userId]
+  );
+  return store.providerAnalytics[userId];
+}
+
+function bumpProviderAnalytics(
+  store: PlatformStore,
+  userId: string,
+  event: ProviderAnalyticsEvent,
+  now = new Date()
+) {
+  const analytics = ensureProviderAnalytics(store, userId);
+  const today = dateKey(now);
+  let day = analytics.daily.find((item) => item.date === today);
+  if (!day) {
+    day = { date: today, profileViews: 0, enquiries: 0, messagesReceived: 0 };
+    analytics.daily.push(day);
+  }
+
+  if (event === "profile-view") {
+    analytics.profileViews += 1;
+    analytics.lastViewedAt = now.toISOString();
+    day.profileViews += 1;
+  } else if (event === "enquiry") {
+    analytics.enquiries += 1;
+    analytics.lastEnquiryAt = now.toISOString();
+    day.enquiries += 1;
+  } else {
+    analytics.messagesReceived += 1;
+    analytics.lastMessageAt = now.toISOString();
+    day.messagesReceived += 1;
+  }
+
+  analytics.daily = analytics.daily
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-90);
+}
+
+function sumAnalyticsDays(
+  daily: ProviderAnalyticsDay[],
+  field: keyof Omit<ProviderAnalyticsDay, "date">,
+  days: number,
+  offsetDays = 0
+) {
+  const keys = new Set<string>();
+  const cursor = new Date();
+  cursor.setUTCHours(0, 0, 0, 0);
+  cursor.setUTCDate(cursor.getUTCDate() - offsetDays);
+
+  for (let index = 0; index < days; index += 1) {
+    keys.add(dateKey(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+
+  return daily.reduce((total, day) => total + (keys.has(day.date) ? day[field] : 0), 0);
+}
+
+export function providerAnalyticsSummary(
+  store: PlatformStore,
+  userId: string
+): ProviderAnalyticsSummary {
+  const analytics = normalizeProviderAnalyticsRecord(userId, store.providerAnalytics[userId]);
+  const sortedDaily = [...analytics.daily].sort((a, b) => a.date.localeCompare(b.date));
+
+  return {
+    profileViews: analytics.profileViews,
+    enquiries: analytics.enquiries,
+    messagesReceived: analytics.messagesReceived,
+    engagement: analytics.enquiries + analytics.messagesReceived,
+    todayViews: sumAnalyticsDays(sortedDaily, "profileViews", 1),
+    last7DaysViews: sumAnalyticsDays(sortedDaily, "profileViews", 7),
+    last28DaysViews: sumAnalyticsDays(sortedDaily, "profileViews", 28),
+    previous28DaysViews: sumAnalyticsDays(sortedDaily, "profileViews", 28, 28),
+    lastViewedAt: analytics.lastViewedAt,
+    lastEnquiryAt: analytics.lastEnquiryAt,
+    lastMessageAt: analytics.lastMessageAt,
+    daily: sortedDaily.slice(-28),
+  };
+}
+
+export async function recordProviderProfileView(
+  providerId: string,
+  viewerUserId?: string
+) {
+  const providerUserId = providerAccountUserId({ id: providerId } as Provider);
+  if (!providerUserId || providerUserId === viewerUserId) return false;
+
+  return updateStore((store) => {
+    const user = store.users.find((item) => item.id === providerUserId && item.role === "provider");
+    const profile = store.providerProfiles[providerUserId];
+    if (!user || !profile?.published) return false;
+
+    bumpProviderAnalytics(store, providerUserId, "profile-view");
+    return true;
+  });
+}
+
 export async function saveParentProfile(
   userId: string,
   input: Omit<ParentProfileRecord, "userId" | "savedAt">
@@ -1152,6 +1329,8 @@ export async function appendConversationMessage(input: {
   providerId?: string | null;
 }) {
   return updateStore((store) => {
+    let startedProviderConversationUserId: string | undefined;
+
     if (input.viewerRole === "parent" && input.providerId) {
       const existing = store.conversations.find(
         (conversation) =>
@@ -1163,9 +1342,9 @@ export async function appendConversationMessage(input: {
       );
       const parent = store.users.find((user) => user.id === input.viewerUserId);
       if (!existing && provider && parent) {
-        store.conversations.unshift(
-          buildStoredConversation(provider, input.viewerUserId, parent.name)
-        );
+        const conversation = buildStoredConversation(provider, input.viewerUserId, parent.name);
+        startedProviderConversationUserId = conversation.providerUserId;
+        store.conversations.unshift(conversation);
       }
     }
 
@@ -1199,6 +1378,12 @@ export async function appendConversationMessage(input: {
       conversation.unreadForParent = 0;
       conversation.unreadForProvider = (conversation.unreadForProvider ?? 0) + 1;
       conversation.unread = conversation.unreadForProvider;
+      if (conversation.providerUserId) {
+        if (startedProviderConversationUserId === conversation.providerUserId) {
+          bumpProviderAnalytics(store, conversation.providerUserId, "enquiry");
+        }
+        bumpProviderAnalytics(store, conversation.providerUserId, "message-received");
+      }
     } else {
       conversation.unreadForProvider = 0;
       conversation.unreadForParent = (conversation.unreadForParent ?? 0) + 1;
