@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
+import { useCallback, useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -149,6 +149,8 @@ const DEFAULT_ADMIN_STATE: AdminState = {
   },
 };
 
+const ADMIN_DASHBOARD_REFRESH_MS = 5000;
+
 function AdminDashboard() {
   const [adminState, setAdminState] = useState<AdminState>(DEFAULT_ADMIN_STATE);
   const {
@@ -163,19 +165,47 @@ function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [actionError, setActionError] = useState("");
   const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [lastDashboardRefreshAt, setLastDashboardRefreshAt] = useState<Date | null>(null);
   const filteredApprovedProviders = approvedProviders.filter((provider) =>
     provider.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  useEffect(() => {
-    fetch("/api/admin/verifications", { credentials: "same-origin", cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((payload) => {
-        if (payload) setAdminState(payload);
-      })
-      .catch(() => undefined)
-      .finally(() => setDashboardLoading(false));
+  const refreshDashboard = useCallback(async () => {
+    const response = await fetch("/api/admin/verifications", {
+      credentials: "same-origin",
+      cache: "no-store",
+    }).catch(() => null);
+    const payload = response?.ok ? await response.json().catch(() => null) : null;
+    if (payload) {
+      setAdminState(payload);
+      setLastDashboardRefreshAt(new Date());
+    }
+    setDashboardLoading(false);
   }, []);
+
+  useEffect(() => {
+    const initialRefreshTimer = window.setTimeout(() => {
+      void refreshDashboard();
+    }, 0);
+
+    const refreshTimer = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void refreshDashboard();
+      }
+    }, ADMIN_DASHBOARD_REFRESH_MS);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refreshDashboard();
+      }
+    };
+
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearTimeout(initialRefreshTimer);
+      window.clearInterval(refreshTimer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [refreshDashboard]);
 
   const approveProvider = async (id: string) => {
     setActionError("");
@@ -291,11 +321,16 @@ function AdminDashboard() {
               <Eye className="h-5 w-5 text-[var(--brand-leaf)]" />
               <h2 className="text-lg font-black text-[var(--brand-ink)]">Website Traffic</h2>
             </div>
-            {platformAnalytics.lastVisitedAt && (
+            <div className="flex flex-col gap-1 sm:items-end">
+              <Badge className="w-fit rounded-full border border-green-200 bg-green-50 text-xs text-green-700">
+                Live
+              </Badge>
               <p className="text-xs font-bold text-[var(--brand-muted)]">
-                Last visit {new Date(platformAnalytics.lastVisitedAt).toLocaleString()}
+                {lastDashboardRefreshAt
+                  ? `Updated ${lastDashboardRefreshAt.toLocaleTimeString()}`
+                  : "Updates every 5 seconds"}
               </p>
-            )}
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

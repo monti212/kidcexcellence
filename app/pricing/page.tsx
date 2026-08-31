@@ -169,14 +169,15 @@ export default function PricingPage() {
                       {pkg.name}
                     </span>
                   </span>
-                  <span className="shrink-0 text-right">
-                    <span className="block whitespace-nowrap text-2xl font-black text-[var(--brand-ink)]">
-                      P{pkg.price}
-                    </span>
-                    <span className="block text-xs font-bold text-[var(--brand-muted)]">
-                      BWP
-                    </span>
-                  </span>
+                  <a
+                    href={getVetWithUsEnquiryHref(pkg.name, pkg.price)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--brand-sky)] px-4 text-sm font-black text-white transition-colors hover:bg-[var(--brand-coral)]"
+                  >
+                    Send enquiry
+                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                  </a>
                 </span>
                 <span className="mt-3 block text-sm leading-6 text-[var(--brand-muted)]">
                   {pkg.summary}
@@ -191,15 +192,6 @@ export default function PricingPage() {
                     </span>
                   ))}
                 </span>
-                <a
-                  href={getVetWithUsEnquiryHref(pkg.name, pkg.price)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-auto inline-flex h-10 w-fit items-center justify-center gap-2 rounded-lg bg-[var(--brand-sky)] px-4 text-sm font-black text-white transition-colors hover:bg-[var(--brand-coral)]"
-                >
-                  Send enquiry
-                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                </a>
               </div>
             ))}
           </div>

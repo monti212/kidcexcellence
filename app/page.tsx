@@ -360,20 +360,15 @@ export default function HomePage() {
                       {pkg.name} Package
                     </span>
                   </span>
-                  <span className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-                    <span className="whitespace-nowrap text-xl font-black sm:text-2xl">
-                      P{pkg.price}
-                    </span>
-                    <a
-                      href={getVettingEnquiryHref(pkg.name, pkg.price)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[var(--brand-sky)] px-3 text-xs font-black text-white transition-colors hover:bg-[var(--brand-coral)]"
-                    >
-                      <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                      Enquire
-                    </a>
-                  </span>
+                  <a
+                    href={getVettingEnquiryHref(pkg.name, pkg.price)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--brand-sky)] px-3 text-xs font-black text-white transition-colors hover:bg-[var(--brand-coral)]"
+                  >
+                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                    Enquire
+                  </a>
                 </div>
               ))}
             </div>
