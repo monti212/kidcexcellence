@@ -73,8 +73,8 @@ const categoryIconMap: Record<string, typeof Baby> = {
   "kiddies-entertainment": Drama,
 };
 
-function getVettingWhatsAppHref(packageName: string, price: number) {
-  const message = `Hi Kidcellence, I would like to choose the ${packageName} Vet With Us Package for P${price}.`;
+function getVettingEnquiryHref(packageName: string, price: number) {
+  const message = `Hi Kidcellence, I would like to enquire about the ${packageName} Vet With Us Package. The listed price is P${price}.`;
   return `https://wa.me/26775378699?text=${encodeURIComponent(message)}`;
 }
 
@@ -343,17 +343,14 @@ export default function HomePage() {
                 </h3>
               </div>
               <p className="max-w-md text-sm leading-6 text-[var(--brand-muted)]">
-                Choose a Standard or VIP package and connect with Kidcellence on WhatsApp.
+                View the package prices, then send an enquiry to Kidcellence on WhatsApp.
               </p>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               {VETTING_PACKAGES.map((pkg) => (
-                <a
+                <div
                   key={pkg.id}
-                  href={getVettingWhatsAppHref(pkg.name, pkg.price)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex min-h-20 flex-col items-start justify-center gap-2 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-3 transition-colors hover:border-[var(--brand-sky)] hover:bg-[#eaf8fa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-sky)]/30 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+                  className="flex min-h-28 flex-col items-start justify-center gap-3 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5"
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <span className="grid h-9 w-9 shrink-0 place-items-center text-[var(--brand-gold)]">
@@ -363,13 +360,21 @@ export default function HomePage() {
                       {pkg.name} Package
                     </span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-3 text-[var(--brand-sky)]">
+                  <span className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
                     <span className="whitespace-nowrap text-xl font-black sm:text-2xl">
                       P{pkg.price}
                     </span>
-                    <MessageCircle className="h-6 w-6" aria-label={`Message Kidcellence about the ${pkg.name} Package`} />
+                    <a
+                      href={getVettingEnquiryHref(pkg.name, pkg.price)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[var(--brand-sky)] px-3 text-xs font-black text-white transition-colors hover:bg-[var(--brand-coral)]"
+                    >
+                      <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                      Enquire
+                    </a>
                   </span>
-                </a>
+                </div>
               ))}
             </div>
           </div>
