@@ -96,6 +96,7 @@ interface StoredProviderProfile {
   verificationPaymentReference?: string;
   verificationPackageId?: string;
   verificationPackageName?: string;
+  coveredByFreeAccess?: boolean;
   feeRows: FeeRow[];
   savedAt?: string;
 }
@@ -735,6 +736,16 @@ function ProviderProfileContent() {
     }
 
     const payload = await response.json();
+    if (payload.payment?.status === "paid") {
+      setVerificationPaymentStatus("paid");
+      setVerificationFeePaidAt(payload.payment.paidAt ?? "");
+      setVerificationPaymentReference(payload.payment.reference ?? "");
+      setVerificationPackageId(payload.payment.packageId ?? verificationPackageId);
+      setVerificationPackageName(payload.payment.packageName ?? verificationPackageName);
+      setUploadMessage("Free full access is active for this month. No payment needed.");
+      return;
+    }
+
     if (payload.checkoutUrl) {
       window.location.assign(payload.checkoutUrl);
       return;
@@ -1377,7 +1388,8 @@ function ProviderProfileContent() {
           <TabsContent value="documents">
             <div className="bg-white rounded-lg border border-[var(--brand-line)] shadow-sm p-6 space-y-5">
               <p className="text-[var(--brand-muted)] text-sm bg-blue-50 rounded-lg p-3 border border-blue-100">
-                Pay the verification fee and upload the required documents for your provider type.
+                Your first month includes full provider access, so verification checkout is waived while it is active.
+                Upload the required documents for your provider type.
                 Once approved, your public profile displays the Verified badge.
               </p>
 
@@ -1411,7 +1423,7 @@ function ProviderProfileContent() {
                                 {plan.name}
                               </span>
                               <span className="text-lg font-black text-[var(--brand-ink)]">
-                                P {plan.price}
+                                {verificationPaid ? "Included" : `P ${plan.price}`}
                               </span>
                             </div>
                             <p className="mt-1 text-xs leading-5 text-[var(--brand-muted)]">
@@ -1437,16 +1449,16 @@ function ProviderProfileContent() {
                   ) : (
                     <>
                       <div className="mt-2 text-2xl font-black text-[var(--brand-ink)]">
-                        P {VERIFICATION_FEE.amount}
+                        {verificationPaid ? "P 0" : `P ${VERIFICATION_FEE.amount}`}
                       </div>
                       <p className="mt-1 text-xs text-[var(--brand-muted)]">
-                        One-time additional review fee for the verification badge.
+                        Included during the free full-access month.
                       </p>
                     </>
                   )}
                   {verificationPaid ? (
                     <Badge className="mt-3 rounded-full border-green-200 bg-green-50 text-green-700">
-                      Paid{verificationPackageName ? ` · ${verificationPackageName}` : ""}
+                      Included{verificationPackageName ? ` · ${verificationPackageName}` : ""}
                     </Badge>
                   ) : (
                     <Button
@@ -1544,7 +1556,7 @@ function ProviderProfileContent() {
                           : missingDocuments.length
                             ? `Missing documents: ${missingDocuments.map((document) => document.label).join(", ")}.`
                             : "All required details and documents are uploaded. Submit when ready."
-                        : "Pay the verification fee before submitting for review.")}
+                        : "Payment is only needed after the free full-access month ends.")}
                   </p>
                 </div>
                 {(verificationStatus === "not_submitted" ||

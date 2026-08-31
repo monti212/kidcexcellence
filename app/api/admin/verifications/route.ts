@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   decideVerification,
+  effectiveVerificationPayment,
   getSessionFromRequest,
+  platformAnalyticsSummary,
   readStore,
 } from "@/lib/platform-store";
 import { accountProvidersFromStore, getCategoryLabel } from "@/lib/platform-service";
@@ -57,6 +59,7 @@ function dashboardPayload(
         (item) => item.userId === user.id
       );
       const category = profile?.category ?? user.category ?? "";
+      const verificationPayment = effectiveVerificationPayment(profile, user);
 
       return {
         userId: user.id,
@@ -70,15 +73,7 @@ function dashboardPayload(
         savedAt: profile?.savedAt,
         verificationStatus:
           approved ? "approved" : pending ? "pending" : profile?.verificationStatus ?? "not_submitted",
-        verificationPayment: {
-          status: profile?.verificationPaymentStatus ?? "unpaid",
-          amount: profile?.verificationFeeAmount,
-          currency: profile?.verificationFeeCurrency,
-          paidAt: profile?.verificationFeePaidAt,
-          reference: profile?.verificationPaymentReference,
-          packageId: profile?.verificationPackageId,
-          packageName: profile?.verificationPackageName,
-        },
+        verificationPayment,
         pendingId: pending?.id,
         approvedDate: approved?.date,
         documentCount: documents.length,
@@ -110,16 +105,13 @@ function dashboardPayload(
     pendingProviders: store.verifications.pendingProviders.map((pending) => ({
       ...pending,
       verificationPayment: pending.userId
-        ? {
-            status:
-              store.providerProfiles[pending.userId]?.verificationPaymentStatus ?? "unpaid",
-            amount: store.providerProfiles[pending.userId]?.verificationFeeAmount,
-            currency: store.providerProfiles[pending.userId]?.verificationFeeCurrency,
-            paidAt: store.providerProfiles[pending.userId]?.verificationFeePaidAt,
-            reference: store.providerProfiles[pending.userId]?.verificationPaymentReference,
-            packageId: store.providerProfiles[pending.userId]?.verificationPackageId,
-            packageName: store.providerProfiles[pending.userId]?.verificationPackageName,
-          }
+        ? effectiveVerificationPayment(
+            store.providerProfiles[pending.userId],
+            store.users.find((user) => user.id === pending.userId) ?? {
+              id: pending.userId,
+              createdAt: pending.submittedDate,
+            }
+          )
         : null,
       uploads: pending.userId
         ? providerUploads(store, pending.userId)
@@ -133,6 +125,7 @@ function dashboardPayload(
       totalParents: store.users.filter((user) => user.role === "parent").length,
       registeredProviders: store.users.filter((user) => user.role === "provider").length,
     },
+    platformAnalytics: platformAnalyticsSummary(store),
     admin,
   };
 }

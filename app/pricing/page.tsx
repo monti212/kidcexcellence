@@ -17,26 +17,29 @@ export const metadata: Metadata = {
 const monthlySubscriptions = [
   {
     name: "Parents / Guardians",
-    price: "P60",
-    interval: "monthly",
+    price: "P0",
+    interval: "first month",
     note: "For families searching, comparing, and contacting trusted child related service providers.",
-    verification: "No verification fee",
+    renewal: "Then P60 monthly",
+    verification: "Everything included for the first month",
     href: "/auth?role=parent",
   },
   {
     name: "Nannies / Helpers / Babysitters",
-    price: "P60",
-    interval: "monthly",
+    price: "P0",
+    interval: "first month",
     note: "For individual care providers listing their services and managing enquiries.",
-    verification: "Optional verification fee: P20",
+    renewal: "Then P60 monthly",
+    verification: "Verification checkout waived during the free month",
     href: "/auth?role=provider&category=nannies",
   },
   {
     name: "Other Service Providers",
-    price: "P150",
-    interval: "monthly",
+    price: "P0",
+    interval: "first month",
     note: "For tutors, specialists, transport, parties, agencies, schools, and other providers.",
-    verification: "Optional verification fee: P50",
+    renewal: "Then P150 monthly",
+    verification: "Verification checkout waived during the free month",
     href: "/auth?role=provider",
   },
 ];
@@ -68,12 +71,12 @@ export default function PricingPage() {
           </div>
           <p className="brand-label mt-6">Pricing</p>
           <h1 className="mt-2 text-4xl font-black text-[var(--brand-ink)] sm:text-5xl">
-            Clear costs for finding and verifying care.
+            Full access is free for your first month.
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--brand-muted)]">
-            Kidcellence includes monthly subscription options for parents,
-            individual care providers, and broader service providers, plus managed
-            vetting packages for families who want extra support.
+            Parents and providers can use every Kidcellence feature for one month
+            before any subscription payment is needed. Provider verification
+            checkout is also waived while the free month is active.
           </p>
         </div>
       </header>
@@ -82,13 +85,13 @@ export default function PricingPage() {
         <section>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="brand-label">Monthly subscriptions</p>
+              <p className="brand-label">Free first month</p>
               <h2 className="mt-2 text-2xl font-black text-[var(--brand-ink)]">
-                Choose the plan that matches your role.
+                Choose the account that matches your role.
               </h2>
             </div>
             <p className="max-w-sm text-sm leading-6 text-[var(--brand-muted)]">
-              Simple monthly access, with verification shown separately where it applies.
+              Full access starts immediately. Monthly pricing begins after the free month.
             </p>
           </div>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
@@ -120,12 +123,15 @@ export default function PricingPage() {
                 <p className="mt-3 text-sm leading-6 text-[var(--brand-muted)]">
                   {plan.note}
                 </p>
+                <p className="mt-3 text-sm font-black text-[var(--brand-leaf)]">
+                  {plan.renewal}
+                </p>
                 <p className="mt-5 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-3 py-2 text-sm font-black text-[var(--brand-ink)]">
                   {plan.verification}
                 </p>
                 <Link href={plan.href} className="mt-auto inline-block pt-6">
                   <Button className="rounded-full bg-[var(--brand-sky)] px-5 font-black text-white hover:bg-[var(--brand-coral)]">
-                    Choose subscription
+                    Start free month
                   </Button>
                 </Link>
               </div>

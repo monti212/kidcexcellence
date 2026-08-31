@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { getSessionFromRequest } from "@/lib/platform-store";
+import {
+  effectiveVerificationPayment,
+  fullAccessEntitlementForUser,
+  getSessionFromRequest,
+  readStore,
+} from "@/lib/platform-store";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
 import { VERIFICATION_FEE } from "@/lib/verification-requirements";
@@ -57,6 +62,15 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
     const packageId = typeof body?.packageId === "string" ? body.packageId : undefined;
+    const store = await readStore();
+    const profile = store.providerProfiles[auth.session.userId];
+    const subscription = fullAccessEntitlementForUser(auth.user);
+    const payment = effectiveVerificationPayment(profile, auth.user, packageId);
+
+    if (payment.status === "paid") {
+      return NextResponse.json({ checkoutUrl: null, payment, subscription });
+    }
+
     const stripeLink = configuredStripePaymentLink(packageId);
 
     if (!stripeLink) {

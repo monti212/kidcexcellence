@@ -14,6 +14,7 @@ import {
   Users,
   Clock,
   BarChart2,
+  Eye,
   Search,
   ExternalLink,
   FileText,
@@ -91,6 +92,28 @@ interface AdminState {
     totalParents: number;
     registeredProviders: number;
   };
+  platformAnalytics: {
+    totalPageViews: number;
+    totalVisitors: number;
+    todayPageViews: number;
+    todayVisitors: number;
+    last7DaysPageViews: number;
+    last7DaysVisitors: number;
+    last28DaysPageViews: number;
+    last28DaysVisitors: number;
+    previous28DaysPageViews: number;
+    lastVisitedAt?: string;
+    daily: Array<{
+      date: string;
+      pageViews: number;
+      visitors: number;
+    }>;
+    topPages: Array<{
+      path: string;
+      pageViews: number;
+      lastVisitedAt?: string;
+    }>;
+  };
   admin: {
     name: string;
     email: string;
@@ -107,6 +130,19 @@ const DEFAULT_ADMIN_STATE: AdminState = {
     totalParents: 0,
     registeredProviders: 0,
   },
+  platformAnalytics: {
+    totalPageViews: 0,
+    totalVisitors: 0,
+    todayPageViews: 0,
+    todayVisitors: 0,
+    last7DaysPageViews: 0,
+    last7DaysVisitors: 0,
+    last28DaysPageViews: 0,
+    last28DaysVisitors: 0,
+    previous28DaysPageViews: 0,
+    daily: [],
+    topPages: [],
+  },
   admin: {
     name: "Admin",
     email: "",
@@ -121,6 +157,7 @@ function AdminDashboard() {
     approvedProviders,
     rejectedCount,
     stats,
+    platformAnalytics,
     admin,
   } = adminState;
   const [searchQuery, setSearchQuery] = useState("");
@@ -189,6 +226,19 @@ function AdminDashboard() {
     : provider.verificationStatus === "rejected" ? "Rejected"
     : "Waiting for provider to submit";
 
+  const pageViewChange =
+    platformAnalytics.previous28DaysPageViews > 0
+      ? Math.round(
+          ((platformAnalytics.last28DaysPageViews - platformAnalytics.previous28DaysPageViews) /
+            platformAnalytics.previous28DaysPageViews) *
+            100
+        )
+      : null;
+  const maxDailyPageViews = Math.max(
+    1,
+    ...platformAnalytics.daily.map((day) => day.pageViews)
+  );
+
   return (
     <div className="min-h-screen brand-page">
       {/* Admin Header */}
@@ -233,6 +283,97 @@ function AdminDashboard() {
               <div className="text-[var(--brand-muted)] text-sm mt-0.5">{stat.label}</div>
             </div>
           ))}
+        </div>
+
+        <div className="mb-8 rounded-lg border border-[var(--brand-line)] bg-white p-6 shadow-sm">
+          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-[var(--brand-leaf)]" />
+              <h2 className="text-lg font-black text-[var(--brand-ink)]">Website Traffic</h2>
+            </div>
+            {platformAnalytics.lastVisitedAt && (
+              <p className="text-xs font-bold text-[var(--brand-muted)]">
+                Last visit {new Date(platformAnalytics.lastVisitedAt).toLocaleString()}
+              </p>
+            )}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: "Total visitors", value: platformAnalytics.totalVisitors },
+              { label: "Total page views", value: platformAnalytics.totalPageViews },
+              { label: "Visitors today", value: platformAnalytics.todayVisitors },
+              { label: "Page views today", value: platformAnalytics.todayPageViews },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
+                <div className="text-2xl font-extrabold text-[var(--brand-ink)]">
+                  {stat.value.toLocaleString()}
+                </div>
+                <div className="mt-1 text-sm text-[var(--brand-muted)]">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+            <div className="rounded-lg border border-[var(--brand-line)] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-[var(--brand-ink)]">Last 28 days</p>
+                  <p className="mt-1 text-xs text-[var(--brand-muted)]">
+                    {platformAnalytics.last28DaysVisitors.toLocaleString()} visitors ·{" "}
+                    {platformAnalytics.last28DaysPageViews.toLocaleString()} page views
+                  </p>
+                </div>
+                {pageViewChange !== null && (
+                  <Badge className={`rounded-full border-0 text-xs ${
+                    pageViewChange >= 0
+                      ? "bg-green-50 text-green-700"
+                      : "bg-red-50 text-red-700"
+                  }`}>
+                    {pageViewChange >= 0 ? "+" : ""}{pageViewChange}%
+                  </Badge>
+                )}
+              </div>
+              <div className="mt-4 flex h-28 items-end gap-1">
+                {platformAnalytics.daily.length === 0 ? (
+                  <div className="flex h-full w-full items-center justify-center rounded-lg bg-[var(--brand-ivory)] text-sm font-bold text-[var(--brand-muted)]">
+                    No traffic recorded yet
+                  </div>
+                ) : (
+                  platformAnalytics.daily.map((day) => (
+                    <div
+                      key={day.date}
+                      className="min-w-0 flex-1 rounded-t bg-[var(--brand-sky)]"
+                      title={`${day.date}: ${day.pageViews} page views, ${day.visitors} visitors`}
+                      style={{ height: `${Math.max(8, (day.pageViews / maxDailyPageViews) * 100)}%` }}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-[var(--brand-line)] p-4">
+              <p className="text-sm font-black text-[var(--brand-ink)]">Top Pages</p>
+              <div className="mt-3 space-y-2">
+                {platformAnalytics.topPages.length === 0 ? (
+                  <p className="rounded-lg bg-[var(--brand-ivory)] px-3 py-4 text-sm font-bold text-[var(--brand-muted)]">
+                    No pages viewed yet.
+                  </p>
+                ) : (
+                  platformAnalytics.topPages.map((page) => (
+                    <div key={page.path} className="flex items-center justify-between gap-3 rounded-lg bg-[var(--brand-ivory)] px-3 py-2">
+                      <span className="min-w-0 truncate text-sm font-bold text-[var(--brand-ink)]">
+                        {page.path}
+                      </span>
+                      <span className="shrink-0 text-sm font-black text-[var(--brand-leaf)]">
+                        {page.pageViews.toLocaleString()}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Pending Verifications */}

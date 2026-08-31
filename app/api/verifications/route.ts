@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import {
+  effectiveVerificationPayment,
+  fullAccessEntitlementForUser,
   getSessionFromRequest,
   readStore,
   submitProviderVerification,
@@ -44,20 +46,14 @@ export async function GET(request: Request) {
     (upload) => upload.userId === auth.session.userId && upload.type === "gallery"
   ).length;
   const category = profile?.category ?? auth.user.category ?? "schools";
+  const payment = effectiveVerificationPayment(profile, auth.user);
 
   return NextResponse.json({
     status: profile?.verificationStatus ?? "not_submitted",
     providerType: getVerificationProviderType(category),
     fee: VERIFICATION_FEE,
-    payment: {
-      status: profile?.verificationPaymentStatus ?? "unpaid",
-      amount: profile?.verificationFeeAmount,
-      currency: profile?.verificationFeeCurrency,
-      paidAt: profile?.verificationFeePaidAt,
-      reference: profile?.verificationPaymentReference,
-      packageId: profile?.verificationPackageId,
-      packageName: profile?.verificationPackageName,
-    },
+    subscription: fullAccessEntitlementForUser(auth.user),
+    payment,
     packages: getVettingPackagesForCategory(category),
     requiredDocuments: getVerificationDocuments(category),
     missingDocuments: missingVerificationDocuments(category, uploadedDocumentKeys),

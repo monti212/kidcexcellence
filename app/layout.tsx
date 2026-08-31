@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SiteAnalyticsTracker } from "@/components/SiteAnalyticsTracker";
 
 export const metadata: Metadata = {
   title: "Kidcellence | Botswana Childcare Marketplace",
@@ -17,6 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-[var(--brand-paper)] font-sans">
+        <SiteAnalyticsTracker />
         <Navbar />
         <main className="flex-1">{children}</main>
         <Footer />

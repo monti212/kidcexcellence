@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import {
+  effectiveVerificationPayment,
+  fullAccessEntitlementForUser,
   getSessionFromRequest,
   providerAnalyticsSummary,
   readStore,
@@ -16,6 +18,23 @@ interface PublishRequirementIssue {
   field: string;
   tab: "basic" | "pricing";
   hint: string;
+}
+
+function profileWithEffectivePayment(
+  profile: Awaited<ReturnType<typeof readStore>>["providerProfiles"][string],
+  user: Parameters<typeof effectiveVerificationPayment>[1]
+) {
+  const payment = effectiveVerificationPayment(profile, user);
+  return {
+    ...profile,
+    verificationPaymentStatus: payment.status,
+    verificationFeeAmount: payment.amount,
+    verificationFeeCurrency: payment.currency,
+    verificationFeePaidAt: payment.paidAt,
+    verificationPaymentReference: payment.reference,
+    verificationPackageId: payment.packageId,
+    verificationPackageName: payment.packageName,
+  };
 }
 
 function hasStartingPrice(profile: {
@@ -125,7 +144,8 @@ export async function GET(request: Request) {
   const displayName = profile?.displayName || auth.user.name;
 
   return NextResponse.json({
-    profile,
+    profile: profile ? profileWithEffectivePayment(profile, auth.user) : null,
+    subscription: fullAccessEntitlementForUser(auth.user),
     verified: providerIsApproved(
       store.verifications.approvedProviders,
       displayName,
@@ -257,7 +277,8 @@ export async function POST(request: Request) {
   const store = await readStore();
 
   return NextResponse.json({
-    profile,
+    profile: profileWithEffectivePayment(profile, auth.user),
+    subscription: fullAccessEntitlementForUser(auth.user),
     verified: providerIsApproved(
       store.verifications.approvedProviders,
       profile.displayName || auth.user.name,

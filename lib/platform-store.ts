@@ -39,6 +39,7 @@ const BUILT_IN_ADMIN_EMAILS = [
   "katlotarniah@gmail.com",
   "kidcellencebw@gmail.com",
 ];
+export const FREE_FULL_ACCESS_MONTHS = 1;
 const LEGACY_DEMO_APPROVED_VERIFICATION_IDS = new Set(["a1", "a2", "a3", "a4", "a5"]);
 
 export interface PlatformUser {
@@ -207,6 +208,50 @@ export interface ProviderAnalyticsSummary {
   daily: ProviderAnalyticsDay[];
 }
 
+export interface PlatformAnalyticsDay {
+  date: string;
+  pageViews: number;
+  visitorIds: string[];
+}
+
+export interface PlatformAnalyticsRecord {
+  pageViews: number;
+  visitorIds: string[];
+  lastVisitedAt?: string;
+  daily: PlatformAnalyticsDay[];
+  pages: Record<
+    string,
+    {
+      path: string;
+      pageViews: number;
+      lastVisitedAt?: string;
+    }
+  >;
+}
+
+export interface PlatformAnalyticsSummary {
+  totalPageViews: number;
+  totalVisitors: number;
+  todayPageViews: number;
+  todayVisitors: number;
+  last7DaysPageViews: number;
+  last7DaysVisitors: number;
+  last28DaysPageViews: number;
+  last28DaysVisitors: number;
+  previous28DaysPageViews: number;
+  lastVisitedAt?: string;
+  daily: Array<{
+    date: string;
+    pageViews: number;
+    visitors: number;
+  }>;
+  topPages: Array<{
+    path: string;
+    pageViews: number;
+    lastVisitedAt?: string;
+  }>;
+}
+
 export interface StoredConversation extends Conversation {
   parentUserId: string;
   parentName: string;
@@ -225,6 +270,7 @@ export interface PlatformStore {
   parentProfiles: Record<string, ParentProfileRecord>;
   providerProfiles: Record<string, ProviderProfileRecord>;
   providerAnalytics: Record<string, ProviderAnalyticsRecord>;
+  platformAnalytics: PlatformAnalyticsRecord;
   uploads: PlatformUploadRecord[];
   conversations: StoredConversation[];
   verifications: {
@@ -232,6 +278,26 @@ export interface PlatformStore {
     approvedProviders: ApprovedVerification[];
     rejectedCount: number;
   };
+}
+
+export interface FullAccessEntitlement {
+  status: "active" | "expired";
+  name: string;
+  startedAt: string;
+  expiresAt: string;
+  daysRemaining: number;
+  includes: string[];
+}
+
+export interface EffectiveVerificationPayment {
+  status: "unpaid" | "paid";
+  amount?: number;
+  currency?: string;
+  paidAt?: string;
+  reference?: string;
+  packageId?: string;
+  packageName?: string;
+  coveredByFreeAccess?: boolean;
 }
 
 const runtimeDataRoot =
@@ -280,6 +346,12 @@ function createInitialStore(): PlatformStore {
     parentProfiles: {},
     providerProfiles: {},
     providerAnalytics: {},
+    platformAnalytics: {
+      pageViews: 0,
+      visitorIds: [],
+      daily: [],
+      pages: {},
+    },
     uploads: [],
     conversations: [],
     verifications: {
@@ -287,6 +359,102 @@ function createInitialStore(): PlatformStore {
       approvedProviders: [],
       rejectedCount: 0,
     },
+  };
+}
+
+function addCalendarMonths(value: string, months: number) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const originalDay = date.getDate();
+  const expiresAt = new Date(date);
+  expiresAt.setMonth(expiresAt.getMonth() + months);
+
+  if (expiresAt.getDate() !== originalDay) {
+    expiresAt.setDate(0);
+  }
+
+  return expiresAt;
+}
+
+export function fullAccessEntitlementForUser(
+  user: Pick<PlatformUser, "createdAt"> | Pick<PublicPlatformUser, "createdAt">,
+  now = new Date()
+): FullAccessEntitlement {
+  const fallbackStart = new Date().toISOString();
+  const startedAt = user.createdAt || fallbackStart;
+  const expiresAt = addCalendarMonths(startedAt, FREE_FULL_ACCESS_MONTHS) ?? new Date(startedAt);
+  const millisecondsRemaining = expiresAt.getTime() - now.getTime();
+
+  return {
+    status: millisecondsRemaining > 0 ? "active" : "expired",
+    name: "Free full access month",
+    startedAt,
+    expiresAt: expiresAt.toISOString(),
+    daysRemaining: Math.max(0, Math.ceil(millisecondsRemaining / (24 * 60 * 60 * 1000))),
+    includes: [
+      "Parent discovery, comparison, enquiries, and messaging",
+      "Provider listing, publishing, analytics, documents, and gallery tools",
+      "Provider verification submission without checkout during the free month",
+    ],
+  };
+}
+
+export function userHasFreeFullAccess(
+  user: Pick<PlatformUser, "createdAt"> | Pick<PublicPlatformUser, "createdAt">,
+  now = new Date()
+) {
+  return fullAccessEntitlementForUser(user, now).status === "active";
+}
+
+export function effectiveVerificationPayment(
+  profile: Pick<
+    ProviderProfileRecord,
+    | "verificationPaymentStatus"
+    | "verificationFeeAmount"
+    | "verificationFeeCurrency"
+    | "verificationFeePaidAt"
+    | "verificationPaymentReference"
+    | "verificationPackageId"
+    | "verificationPackageName"
+  > | null | undefined,
+  user: Pick<PlatformUser, "id" | "createdAt"> | Pick<PublicPlatformUser, "id" | "createdAt">,
+  packageId?: string
+): EffectiveVerificationPayment {
+  if (profile?.verificationPaymentStatus === "paid") {
+    return {
+      status: "paid",
+      amount: profile.verificationFeeAmount,
+      currency: profile.verificationFeeCurrency,
+      paidAt: profile.verificationFeePaidAt,
+      reference: profile.verificationPaymentReference,
+      packageId: profile.verificationPackageId,
+      packageName: profile.verificationPackageName,
+    };
+  }
+
+  if (userHasFreeFullAccess(user)) {
+    const selectedPackage = packageId ? getVettingPackage(packageId) : null;
+    return {
+      status: "paid",
+      amount: 0,
+      currency: "BWP",
+      paidAt: user.createdAt,
+      reference: `free-month-${user.id}`,
+      packageId: selectedPackage?.id ?? profile?.verificationPackageId,
+      packageName: selectedPackage?.name ?? profile?.verificationPackageName ?? "Free full access month",
+      coveredByFreeAccess: true,
+    };
+  }
+
+  return {
+    status: "unpaid",
+    amount: profile?.verificationFeeAmount,
+    currency: profile?.verificationFeeCurrency,
+    paidAt: profile?.verificationFeePaidAt,
+    reference: profile?.verificationPaymentReference,
+    packageId: profile?.verificationPackageId,
+    packageName: profile?.verificationPackageName,
   };
 }
 
@@ -321,6 +489,42 @@ function normalizeProviderAnalyticsRecord(
       .filter((day): day is ProviderAnalyticsDay => Boolean(day))
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(-90),
+  };
+}
+
+function normalizePlatformAnalyticsDay(day: Partial<PlatformAnalyticsDay>): PlatformAnalyticsDay | null {
+  if (!day.date) return null;
+  return {
+    date: day.date,
+    pageViews: Number(day.pageViews) || 0,
+    visitorIds: [...new Set((day.visitorIds ?? []).filter(Boolean).map(String))],
+  };
+}
+
+function normalizePlatformAnalyticsRecord(
+  analytics?: Partial<PlatformAnalyticsRecord>
+): PlatformAnalyticsRecord {
+  const pages: PlatformAnalyticsRecord["pages"] = {};
+  Object.entries(analytics?.pages ?? {}).forEach(([pathKey, page]) => {
+    const pathValue = page?.path || pathKey;
+    if (!pathValue) return;
+    pages[pathValue] = {
+      path: pathValue,
+      pageViews: Number(page?.pageViews) || 0,
+      lastVisitedAt: page?.lastVisitedAt,
+    };
+  });
+
+  return {
+    pageViews: Number(analytics?.pageViews) || 0,
+    visitorIds: [...new Set((analytics?.visitorIds ?? []).filter(Boolean).map(String))],
+    lastVisitedAt: analytics?.lastVisitedAt,
+    daily: (analytics?.daily ?? [])
+      .map(normalizePlatformAnalyticsDay)
+      .filter((day): day is PlatformAnalyticsDay => Boolean(day))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-90),
+    pages,
   };
 }
 
@@ -407,6 +611,7 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
         normalizeProviderAnalyticsRecord(userId, analytics),
       ])
     ),
+    platformAnalytics: normalizePlatformAnalyticsRecord(store.platformAnalytics),
     uploads: store.uploads ?? initial.uploads,
     conversations: (store.conversations ?? []).filter(
       (conversation): conversation is StoredConversation =>
@@ -991,6 +1196,48 @@ function sumAnalyticsDays(
   return daily.reduce((total, day) => total + (keys.has(day.date) ? day[field] : 0), 0);
 }
 
+function sumPlatformPageViews(
+  daily: PlatformAnalyticsDay[],
+  days: number,
+  offsetDays = 0
+) {
+  const keys = new Set<string>();
+  const cursor = new Date();
+  cursor.setUTCHours(0, 0, 0, 0);
+  cursor.setUTCDate(cursor.getUTCDate() - offsetDays);
+
+  for (let index = 0; index < days; index += 1) {
+    keys.add(dateKey(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+
+  return daily.reduce((total, day) => total + (keys.has(day.date) ? day.pageViews : 0), 0);
+}
+
+function sumPlatformVisitors(
+  daily: PlatformAnalyticsDay[],
+  days: number,
+  offsetDays = 0
+) {
+  const keys = new Set<string>();
+  const visitorIds = new Set<string>();
+  const cursor = new Date();
+  cursor.setUTCHours(0, 0, 0, 0);
+  cursor.setUTCDate(cursor.getUTCDate() - offsetDays);
+
+  for (let index = 0; index < days; index += 1) {
+    keys.add(dateKey(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+
+  daily.forEach((day) => {
+    if (!keys.has(day.date)) return;
+    day.visitorIds.forEach((visitorId) => visitorIds.add(visitorId));
+  });
+
+  return visitorIds.size;
+}
+
 export function providerAnalyticsSummary(
   store: PlatformStore,
   userId: string
@@ -1012,6 +1259,86 @@ export function providerAnalyticsSummary(
     lastMessageAt: analytics.lastMessageAt,
     daily: sortedDaily.slice(-28),
   };
+}
+
+export function platformAnalyticsSummary(store: PlatformStore): PlatformAnalyticsSummary {
+  const analytics = normalizePlatformAnalyticsRecord(store.platformAnalytics);
+  const sortedDaily = [...analytics.daily].sort((a, b) => a.date.localeCompare(b.date));
+
+  return {
+    totalPageViews: analytics.pageViews,
+    totalVisitors: analytics.visitorIds.length,
+    todayPageViews: sumPlatformPageViews(sortedDaily, 1),
+    todayVisitors: sumPlatformVisitors(sortedDaily, 1),
+    last7DaysPageViews: sumPlatformPageViews(sortedDaily, 7),
+    last7DaysVisitors: sumPlatformVisitors(sortedDaily, 7),
+    last28DaysPageViews: sumPlatformPageViews(sortedDaily, 28),
+    last28DaysVisitors: sumPlatformVisitors(sortedDaily, 28),
+    previous28DaysPageViews: sumPlatformPageViews(sortedDaily, 28, 28),
+    lastVisitedAt: analytics.lastVisitedAt,
+    daily: sortedDaily.slice(-28).map((day) => ({
+      date: day.date,
+      pageViews: day.pageViews,
+      visitors: day.visitorIds.length,
+    })),
+    topPages: Object.values(analytics.pages)
+      .sort((a, b) => b.pageViews - a.pageViews)
+      .slice(0, 5),
+  };
+}
+
+function cleanAnalyticsPath(pathname: string) {
+  const normalized = pathname.trim();
+  if (!normalized.startsWith("/")) return "/";
+  return normalized.split("?")[0]?.slice(0, 160) || "/";
+}
+
+export async function recordPlatformPageView(input: {
+  visitorId: string;
+  pathname: string;
+}) {
+  const visitorId = input.visitorId.trim().slice(0, 128);
+  const pathname = cleanAnalyticsPath(input.pathname);
+
+  if (!visitorId || pathname.startsWith("/admin") || pathname.startsWith("/api")) {
+    return false;
+  }
+
+  return updateStore((store) => {
+    const analytics = normalizePlatformAnalyticsRecord(store.platformAnalytics);
+    const now = new Date();
+    const today = dateKey(now);
+    let day = analytics.daily.find((item) => item.date === today);
+    if (!day) {
+      day = { date: today, pageViews: 0, visitorIds: [] };
+      analytics.daily.push(day);
+    }
+
+    analytics.pageViews += 1;
+    analytics.lastVisitedAt = now.toISOString();
+
+    if (!analytics.visitorIds.includes(visitorId)) {
+      analytics.visitorIds.push(visitorId);
+    }
+    if (!day.visitorIds.includes(visitorId)) {
+      day.visitorIds.push(visitorId);
+    }
+    day.pageViews += 1;
+
+    const page = analytics.pages[pathname] ?? {
+      path: pathname,
+      pageViews: 0,
+    };
+    page.pageViews += 1;
+    page.lastVisitedAt = now.toISOString();
+    analytics.pages[pathname] = page;
+
+    analytics.daily = analytics.daily
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-90);
+    store.platformAnalytics = analytics;
+    return true;
+  });
 }
 
 export async function recordProviderProfileView(
@@ -1436,7 +1763,7 @@ export async function submitProviderVerification(userId: string) {
     if (profile.verificationStatus === "approved") {
       throw new Error("This provider profile is already verified.");
     }
-    if (profile.verificationPaymentStatus !== "paid") {
+    if (effectiveVerificationPayment(profile, user).status !== "paid") {
       throw new Error("Pay the verification fee before submitting documents for review.");
     }
 

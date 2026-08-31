@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   SESSION_COOKIE_NAME,
   createOrLoginUser,
+  fullAccessEntitlementForUser,
   getSessionFromRequest,
   isAdminEmail,
   revokeSessionToken,
@@ -21,6 +22,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     user: auth.user,
+    subscription: fullAccessEntitlementForUser(auth.user),
     session: {
       userId: auth.session.userId,
       role: auth.session.role,
@@ -91,6 +93,7 @@ export async function POST(request: Request) {
     });
     const response = NextResponse.json({
       user,
+      subscription: fullAccessEntitlementForUser(user),
       session: {
         userId: session.userId,
         role: session.role,
