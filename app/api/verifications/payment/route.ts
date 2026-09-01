@@ -33,7 +33,21 @@ function stripeCheckoutUrl(link: string, reference: string, email: string) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const packageId = searchParams.get("packageId") ?? undefined;
+  if (packageId) {
+    const stripeLink = configuredStripePaymentLink(packageId);
+    if (!stripeLink) {
+      return NextResponse.json(
+        { error: "Payment checkout is not configured yet. Please contact Kidcellence before paying." },
+        { status: 503 }
+      );
+    }
+
+    return NextResponse.redirect(stripeLink);
+  }
+
   return NextResponse.json({ fee: VERIFICATION_FEE, packages: VETTING_PACKAGES });
 }
 

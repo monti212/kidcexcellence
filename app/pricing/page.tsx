@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   CreditCard,
-  MessageCircle,
   Star,
   UserRound,
   UsersRound,
@@ -44,14 +43,16 @@ const monthlySubscriptions = [
   },
 ];
 
-const vetWithUsWhatsAppPackages = [
+const vetWithUsPaymentPackages = [
   {
+    id: "standard",
     name: "Standard Package",
     price: 795,
     summary: "Core nanny/helper vetting for everyday household placements.",
     features: ["Traceable nanny/helper", "Thorough vetting", "Personalized matching"],
   },
   {
+    id: "vip",
     name: "VIP Package",
     price: 995,
     summary: "Priority vetting for families with sensitive household information.",
@@ -59,9 +60,8 @@ const vetWithUsWhatsAppPackages = [
   },
 ];
 
-function getVetWithUsEnquiryHref(packageName: string, price: number) {
-  const message = `Hi Kidcellence, I would like to enquire about the ${packageName} Vet With Us Package. The listed price is P${price}.`;
-  return `https://wa.me/26775378699?text=${encodeURIComponent(message)}`;
+function getVetWithUsPaymentHref(packageId: string) {
+  return `/api/verifications/payment?packageId=${encodeURIComponent(packageId)}`;
 }
 
 export default function PricingPage() {
@@ -151,49 +151,53 @@ export default function PricingPage() {
               </h2>
             </div>
             <p className="max-w-sm text-sm leading-6 text-[var(--brand-muted)]">
-              View the package prices, then send Kidcellence an enquiry on WhatsApp.
+              View the package details, then continue to the payment gateway.
             </p>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {vetWithUsWhatsAppPackages.map((pkg) => (
-              <div
-                key={pkg.name}
-                className="flex min-h-[15rem] flex-col rounded-lg border border-[var(--brand-line)] bg-white p-5"
-              >
-                <span className="flex items-start justify-between gap-4">
-                  <span>
-                    <span className="grid h-10 w-10 place-items-center rounded-lg border border-[rgba(84,178,191,0.22)] bg-[var(--brand-cream)] text-[var(--brand-gold)]">
-                      <Star className="h-4 w-4 fill-[var(--brand-gold)]" aria-hidden="true" />
+            {vetWithUsPaymentPackages.map((pkg) => {
+              const paymentHref = getVetWithUsPaymentHref(pkg.id);
+
+              return (
+                <div
+                  key={pkg.name}
+                  className="flex min-h-[15rem] flex-col rounded-lg border border-[var(--brand-line)] bg-white p-5"
+                >
+                  <span className="flex items-start justify-between gap-4">
+                    <span>
+                      <span className="grid h-10 w-10 place-items-center rounded-lg border border-[rgba(84,178,191,0.22)] bg-[var(--brand-cream)] text-[var(--brand-gold)]">
+                        <Star className="h-4 w-4 fill-[var(--brand-gold)]" aria-hidden="true" />
+                      </span>
+                      <span className="mt-4 block text-xl font-black text-[var(--brand-ink)]">
+                        {pkg.name}
+                      </span>
                     </span>
-                    <span className="mt-4 block text-xl font-black text-[var(--brand-ink)]">
-                      {pkg.name}
-                    </span>
-                  </span>
-                  <a
-                    href={getVetWithUsEnquiryHref(pkg.name, pkg.price)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--brand-sky)] px-4 text-sm font-black text-white transition-colors hover:bg-[var(--brand-coral)]"
-                  >
-                    Send enquiry
-                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                  </a>
-                </span>
-                <span className="mt-3 block text-sm leading-6 text-[var(--brand-muted)]">
-                  {pkg.summary}
-                </span>
-                <span className="mt-5 flex flex-wrap gap-2">
-                  {pkg.features.map((feature) => (
-                    <span
-                      key={feature}
-                      className="rounded-full border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-3 py-1 text-xs font-bold text-[var(--brand-ink)]"
+                    <a
+                      href={paymentHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--brand-sky)] px-4 text-sm font-black text-white transition-colors hover:bg-[var(--brand-coral)]"
                     >
-                      {feature}
-                    </span>
-                  ))}
-                </span>
-              </div>
-            ))}
+                      <CreditCard className="h-4 w-4" aria-hidden="true" />
+                      Pay P{pkg.price}
+                    </a>
+                  </span>
+                  <span className="mt-3 block text-sm leading-6 text-[var(--brand-muted)]">
+                    {pkg.summary}
+                  </span>
+                  <span className="mt-5 flex flex-wrap gap-2">
+                    {pkg.features.map((feature) => (
+                      <span
+                        key={feature}
+                        className="rounded-full border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-3 py-1 text-xs font-bold text-[var(--brand-ink)]"
+                      >
+                        {feature}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </section>
       </main>
