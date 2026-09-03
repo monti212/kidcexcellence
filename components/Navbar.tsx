@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { BrandMark } from "@/components/BrandMark";
 import { usePlatformSession } from "@/lib/use-platform-session";
 import { clsx } from "clsx";
-import { LogIn, LogOut, Menu, UserCircle, UserPlus } from "lucide-react";
+import { CreditCard, LogIn, LogOut, Menu, UserCircle, UserPlus } from "lucide-react";
 
 const navLinks = [
   { href: "/search", label: "Browse" },
@@ -28,6 +28,7 @@ export default function Navbar() {
       : user?.role === "admin"
         ? "/admin"
         : "/profile/parent";
+  const billingHref = user?.role === "admin" ? "/admin/billing" : "/billing";
 
   const handleLogout = async () => {
     await logout();
@@ -65,6 +66,12 @@ export default function Navbar() {
           <div className="hidden items-center gap-2 md:flex">
             {user ? (
               <>
+                <Link href={billingHref}>
+                  <Button variant="ghost" className="h-10 rounded-full px-3 font-extrabold text-[var(--brand-muted)] hover:text-[var(--brand-ink)]">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Billing
+                  </Button>
+                </Link>
                 <Link href={profileHref}>
                   <Button variant="outline" className="h-10 max-w-44 rounded-full border-[var(--brand-line)] bg-white px-3 font-extrabold text-[var(--brand-ink)] hover:bg-[var(--brand-cream)]">
                     <UserCircle className="mr-2 h-4 w-4" />
@@ -141,6 +148,11 @@ export default function Navbar() {
                 )}
                 {user ? (
                   <>
+                    <Link href={billingHref} onClick={() => setOpen(false)}>
+                      <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
+                        Billing
+                      </Button>
+                    </Link>
                     <Link href={profileHref} onClick={() => setOpen(false)}>
                       <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
                         {user.name}

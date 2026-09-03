@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   CreditCard,
-  MessageCircle,
   Star,
   UserRound,
   UsersRound,
@@ -41,20 +40,18 @@ const monthlySubscriptions = [
   },
 ];
 
-const vetWithUsWhatsAppPackages = [
+const vetWithUsPackages = [
   {
     name: "Standard Package",
     price: "P795",
     summary: "Core nanny/helper vetting for everyday household placements.",
     features: ["Traceable nanny/helper", "Thorough vetting", "Personalized matching"],
-    href: "https://wa.me/26775378699?text=Hi%20Kidcellence%2C%20I%20would%20like%20to%20choose%20the%20Standard%20Vet%20With%20Us%20Package%20for%20P795.",
   },
   {
     name: "VIP Package",
     price: "P995",
     summary: "Priority vetting for families with sensitive household information.",
     features: ["Everything in Standard", "NDA support", "Priority handling"],
-    href: "https://wa.me/26775378699?text=Hi%20Kidcellence%2C%20I%20would%20like%20to%20choose%20the%20VIP%20Vet%20With%20Us%20Package%20for%20P995.",
   },
 ];
 
@@ -142,40 +139,36 @@ export default function PricingPage() {
               </h2>
             </div>
             <p className="max-w-sm text-sm leading-6 text-[var(--brand-muted)]">
-              These larger support packages connect families to Kidcellence on WhatsApp.
+              An optional upgrade for nannies, helpers, and babysitters who want
+              managed vetting instead of the standard P20 verification.
             </p>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {vetWithUsWhatsAppPackages.map((pkg) => (
-              <a
+            {vetWithUsPackages.map((pkg) => (
+              <div
                 key={pkg.name}
-                href={pkg.href}
-                target="_blank"
-                rel="noreferrer"
-                className="flex min-h-[15rem] flex-col rounded-lg border border-[var(--brand-line)] bg-white p-5 transition-colors hover:border-[var(--brand-sky)] hover:bg-[var(--brand-ivory)]"
+                className="flex min-h-[15rem] flex-col rounded-lg border border-[var(--brand-line)] bg-white p-5"
               >
-                <span className="flex items-start justify-between gap-4">
-                  <span>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
                     <span className="grid h-10 w-10 place-items-center rounded-lg border border-[rgba(84,178,191,0.22)] bg-[var(--brand-cream)] text-[var(--brand-gold)]">
                       <Star className="h-4 w-4 fill-[var(--brand-gold)]" aria-hidden="true" />
                     </span>
-                    <span className="mt-4 block text-xl font-black text-[var(--brand-ink)]">
+                    <h3 className="mt-4 text-xl font-black text-[var(--brand-ink)]">
                       {pkg.name}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-right">
-                    <span className="block whitespace-nowrap text-2xl font-black text-[var(--brand-ink)]">
+                    </h3>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="whitespace-nowrap text-2xl font-black text-[var(--brand-ink)]">
                       {pkg.price}
-                    </span>
-                    <span className="block text-xs font-bold text-[var(--brand-muted)]">
-                      BWP
-                    </span>
-                  </span>
-                </span>
-                <span className="mt-3 block text-sm leading-6 text-[var(--brand-muted)]">
+                    </div>
+                    <div className="text-xs font-bold text-[var(--brand-muted)]">BWP</div>
+                  </div>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-[var(--brand-muted)]">
                   {pkg.summary}
-                </span>
-                <span className="mt-5 flex flex-wrap gap-2">
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
                   {pkg.features.map((feature) => (
                     <span
                       key={feature}
@@ -184,12 +177,16 @@ export default function PricingPage() {
                       {feature}
                     </span>
                   ))}
-                </span>
-                <span className="mt-auto inline-flex w-fit items-center gap-2 pt-6 text-sm font-black text-[var(--brand-sky)]">
-                  Message on WhatsApp
-                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                </span>
-              </a>
+                </div>
+                <Link
+                  href="/profile/provider?tab=verification"
+                  className="mt-auto inline-block pt-6"
+                >
+                  <Button className="rounded-full bg-[var(--brand-sky)] px-5 font-black text-white hover:bg-[var(--brand-coral)]">
+                    Choose in your profile
+                  </Button>
+                </Link>
+              </div>
             ))}
           </div>
         </section>

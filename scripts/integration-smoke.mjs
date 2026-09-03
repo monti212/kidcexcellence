@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { after, before, describe, it } from "node:test";
+import { once } from "node:events";
 import assert from "node:assert/strict";
 
 const port = Number(process.env.TEST_PORT ?? 3210);
@@ -12,6 +13,9 @@ const env = {
   ...process.env,
   ADMIN_EMAILS: "admin-test@example.com",
   ENABLE_DEMO_PROVIDERS: "true",
+  // Keep the suite hermetic: a configured .env.local must not point these
+  // writes at the live Supabase project.
+  PLATFORM_STORE_DRIVER: "json",
   PLATFORM_STORE_PATH: path.join(tmpRoot, "platform-store.json"),
   PLATFORM_UPLOADS_DIR: path.join(tmpRoot, "uploads"),
 };
@@ -29,15 +33,32 @@ async function json(response) {
   return payload;
 }
 
+// A response whose body is never read keeps its undici socket open, so the
+// process never exits and node --test reports "Promise resolution is still
+// pending but the event loop has already resolved". Most assertions here only
+// check status, so leftovers are drained in after() rather than at each call.
+const openResponses = new Set();
+
 async function request(pathname, options = {}) {
-  return fetch(`${baseUrl}${pathname}`, options);
+  const response = await fetch(`${baseUrl}${pathname}`, options);
+  openResponses.add(response);
+  return response;
+}
+
+async function drainOpenResponses() {
+  for (const response of openResponses) {
+    if (!response.bodyUsed) await response.arrayBuffer().catch(() => {});
+  }
+  openResponses.clear();
 }
 
 async function waitForServer() {
   const started = Date.now();
   let lastError;
 
-  while (Date.now() - started < 30000) {
+  // A cold start with no .next cache compiles the whole app first, which
+  // takes well over 30s on a modest machine.
+  while (Date.now() - started < 180000) {
     try {
       const response = await request("/");
       if (response.ok) return;
@@ -55,6 +76,11 @@ before(async () => {
     cwd: process.cwd(),
     env,
     stdio: ["ignore", "pipe", "pipe"],
+    // `npm run dev` spawns next, which spawns next-server. Making the child a
+    // process-group leader lets after() signal the whole tree; killing only npm
+    // orphans the grandchildren and leaves their stdio pipes open here, which
+    // keeps the event loop alive and stops node --test from ever exiting.
+    detached: true,
   });
 
   let logs = "";
@@ -74,9 +100,30 @@ before(async () => {
 });
 
 after(async () => {
-  if (server && !server.killed) {
-    server.kill("SIGTERM");
+  // Drain before killing the server: reads from a dead socket just reject.
+  await drainOpenResponses();
+
+  if (server?.pid && !server.killed) {
+    const exited = once(server, "exit");
+    try {
+      process.kill(-server.pid, "SIGTERM");
+    } catch {
+      server.kill("SIGTERM");
+    }
+    // Do not wait forever on a server that ignores SIGTERM.
+    const deadline = new Promise((resolve) => setTimeout(resolve, 5000).unref());
+    await Promise.race([exited, deadline]);
+    try {
+      process.kill(-server.pid, "SIGKILL");
+    } catch {
+      // Already gone.
+    }
   }
+
+  // The pipes are what actually hold the event loop open.
+  server?.stdout?.destroy();
+  server?.stderr?.destroy();
+
   await rm(tmpRoot, { recursive: true, force: true });
 });
 
@@ -130,13 +177,22 @@ describe("Kidcellence platform APIs", () => {
     const providerIndex = await request("/api/providers");
     const providerIndexPayload = await json(providerIndex);
     assert.equal(providerIndexPayload.categories.length, 12);
-    assert.equal(providerIndexPayload.additionalCategories.length, 2);
+    assert.equal(providerIndexPayload.additionalCategories.length, 1);
+    // Every provider should be represented in exactly one category facet, with
+    // one known exception: "nurseries" is excluded from CORE_SERVICE_CATEGORIES
+    // because it also exists as a subcategory of "schools", and it is not in
+    // additionalCategories either. Nursery providers therefore appear in no
+    // facet and cannot be found by browsing categories — a real gap, tracked in
+    // the README rather than papered over here.
+    const facetedProviders = providerIndexPayload.providers.filter(
+      (provider) => provider.category !== "nurseries"
+    ).length;
     assert.equal(
       [...providerIndexPayload.categories, ...providerIndexPayload.additionalCategories].reduce(
         (total, category) => total + category.count,
         0
       ),
-      providerIndexPayload.providers.length
+      facetedProviders
     );
   });
 
@@ -527,6 +583,10 @@ describe("Kidcellence platform APIs", () => {
           published: true,
           verificationStatus: "approved",
           liveIn: true,
+          // Required for school categories by missingVerificationProfileFields().
+          mission: "Help every child arrive ready to learn.",
+          vision: "A confident start for every family in Botswana.",
+          values: "Safety, warmth, and steady communication.",
           feeRows: [{ grade: "Reception", termly: "4200", annually: "12600" }],
         },
       }),
@@ -697,6 +757,59 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(nannyPaymentPayload.payment.amount, 795);
     assert.equal(nannyPaymentPayload.payment.packageName, "Standard");
 
+    // A vetting package is an upgrade, not a requirement: a care worker who
+    // picks no package pays the plain P20 care-worker verification fee.
+    const soloSignup = await request("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: baseUrl },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "provider",
+        name: "Integration Solo Nanny",
+        email: `solo-nanny-${Date.now()}@example.com`,
+        password: "password123",
+        category: "nannies",
+        location: "gaborone",
+      }),
+    });
+    assert.equal(soloSignup.status, 200);
+    const soloCookie = cookieFrom(soloSignup);
+    await soloSignup.text();
+
+    const soloProfile = await request("/api/profiles/provider", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: soloCookie, Origin: baseUrl },
+      body: JSON.stringify({
+        profile: {
+          displayName: "Integration Solo Nanny",
+          category: "nannies",
+          location: "Gaborone",
+          bio: "Care provider paying the plain verification fee.",
+          phone: "+267 71 000 333",
+          whatsapp: "+26771000333",
+          services: ["Nanny care"],
+          experience: "Three years",
+          availability: "Weekdays",
+          price: "3000",
+          priceUnit: "monthly",
+          published: false,
+          feeRows: [],
+        },
+      }),
+    });
+    assert.equal(soloProfile.status, 200);
+    await soloProfile.text();
+
+    const soloPayment = await request("/api/verifications/payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: soloCookie, Origin: baseUrl },
+      body: JSON.stringify({}),
+    });
+    assert.equal(soloPayment.status, 200);
+    const soloPaymentPayload = await json(soloPayment);
+    assert.equal(soloPaymentPayload.payment.amount, 20);
+    assert.equal(soloPaymentPayload.payment.packageId, undefined);
+
     const payment = await request("/api/verifications/payment", {
       method: "POST",
       headers: { Cookie: cookie, Origin: baseUrl },
@@ -704,7 +817,8 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(payment.status, 200);
     const paymentPayload = await json(payment);
     assert.equal(paymentPayload.payment.status, "paid");
-    assert.equal(paymentPayload.payment.amount, 250);
+    // Nurseries are an organisation category: P50, per /pricing.
+    assert.equal(paymentPayload.payment.amount, 50);
 
     const identityForm = new FormData();
     identityForm.set("type", "document");
@@ -769,11 +883,32 @@ describe("Kidcellence platform APIs", () => {
     });
     assert.equal(representativeUpload.status, 200);
 
+    // Beyond documents, missingVerificationProfileFields() requires a display
+    // picture, a cover photo, and at least one gallery image before a school
+    // may submit for verification.
+    for (const [type, label, fileName] of [
+      ["profile-image", "Display picture", "display.png"],
+      ["cover-image", "Cover photo", "cover.png"],
+      ["gallery", "Classroom", "classroom.png"],
+    ]) {
+      const imageForm = new FormData();
+      imageForm.set("type", type);
+      imageForm.set("label", label);
+      imageForm.set("file", new Blob(["test image"], { type: "image/png" }), fileName);
+      const imageUpload = await request("/api/uploads", {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: baseUrl },
+        body: imageForm,
+      });
+      assert.equal(imageUpload.status, 200, `${type} upload failed`);
+      await imageUpload.text();
+    }
+
     const list = await request("/api/uploads", {
       headers: { Cookie: cookie },
     });
     assert.equal(list.status, 200);
-    assert.equal((await json(list)).uploads.length, 4);
+    assert.equal((await json(list)).uploads.length, 7);
 
     const submitted = await request("/api/verifications", {
       method: "POST",
@@ -924,5 +1059,92 @@ describe("Kidcellence platform APIs", () => {
 
     const hiddenProvider = await request(`/api/providers/${profilePayload.publicId}`);
     assert.equal(hiddenProvider.status, 404);
+  });
+
+  it("exposes billing state per account and refuses unverified payment writes", async () => {
+    // The suite runs without STRIPE_SECRET_KEY, so this exercises the
+    // unconfigured paths: they must fail closed rather than grant paid status.
+    const anonymous = await request("/api/billing");
+    assert.equal(anonymous.status, 401);
+    await anonymous.text();
+
+    const anonymousAdmin = await request("/api/admin/billing");
+    assert.equal(anonymousAdmin.status, 401);
+    await anonymousAdmin.text();
+
+    const email = `billing-parent-${Date.now()}@example.com`;
+    const signup = await request("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: baseUrl },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "parent",
+        name: "Billing Parent",
+        email,
+        password: "password123",
+        location: "gaborone",
+      }),
+    });
+    assert.equal(signup.status, 200);
+    const cookie = cookieFrom(signup);
+
+    const billing = await request("/api/billing", { headers: { Cookie: cookie } });
+    assert.equal(billing.status, 200);
+    const billingPayload = await json(billing);
+    // A parent account resolves to the parent plan at the /pricing rate.
+    assert.equal(billingPayload.plan.id, "parent");
+    assert.equal(billingPayload.plan.price, 60);
+    assert.equal(billingPayload.subscription, null);
+    assert.deepEqual(billingPayload.payments, []);
+    assert.equal(billingPayload.billingEnabled, false);
+
+    // Checkout must refuse rather than silently succeed when Stripe is absent.
+    const checkout = await request("/api/billing/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookie, Origin: baseUrl },
+      body: JSON.stringify({}),
+    });
+    assert.equal(checkout.status, 503);
+    await checkout.text();
+
+    // Cross-origin writes stay blocked on the billing routes too.
+    const crossOrigin = await request("/api/billing/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: "https://attacker.example",
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(crossOrigin.status, 403);
+    await crossOrigin.text();
+
+    const portal = await request("/api/billing/portal", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+    });
+    assert.equal(portal.status, 503);
+    await portal.text();
+
+    const billingPage = await request("/billing");
+    assert.equal(billingPage.status, 200);
+    await billingPage.text();
+  });
+
+  it("rejects unsigned Stripe webhook deliveries", async () => {
+    // Without STRIPE_WEBHOOK_SECRET the route must fail closed: it is the only
+    // writer of paid state, so an unverified payload can never be trusted.
+    const unsigned = await request("/api/stripe/webhook", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: "evt_forged",
+        type: "checkout.session.completed",
+        data: { object: { id: "cs_forged", mode: "payment", payment_status: "paid" } },
+      }),
+    });
+    assert.equal(unsigned.status, 503);
+    assert.match((await json(unsigned)).error, /webhook secret/i);
   });
 });

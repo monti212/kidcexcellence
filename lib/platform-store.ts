@@ -21,7 +21,7 @@ import {
   type PendingVerification,
 } from "@/lib/platform-service";
 import {
-  VERIFICATION_FEE,
+  getVerificationFee,
   missingVerificationDocuments,
   missingVerificationProfileFields,
 } from "@/lib/verification-requirements";
@@ -29,6 +29,15 @@ import {
   categorySupportsVettingPackages,
   getVettingPackage,
 } from "@/lib/vetting-packages";
+import {
+  readSupabaseStore,
+  writeSupabaseStore,
+  type SupabaseStoreSnapshot,
+} from "@/lib/platform-store-supabase";
+import { supabaseStoreEnabled } from "@/lib/supabase";
+import { readD1Store, writeD1Store, type D1StoreSnapshot } from "@/lib/platform-store-d1";
+import { d1Enabled } from "@/lib/cloudflare-d1";
+import type { BillingPlanId } from "@/lib/billing-plans";
 
 export type UserRole = "parent" | "provider" | "admin";
 export const SESSION_COOKIE_NAME = "kidcellence_session";
@@ -44,6 +53,8 @@ export interface PlatformUser {
   category?: string;
   passwordHash: string;
   emailVerifiedAt?: string;
+  /** Set on first checkout; reused so a user never accumulates Stripe customers. */
+  stripeCustomerId?: string;
   createdAt: string;
   lastLoginAt?: string;
 }
@@ -177,6 +188,60 @@ export interface StoredConversation extends Conversation {
   unreadForProvider?: number;
 }
 
+/**
+ * Mirrors Stripe's subscription statuses. Stripe is the source of truth for
+ * this value: it is only ever written from a verified webhook, never from a
+ * browser round trip, because a user who abandons the Checkout redirect must
+ * not be able to leave themselves marked active.
+ */
+export type BillingSubscriptionStatus =
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "incomplete"
+  | "incomplete_expired"
+  | "unpaid"
+  | "paused"
+  | "canceled";
+
+export interface BillingSubscriptionRecord {
+  userId: string;
+  planId: BillingPlanId;
+  status: BillingSubscriptionStatus;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  stripePriceId?: string;
+  /** Major currency units, matching the plan catalogue (BWP 60, not 6000). */
+  amount: number;
+  currency: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd: boolean;
+  startedAt: string;
+  updatedAt: string;
+  canceledAt?: string;
+}
+
+/**
+ * A single settled money movement. Subscription renewals, verification fees,
+ * and vetting packages all land here so the billing dashboards have one ledger
+ * to read instead of three.
+ */
+export interface BillingPaymentRecord {
+  id: string;
+  userId: string;
+  kind: "subscription" | "verification" | "vetting";
+  description: string;
+  amount: number;
+  currency: string;
+  status: "paid" | "failed" | "refunded";
+  stripeCustomerId?: string;
+  stripeSessionId?: string;
+  stripeInvoiceId?: string;
+  stripePaymentIntentId?: string;
+  packageId?: string;
+  createdAt: string;
+}
+
 export interface PlatformStore {
   users: PlatformUser[];
   sessions: PlatformSession[];
@@ -186,6 +251,14 @@ export interface PlatformStore {
   providerProfiles: Record<string, ProviderProfileRecord>;
   uploads: PlatformUploadRecord[];
   conversations: StoredConversation[];
+  subscriptions: BillingSubscriptionRecord[];
+  payments: BillingPaymentRecord[];
+  /**
+   * Stripe event ids already applied. Stripe retries delivery on any non-2xx
+   * response and can also deliver the same event twice, so every handler is
+   * gated on this list inside the same `updateStore()` pass that applies it.
+   */
+  processedStripeEvents: string[];
   verifications: {
     pendingProviders: PendingVerification[];
     approvedProviders: ApprovedVerification[];
@@ -214,6 +287,9 @@ function createInitialStore(): PlatformStore {
     providerProfiles: {},
     uploads: [],
     conversations: [],
+    subscriptions: [],
+    payments: [],
+    processedStripeEvents: [],
     verifications: {
       pendingProviders: [],
       approvedProviders: APPROVED_VERIFICATIONS,
@@ -222,7 +298,7 @@ function createInitialStore(): PlatformStore {
   };
 }
 
-async function persistStore(store: PlatformStore) {
+async function persistJsonStore(store: PlatformStore) {
   await mkdir(path.dirname(storePath), { recursive: true });
   await writeFile(storePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
 }
@@ -295,6 +371,14 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
     ),
     providerProfiles,
     uploads: store.uploads ?? initial.uploads,
+    subscriptions: (store.subscriptions ?? initial.subscriptions).map((subscription) => ({
+      ...subscription,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd ?? false,
+      currency: subscription.currency ?? "BWP",
+      amount: subscription.amount ?? 0,
+    })),
+    payments: store.payments ?? initial.payments,
+    processedStripeEvents: store.processedStripeEvents ?? initial.processedStripeEvents,
     conversations: (store.conversations ?? []).filter(
       (conversation): conversation is StoredConversation =>
         typeof (conversation as StoredConversation).parentUserId === "string" &&
@@ -312,23 +396,86 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
   };
 }
 
-export async function readStore(): Promise<PlatformStore> {
+type StoreSnapshot =
+  | { driver: "d1"; snapshot: D1StoreSnapshot }
+  | { driver: "supabase"; snapshot: SupabaseStoreSnapshot }
+  | null;
+
+/**
+ * Picks the active persistence driver.
+ *
+ * `PLATFORM_STORE_DRIVER` forces one explicitly, which keeps the integration
+ * suite hermetic: it sets `json` so configured D1 or Supabase credentials
+ * cannot point the tests at a live database. Left unset, D1 wins over Supabase
+ * when both are configured, because D1 is the production store.
+ */
+function activeStoreDriver(): "d1" | "supabase" | "json" {
+  const forced = process.env.PLATFORM_STORE_DRIVER?.trim().toLowerCase();
+  if (forced === "json") return "json";
+  if (forced === "d1") {
+    if (!d1Enabled()) {
+      throw new Error(
+        "PLATFORM_STORE_DRIVER=d1 requires D1_PROXY_URL and D1_PROXY_TOKEN, or CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_D1_DATABASE_ID and CLOUDFLARE_API_TOKEN."
+      );
+    }
+    return "d1";
+  }
+  if (forced === "supabase") {
+    // supabaseStoreEnabled() raises its own error when credentials are absent.
+    return supabaseStoreEnabled() ? "supabase" : "json";
+  }
+  if (d1Enabled()) return "d1";
+  return supabaseStoreEnabled() ? "supabase" : "json";
+}
+
+/**
+ * Loads the store from whichever driver is active. The database drivers also
+ * return a row snapshot so a later write can persist just the rows the caller
+ * changed; the JSON driver rewrites the whole file and needs no snapshot.
+ */
+async function readStoreWithSnapshot(): Promise<{
+  store: PlatformStore;
+  snapshot: StoreSnapshot;
+}> {
+  const driver = activeStoreDriver();
+
+  if (driver === "d1") {
+    const { store, snapshot } = await readD1Store(normalizeStore);
+    return { store, snapshot: { driver: "d1", snapshot } };
+  }
+
+  if (driver === "supabase") {
+    const { store, snapshot } = await readSupabaseStore(normalizeStore);
+    return { store, snapshot: { driver: "supabase", snapshot } };
+  }
+
   try {
     const contents = await readFile(storePath, "utf8");
     const store = normalizeStore(JSON.parse(contents));
-    await persistStore(store);
-    return store;
+    await persistJsonStore(store);
+    return { store, snapshot: null };
   } catch {
     const store = createInitialStore();
-    await persistStore(store);
-    return store;
+    await persistJsonStore(store);
+    return { store, snapshot: null };
   }
 }
 
+export async function readStore(): Promise<PlatformStore> {
+  const { store } = await readStoreWithSnapshot();
+  return store;
+}
+
 export async function updateStore<T>(updater: (store: PlatformStore) => T | Promise<T>) {
-  const store = await readStore();
+  const { store, snapshot } = await readStoreWithSnapshot();
   const result = await updater(store);
-  await persistStore(store);
+  if (snapshot?.driver === "d1") {
+    await writeD1Store(store, snapshot.snapshot);
+  } else if (snapshot?.driver === "supabase") {
+    await writeSupabaseStore(store, snapshot.snapshot);
+  } else {
+    await persistJsonStore(store);
+  }
   return result;
 }
 
@@ -800,16 +947,16 @@ export async function recordVerificationPayment(userId: string, packageId?: stri
     if (profile.verificationStatus === "approved") {
       throw new Error("This provider profile is already verified.");
     }
+    // A vetting package is an optional upgrade, not a substitute requirement: a
+    // care worker may either pay the plain verification fee or buy Standard/VIP.
     const selectedPackage = categorySupportsVettingPackages(profile.category)
       ? getVettingPackage(packageId)
       : null;
-    if (categorySupportsVettingPackages(profile.category) && !selectedPackage) {
-      throw new Error("Choose a Standard or VIP vetting package before paying.");
-    }
+    const fee = getVerificationFee(profile.category);
 
     profile.verificationPaymentStatus = "paid";
-    profile.verificationFeeAmount = selectedPackage?.price ?? VERIFICATION_FEE.amount;
-    profile.verificationFeeCurrency = selectedPackage?.currency ?? VERIFICATION_FEE.currency;
+    profile.verificationFeeAmount = selectedPackage?.price ?? fee.amount;
+    profile.verificationFeeCurrency = selectedPackage?.currency ?? fee.currency;
     profile.verificationFeePaidAt = new Date().toISOString();
     profile.verificationPaymentReference = `${selectedPackage ? "vetting" : "verify"}-${userId}-${Date.now()}`;
     profile.verificationPackageId = selectedPackage?.id;
@@ -825,6 +972,198 @@ export async function recordVerificationPayment(userId: string, packageId?: stri
       packageName: profile.verificationPackageName,
     };
   });
+}
+
+/**
+ * Everything a webhook is allowed to change, expressed as data.
+ *
+ * The webhook route maps Stripe objects into this shape; the store applies it.
+ * Keeping the mutation rules here means Stripe's object model never leaks into
+ * the persistence layer, and the whole change set lands in one
+ * read-modify-write pass alongside the idempotency marker.
+ */
+export interface BillingEventChanges {
+  stripeCustomer?: { userId: string; stripeCustomerId: string };
+  subscription?: BillingSubscriptionRecord;
+  payment?: BillingPaymentRecord;
+  verificationPaid?: {
+    userId: string;
+    amount: number;
+    currency: string;
+    reference: string;
+    packageId?: string;
+    packageName?: string;
+  };
+}
+
+function applyVerificationPaid(
+  store: PlatformStore,
+  paid: NonNullable<BillingEventChanges["verificationPaid"]>
+) {
+  const profile = store.providerProfiles[paid.userId];
+  if (!profile) return false;
+  profile.verificationPaymentStatus = "paid";
+  profile.verificationFeeAmount = paid.amount;
+  profile.verificationFeeCurrency = paid.currency;
+  profile.verificationFeePaidAt = new Date().toISOString();
+  profile.verificationPaymentReference = paid.reference;
+  profile.verificationPackageId = paid.packageId;
+  profile.verificationPackageName = paid.packageName;
+  return true;
+}
+
+/**
+ * Applies a Stripe event exactly once.
+ *
+ * Returns `{ applied: false }` when the event id has already been recorded, so
+ * the webhook route can still answer 200 and stop Stripe retrying. The
+ * duplicate check and the mutation share a single `updateStore()` pass; a
+ * separate check-then-write would let a retried delivery slip through the gap.
+ */
+export async function applyBillingEvent(eventId: string, changes: BillingEventChanges) {
+  return updateStore((store) => {
+    if (store.processedStripeEvents.includes(eventId)) {
+      return { applied: false as const };
+    }
+    store.processedStripeEvents.push(eventId);
+    // Bounded so the marker list cannot grow without limit; Stripe stops
+    // retrying a given event long before this many newer events arrive.
+    if (store.processedStripeEvents.length > 5000) {
+      store.processedStripeEvents.splice(0, store.processedStripeEvents.length - 5000);
+    }
+
+    if (changes.stripeCustomer) {
+      const user = store.users.find((item) => item.id === changes.stripeCustomer!.userId);
+      if (user) user.stripeCustomerId = changes.stripeCustomer.stripeCustomerId;
+    }
+
+    if (changes.subscription) {
+      const incoming = changes.subscription;
+      const index = store.subscriptions.findIndex(
+        (item) => item.stripeSubscriptionId === incoming.stripeSubscriptionId
+      );
+      if (index >= 0) {
+        store.subscriptions[index] = { ...store.subscriptions[index], ...incoming };
+      } else {
+        store.subscriptions.unshift(incoming);
+      }
+    }
+
+    if (changes.payment && !store.payments.some((item) => item.id === changes.payment!.id)) {
+      store.payments.unshift(changes.payment);
+    }
+
+    if (changes.verificationPaid) {
+      applyVerificationPaid(store, changes.verificationPaid);
+    }
+
+    return { applied: true as const };
+  });
+}
+
+/** Links a Stripe customer to an account outside the webhook path, at checkout. */
+export async function setStripeCustomerId(userId: string, stripeCustomerId: string) {
+  return updateStore((store) => {
+    const user = store.users.find((item) => item.id === userId);
+    if (user) user.stripeCustomerId = stripeCustomerId;
+    return user?.stripeCustomerId ?? null;
+  });
+}
+
+export async function getStripeCustomerId(userId: string) {
+  const store = await readStore();
+  return store.users.find((user) => user.id === userId)?.stripeCustomerId ?? null;
+}
+
+export async function findUserByStripeCustomerId(stripeCustomerId: string) {
+  const store = await readStore();
+  return store.users.find((user) => user.stripeCustomerId === stripeCustomerId) ?? null;
+}
+
+/** The subscription and payment history for one account's own billing page. */
+export async function getUserBilling(userId: string) {
+  const store = await readStore();
+  const subscription =
+    store.subscriptions.find(
+      (item) => item.userId === userId && item.status !== "canceled"
+    ) ??
+    store.subscriptions.find((item) => item.userId === userId) ??
+    null;
+
+  return {
+    subscription,
+    payments: store.payments
+      .filter((payment) => payment.userId === userId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 50),
+  };
+}
+
+const ACTIVE_SUBSCRIPTION_STATUSES: BillingSubscriptionStatus[] = ["active", "trialing"];
+
+/**
+ * Platform-wide billing aggregate for the admin dashboard.
+ *
+ * Computed in JavaScript over the whole store, consistent with how provider
+ * search already works. That is fine at present scale and is the same thing the
+ * README flags for pushing into Postgres later.
+ */
+export async function getBillingOverview() {
+  const store = await readStore();
+  const userById = new Map(store.users.map((user) => [user.id, user]));
+
+  const active = store.subscriptions.filter((item) =>
+    ACTIVE_SUBSCRIPTION_STATUSES.includes(item.status)
+  );
+  const pastDue = store.subscriptions.filter((item) => item.status === "past_due");
+  const canceled = store.subscriptions.filter((item) => item.status === "canceled");
+
+  const planCounts = active.reduce<Record<string, { count: number; amount: number }>>(
+    (totals, subscription) => {
+      const entry = totals[subscription.planId] ?? { count: 0, amount: 0 };
+      entry.count += 1;
+      entry.amount += subscription.amount;
+      totals[subscription.planId] = entry;
+      return totals;
+    },
+    {}
+  );
+
+  const paid = store.payments.filter((payment) => payment.status === "paid");
+  const revenueByKind = paid.reduce<Record<string, number>>((totals, payment) => {
+    totals[payment.kind] = (totals[payment.kind] ?? 0) + payment.amount;
+    return totals;
+  }, {});
+
+  return {
+    currency: active[0]?.currency ?? paid[0]?.currency ?? "BWP",
+    monthlyRecurringRevenue: active.reduce((total, item) => total + item.amount, 0),
+    activeSubscriptions: active.length,
+    pastDueSubscriptions: pastDue.length,
+    canceledSubscriptions: canceled.length,
+    planBreakdown: planCounts,
+    revenueByKind,
+    totalCollected: paid.reduce((total, payment) => total + payment.amount, 0),
+    failedPayments: store.payments.filter((payment) => payment.status === "failed").length,
+    recentPayments: store.payments
+      .slice()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 25)
+      .map((payment) => ({
+        ...payment,
+        userName: userById.get(payment.userId)?.name ?? "Unknown account",
+        userEmail: userById.get(payment.userId)?.email ?? "",
+      })),
+    subscribers: store.subscriptions
+      .slice()
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 50)
+      .map((subscription) => ({
+        ...subscription,
+        userName: userById.get(subscription.userId)?.name ?? "Unknown account",
+        userEmail: userById.get(subscription.userId)?.email ?? "",
+      })),
+  };
 }
 
 export async function listUploads(userId: string, type?: PlatformUploadRecord["type"]) {

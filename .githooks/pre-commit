@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#
+# Blocks commits that contain credentials.
+#
+# Key exposure in a repository is the leading cause of API key takeover. This
+# repo has already had one close call: a live Supabase secret key was sitting in
+# .claude/settings.local.json, protected only by a global gitignore that does
+# not travel with the project.
+#
+# Enable with:  git config core.hooksPath .githooks
+# Bypass once:  git commit --no-verify   (only when you are certain)
+
+set -uo pipefail
+
+# Only look at what is actually staged, and only at added lines.
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+fail=0
+
+check() {
+  local label="$1" pattern="$2"
+  local hits
+  hits=$(git diff --cached --unified=0 -- $staged \
+    | grep -E '^\+' \
+    | grep -vE '^\+\+\+' \
+    | grep -nE -- "$pattern" || true)
+  if [ -n "$hits" ]; then
+    echo "BLOCKED: $label"
+    echo "$hits" | sed 's/^/    /' | cut -c1-160
+    echo
+    fail=1
+  fi
+}
+
+# Stripe: live and test, secret and restricted.
+check "Stripe secret/restricted key" '(sk|rk)_(live|test)_[A-Za-z0-9]{16,}'
+# Supabase secret keys (the new sb_secret_ prefix and legacy service-role JWTs).
+check "Supabase secret key" 'sb_secret_[A-Za-z0-9_-]{16,}'
+check "Supabase service-role JWT" 'eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}'
+# Cloudflare API tokens and the D1 proxy token, which grants raw SQL access.
+check "Cloudflare API token" 'CLOUDFLARE_API_TOKEN\s*[=:]\s*["'"'"']?[A-Za-z0-9_-]{30,}'
+check "D1 proxy token" 'D1_PROXY_TOKEN\s*[=:]\s*["'"'"']?[A-Za-z0-9]{32,}'
+# Generic private keys.
+check "Private key block" '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+
+# Environment files should never be committed; only .env.example may be.
+env_files=$(echo "$staged" | grep -E '(^|/)\.env' | grep -v '\.env\.example$' || true)
+if [ -n "$env_files" ]; then
+  echo "BLOCKED: environment file staged"
+  echo "$env_files" | sed 's/^/    /'
+  echo
+  fail=1
+fi
+
+if [ "$fail" -ne 0 ]; then
+  echo "Commit aborted. Remove the secret, then rotate it — assume anything"
+  echo "that reached your disk in plaintext may already be compromised."
+  exit 1
+fi
+
+exit 0

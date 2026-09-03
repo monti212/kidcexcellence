@@ -1,7 +1,24 @@
-export const VERIFICATION_FEE = {
-  amount: 250,
-  currency: "BWP",
+/**
+ * Verification fees, as advertised on /pricing.
+ *
+ * Individual care workers pay the lower fee; every other provider type pays the
+ * organisation fee. The split follows the same category set as the subscription
+ * tiers in lib/billing-plans.ts, so a nanny on the P60 plan pays P20 and a
+ * school on the P150 plan pays P50.
+ *
+ * Verification is optional. Paying it earns the verified badge; it is not
+ * required to publish a profile.
+ */
+export const VERIFICATION_FEES = {
+  careWorker: { amount: 20, currency: "BWP" as const },
+  organisation: { amount: 50, currency: "BWP" as const },
 };
+
+export function getVerificationFee(category: string) {
+  return CARE_WORKER_CATEGORIES.has(category)
+    ? VERIFICATION_FEES.careWorker
+    : VERIFICATION_FEES.organisation;
+}
 
 export interface VerificationDocumentRequirement {
   key: string;

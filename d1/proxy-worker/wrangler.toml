@@ -1,0 +1,14 @@
+name = "kidcexcellence-d1-proxy"
+main = "src/index.js"
+compatibility_date = "2026-08-26"
+
+# The D1 binding this Worker fronts. database_id is the kidcexcellence-db
+# database; confirm it with `npx wrangler d1 list`.
+[[d1_databases]]
+binding = "DB"
+database_name = "kidcexcellence-db"
+database_id = "f0b826ab-d6e7-4524-91ac-684e8f5f2110"
+
+# PROXY_TOKEN is a secret, not a var. Set it with:
+#   npx wrangler secret put PROXY_TOKEN
+# and give the app the same value as D1_PROXY_TOKEN.

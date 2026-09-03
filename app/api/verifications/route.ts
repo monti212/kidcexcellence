@@ -7,8 +7,8 @@ import {
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
 import {
-  VERIFICATION_FEE,
   getVerificationDocuments,
+  getVerificationFee,
   getVerificationProviderType,
   missingVerificationDocuments,
   missingVerificationProfileFields,
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     status: profile?.verificationStatus ?? "not_submitted",
     providerType: getVerificationProviderType(category),
-    fee: VERIFICATION_FEE,
+    fee: getVerificationFee(category),
     payment: {
       status: profile?.verificationPaymentStatus ?? "unpaid",
       amount: profile?.verificationFeeAmount,

@@ -33,7 +33,7 @@ import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import { PROVIDER_CATEGORY_OPTIONS } from "@/lib/mock-data";
 import { usePlatformSession } from "@/lib/use-platform-session";
 import {
-  VERIFICATION_FEE,
+  getVerificationFee,
   getVerificationDocuments,
   getVerificationProviderType,
   missingVerificationProfileFields,
@@ -315,11 +315,12 @@ function ProviderProfileContent() {
   );
   const verificationPaid = verificationPaymentStatus === "paid";
   const hasVettingPackages = categorySupportsVettingPackages(category);
+  // No package selected means the plain verification fee for this category.
+  // Packages are an optional upgrade, so this may legitimately be null.
   const selectedVettingPackage =
-    VETTING_PACKAGES.find((plan) => plan.id === verificationPackageId) ?? VETTING_PACKAGES[0];
-  const verificationPrice = hasVettingPackages
-    ? selectedVettingPackage.price
-    : VERIFICATION_FEE.amount;
+    VETTING_PACKAGES.find((plan) => plan.id === verificationPackageId) ?? null;
+  const categoryVerificationFee = getVerificationFee(category);
+  const verificationPrice = selectedVettingPackage?.price ?? categoryVerificationFee.amount;
 
   const refreshUploads = useCallback(async () => {
     if (!session) {
@@ -1180,20 +1181,29 @@ function ProviderProfileContent() {
                 <div className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
                   <div className="flex items-center gap-2 text-sm font-black text-[var(--brand-ink)]">
                     <CreditCard className="h-4 w-4 text-[var(--brand-leaf)]" />
-                    {hasVettingPackages ? "Nanny/helper vetting package" : "Verification fee"}
+                    {hasVettingPackages ? "Verification or vetting package" : "Verification fee"}
                   </div>
                   {hasVettingPackages ? (
                     <div className="mt-3 grid gap-2">
-                      {VETTING_PACKAGES.map((plan) => {
+                      {[
+                        {
+                          id: "",
+                          name: "Verification only",
+                          price: categoryVerificationFee.amount,
+                          summary:
+                            "Document check for the Verified badge. No managed placement support.",
+                        },
+                        ...VETTING_PACKAGES,
+                      ].map((plan) => {
                         const selected = verificationPackageId === plan.id;
                         return (
                           <button
-                            key={plan.id}
+                            key={plan.id || "verification-only"}
                             type="button"
                             onClick={() => {
                               if (verificationPaid) return;
                               setVerificationPackageId(plan.id);
-                              setVerificationPackageName(plan.name);
+                              setVerificationPackageName(plan.id ? plan.name : "");
                             }}
                             className={`rounded-lg border p-3 text-left transition-colors ${
                               selected
@@ -1215,24 +1225,26 @@ function ProviderProfileContent() {
                           </button>
                         );
                       })}
-                      <div className="rounded-lg bg-white px-3 py-2">
-                        <div className="text-xs font-black uppercase tracking-[0.12em] text-[var(--brand-muted)]">
-                          {selectedVettingPackage.name} includes
+                      {selectedVettingPackage && (
+                        <div className="rounded-lg bg-white px-3 py-2">
+                          <div className="text-xs font-black uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+                            {selectedVettingPackage.name} includes
+                          </div>
+                          <ul className="mt-2 space-y-1 text-xs leading-5 text-[var(--brand-muted)]">
+                            {selectedVettingPackage.features.map((feature) => (
+                              <li key={feature} className="flex gap-2">
+                                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand-leaf)]" />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        <ul className="mt-2 space-y-1 text-xs leading-5 text-[var(--brand-muted)]">
-                          {selectedVettingPackage.features.map((feature) => (
-                            <li key={feature} className="flex gap-2">
-                              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand-leaf)]" />
-                              <span>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      )}
                     </div>
                   ) : (
                     <>
                       <div className="mt-2 text-2xl font-black text-[var(--brand-ink)]">
-                        P {VERIFICATION_FEE.amount}
+                        P {categoryVerificationFee.amount}
                       </div>
                       <p className="mt-1 text-xs text-[var(--brand-muted)]">
                         One-time additional review fee for the verification badge.

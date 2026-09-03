@@ -48,3 +48,7 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+# Vendored agent skills (restore with: npx skills add https://docs.stripe.com)
+.agents/
+.claude/skills/
