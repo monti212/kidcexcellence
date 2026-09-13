@@ -1192,4 +1192,322 @@ describe("Kidcellence platform APIs", () => {
     const hiddenProvider = await request(`/api/providers/${profilePayload.publicId}`);
     assert.equal(hiddenProvider.status, 404);
   });
+  it("switches active account type between parent and provider without losing provider data", async () => {
+    const email = `switcher-${Date.now()}@example.com`;
+    const signup = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "parent",
+        name: "Integration Switcher",
+        email,
+        password: "password123",
+        location: "gaborone",
+      }),
+    });
+
+    assert.equal(signup.status, 200);
+    let cookie = cookieFrom(signup);
+    const signupPayload = await json(signup);
+    assert.equal(signupPayload.user.role, "parent");
+    assert.deepEqual(signupPayload.user.roles, ["parent"]);
+
+    const unauthSwitch = await request("/api/account/role", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ target: "provider" }),
+    });
+    assert.equal(unauthSwitch.status, 401);
+
+    const crossOriginSwitch = await request("/api/account/role", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: "https://attacker.example.com",
+      },
+      body: JSON.stringify({ target: "provider" }),
+    });
+    assert.equal(crossOriginSwitch.status, 403);
+
+    const escalation = await request("/api/account/role", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ target: "admin" }),
+    });
+    assert.equal(escalation.status, 403);
+
+    const stillParent = await json(
+      await request("/api/auth", { headers: { Cookie: cookie } })
+    );
+    assert.equal(stillParent.user.role, "parent");
+
+    const adminDashboard = await request("/api/admin/verifications", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(adminDashboard.status, 401);
+
+    const toProvider = await request("/api/account/role", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ target: "provider" }),
+    });
+    assert.equal(toProvider.status, 200);
+    const providerCookie = cookieFrom(toProvider);
+    const toProviderPayload = await json(toProvider);
+    assert.equal(toProviderPayload.user.role, "provider");
+    assert.deepEqual(toProviderPayload.user.roles.sort(), ["parent", "provider"]);
+
+    const staleSession = await json(
+      await request("/api/auth", { headers: { Cookie: cookie } })
+    );
+    assert.equal(staleSession.user, null);
+
+    cookie = providerCookie;
+
+    const providerProfile = await json(
+      await request("/api/profiles/provider", { headers: { Cookie: cookie } })
+    );
+    assert.equal(providerProfile.profile.published, false);
+    assert.equal(providerProfile.profile.verificationStatus, "not_submitted");
+
+    const searchResults = await json(await request("/api/providers"));
+    assert.equal(
+      searchResults.providers.some((provider) => provider.email === email),
+      false,
+      "an unpublished switched provider must not appear in search"
+    );
+
+    const publish = await request("/api/profiles/provider", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        profile: {
+          ...providerProfile.profile,
+          displayName: "Switched Provider Listing",
+          location: "gaborone",
+          bio: "A provider listing created by switching account type.",
+          phone: "+267 71 999 888",
+          price: "1500",
+          published: true,
+        },
+      }),
+    });
+    assert.equal(publish.status, 200);
+    const publishPayload = await json(publish);
+    assert.equal(publishPayload.profile.published, true);
+
+    const backToParent = await request("/api/account/role", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ target: "parent" }),
+    });
+    assert.equal(backToParent.status, 200);
+    cookie = cookieFrom(backToParent);
+    const backToParentPayload = await json(backToParent);
+    assert.equal(backToParentPayload.user.role, "parent");
+    assert.deepEqual(backToParentPayload.user.roles.sort(), ["parent", "provider"]);
+
+    // Provider-only write surfaces reject the account while parent is active.
+    // (The provider profile GET is scoped to the caller's own record and is
+    // not role-gated, so it stays readable by design.)
+    const providerUploadBlocked = await request("/api/uploads", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: baseUrl },
+      body: new URLSearchParams({ type: "gallery" }),
+    });
+    assert.equal(providerUploadBlocked.status, 403);
+
+    const providerVerificationBlocked = await request("/api/verifications", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(providerVerificationBlocked.status, 401);
+
+    const parentProfileAfterSwitch = await request("/api/profiles/parent", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(parentProfileAfterSwitch.status, 200);
+
+    const returnToProvider = await request("/api/account/role", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ target: "provider" }),
+    });
+    assert.equal(returnToProvider.status, 200);
+    cookie = cookieFrom(returnToProvider);
+
+    const preservedProfile = await json(
+      await request("/api/profiles/provider", { headers: { Cookie: cookie } })
+    );
+    assert.equal(
+      preservedProfile.profile.displayName,
+      "Switched Provider Listing",
+      "provider profile data must survive a switch away and back"
+    );
+    assert.equal(preservedProfile.profile.published, true);
+  });
+
+  it("renders the settings page with an account type switcher", async () => {
+    const settingsPage = await request("/settings");
+    assert.equal(settingsPage.status, 200);
+
+    // The switcher is client-rendered once the session resolves, so assert the
+    // route serves its pre-session shell and check the source for the control
+    // itself (the same approach the /auth coverage above uses).
+    assert.match(await settingsPage.text(), /Checking your account/);
+
+    const settingsSource = await readFile(
+      path.join(process.cwd(), "app", "settings", "page.tsx"),
+      "utf8"
+    );
+    assert.match(settingsSource, /Account type/);
+    assert.match(settingsSource, /\/api\/account\/role/);
+    // Admin must never be offered as a self-service switch target. Assert on
+    // the rendered option set itself, not on a call site that never exists.
+    const switchableList = settingsSource.match(
+      /\(\[([^\]]*)\] as SwitchableRole\[\]\)/
+    );
+    assert.ok(switchableList, "expected a typed switchable-role list to assert on");
+    assert.equal(switchableList[1].includes("admin"), false);
+
+    const routeSource = await readFile(
+      path.join(process.cwd(), "app", "api", "account", "role", "route.ts"),
+      "utf8"
+    );
+    const serverSwitchable = routeSource.match(/SWITCHABLE_ROLES: UserRole\[\] = \[([^\]]*)\]/);
+    assert.ok(serverSwitchable, "expected SWITCHABLE_ROLES to assert on");
+    assert.equal(serverSwitchable[1].includes("admin"), false);
+
+    const navbarSource = await readFile(
+      path.join(process.cwd(), "components", "Navbar.tsx"),
+      "utf8"
+    );
+    assert.match(navbarSource, /href="\/settings"/);
+  });
+
+  it("keeps allowlisted admins out of the account type switcher", async () => {
+    const email = "admin-test@example.com";
+    const signup = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "admin",
+        name: "Admin Switch Guard",
+        email,
+        password: "password123",
+      }),
+    });
+    assert.equal(signup.status, 200);
+    const cookie = cookieFrom(signup);
+    assert.equal((await json(signup)).user.role, "admin");
+
+    const deskBefore = await request("/api/admin/verifications", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(deskBefore.status, 200);
+
+    // An admin must not be able to demote themselves: switching away would
+    // revoke their admin sessions and leave no route back, since admin is not
+    // a switchable target.
+    for (const target of ["parent", "provider"]) {
+      const attempt = await request("/api/account/role", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: cookie,
+          Origin: baseUrl,
+        },
+        body: JSON.stringify({ target }),
+      });
+      assert.equal(attempt.status, 400, `admin must not switch to ${target}`);
+    }
+
+    const stillAdmin = await json(
+      await request("/api/auth", { headers: { Cookie: cookie } })
+    );
+    assert.equal(stillAdmin.user.role, "admin");
+
+    const deskAfter = await request("/api/admin/verifications", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(deskAfter.status, 200, "admin must keep verification desk access");
+  });
+
+  it("leaves exactly one live session after a no-op account type switch", async () => {
+    const email = `noop-switch-${Date.now()}@example.com`;
+    const signup = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "parent",
+        name: "No-op Switcher",
+        email,
+        password: "password123",
+      }),
+    });
+    assert.equal(signup.status, 200);
+    const originalCookie = cookieFrom(signup);
+
+    // Switching to the role that is already active still rotates the session,
+    // so a previously issued cookie must stop working.
+    const noop = await request("/api/account/role", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: originalCookie,
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ target: "parent" }),
+    });
+    assert.equal(noop.status, 200);
+    const rotatedCookie = cookieFrom(noop);
+    assert.notEqual(rotatedCookie, originalCookie);
+
+    const withOldCookie = await json(
+      await request("/api/auth", { headers: { Cookie: originalCookie } })
+    );
+    assert.equal(withOldCookie.user, null, "the superseded cookie must be revoked");
+
+    const withNewCookie = await json(
+      await request("/api/auth", { headers: { Cookie: rotatedCookie } })
+    );
+    assert.equal(withNewCookie.user.role, "parent");
+    assert.deepEqual(withNewCookie.user.roles, ["parent"]);
+  });
+
 });

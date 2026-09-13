@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { BrandMark } from "@/components/BrandMark";
 import { usePlatformSession } from "@/lib/use-platform-session";
 import { clsx } from "clsx";
-import { LogIn, LogOut, Menu, UserCircle, UserPlus } from "lucide-react";
+import { LogIn, LogOut, Menu, Settings, UserCircle, UserPlus } from "lucide-react";
 
 const navLinks = [
   { href: "/search", label: "Browse" },
@@ -69,6 +69,15 @@ export default function Navbar() {
                   <Button variant="outline" className="h-10 max-w-44 rounded-full border-[var(--brand-line)] bg-white px-3 font-extrabold text-[var(--brand-ink)] hover:bg-[var(--brand-cream)]">
                     <UserCircle className="mr-2 h-4 w-4" />
                     <span className="truncate">{user.name}</span>
+                  </Button>
+                </Link>
+                <Link href="/settings">
+                  <Button
+                    variant="ghost"
+                    className="h-10 rounded-full px-3 text-[var(--brand-muted)] hover:text-[var(--brand-ink)]"
+                    aria-label="Settings"
+                  >
+                    <Settings className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Button
@@ -144,6 +153,12 @@ export default function Navbar() {
                     <Link href={profileHref} onClick={() => setOpen(false)}>
                       <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
                         {user.name}
+                      </Button>
+                    </Link>
+                    <Link href="/settings" onClick={() => setOpen(false)}>
+                      <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white text-[var(--brand-ink)]">
+                        <Settings className="mr-2 h-4 w-4" />
+                        Settings
                       </Button>
                     </Link>
                     <Button onClick={handleLogout} variant="ghost" className="w-full rounded-full text-[var(--brand-muted)]">

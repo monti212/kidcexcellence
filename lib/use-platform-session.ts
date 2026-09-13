@@ -7,8 +7,10 @@ export const PLATFORM_SESSION_EVENT = "kidcellence:session-change";
 export interface PlatformSessionUser {
   id: string;
   role: "parent" | "provider" | "admin";
+  roles?: Array<"parent" | "provider" | "admin">;
   name: string;
   email: string;
+  emailVerifiedAt?: string;
   phone?: string;
   location?: string;
   category?: string;

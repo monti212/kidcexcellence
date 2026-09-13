@@ -45,6 +45,12 @@ const LEGACY_DEMO_APPROVED_VERIFICATION_IDS = new Set(["a1", "a2", "a3", "a4", "
 export interface PlatformUser {
   id: string;
   role: UserRole;
+  /**
+   * Every role this account holds. `role` above is the currently active one.
+   * Backfilled from `role` by normalizeStore for accounts created before
+   * account-type switching existed.
+   */
+  roles?: UserRole[];
   name: string;
   email: string;
   phone?: string;
@@ -59,6 +65,7 @@ export interface PlatformUser {
 export interface PublicPlatformUser {
   id: string;
   role: UserRole;
+  roles: UserRole[];
   name: string;
   email: string;
   phone?: string;
@@ -584,7 +591,10 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
     ])
   );
   return {
-    users: store.users ?? initial.users,
+    users: (store.users ?? initial.users).map((user) => ({
+      ...user,
+      roles: accountRoles(user),
+    })),
     sessions: store.sessions ?? initial.sessions,
     revokedSessionTokens: store.revokedSessionTokens ?? initial.revokedSessionTokens,
     accountTokens: store.accountTokens ?? initial.accountTokens,
@@ -674,10 +684,20 @@ export async function updateStore<T>(updater: (store: PlatformStore) => T | Prom
   return result;
 }
 
+/**
+ * The roles an account holds, always including its active role. Accounts
+ * created before account-type switching have no `roles` array, so their
+ * active role is the only one they hold.
+ */
+export function accountRoles(user: Pick<PlatformUser, "role" | "roles">): UserRole[] {
+  return [...new Set([...(user.roles ?? []), user.role])];
+}
+
 function publicUser(user: PlatformUser): PublicPlatformUser {
   return {
     id: user.id,
     role: user.role,
+    roles: accountRoles(user),
     name: user.name,
     email: user.email,
     phone: user.phone,
@@ -944,6 +964,7 @@ export async function createOrLoginUser(input: {
     user = {
       id: `user-${Date.now()}`,
       role: input.role,
+      roles: [input.role],
       name: input.name?.trim() || (input.role === "provider" ? "New Provider" : input.role === "admin" ? "Admin" : "New Parent"),
       email,
       phone: input.phone?.trim(),
@@ -1132,6 +1153,82 @@ export function isAdminEmail(email: string) {
   return [...BUILT_IN_ADMIN_EMAILS, ...configuredEmails].includes(
     email.trim().toLowerCase()
   );
+}
+
+/**
+ * Switches which role is active for an account, adding it to the account's
+ * held roles on first use. Provider and parent data are both retained, so
+ * switching away and back never loses a listing, uploads, or verification.
+ *
+ * Admin is deliberately not switchable: it is granted only by the email
+ * allowlist (see isAdminEmail), so a request can never escalate into it.
+ */
+export async function switchActiveRole(userId: string, target: UserRole) {
+  const now = new Date().toISOString();
+
+  return updateStore((store) => {
+    const user = store.users.find((item) => item.id === userId);
+    if (!user) {
+      throw new Error("Account not found.");
+    }
+
+    if (target === "admin" && !isAdminEmail(user.email)) {
+      throw new Error("Admin access is not enabled for this email.");
+    }
+
+    // Allowlisted accounts are always admin, in either direction: they cannot
+    // grant themselves admin (handled above) and cannot drop out of it here.
+    // Letting them switch away would revoke their admin sessions and leave no
+    // route back, since admin is not a switchable target.
+    if (isAdminEmail(user.email) && target !== "admin") {
+      throw new Error("Admin access is managed by Kidcellence for this email.");
+    }
+
+    user.roles = [...new Set([...accountRoles(user), target])];
+    user.role = target;
+
+    if (target === "provider" && !store.providerProfiles[userId]) {
+      // Unlike signup, a switched-in listing starts unpublished so a settings
+      // toggle never pushes an unfinished profile into search.
+      store.providerProfiles[userId] = {
+        ...createStarterProviderProfile(user, now),
+        published: false,
+      };
+    }
+
+    if (target === "parent" && !store.parentProfiles[userId]) {
+      store.parentProfiles[userId] = {
+        userId,
+        fullName: user.name,
+        dateOfBirth: "",
+        nationality: "",
+        location: user.location ?? "",
+        phone: user.phone ?? "",
+        bio: "",
+        children: [],
+        savedAt: now,
+      };
+    }
+
+    // The role is sealed into the session token, so a stale cookie would keep
+    // the old role until it expired. Revoke every existing session and issue a
+    // fresh one carrying the new role. This runs even when the target role was
+    // already active, so a no-op switch still leaves exactly one live token.
+    const staleTokens = store.sessions
+      .filter((item) => item.userId === userId)
+      .map((item) => item.token);
+    store.revokedSessionTokens = [
+      ...new Set([...(store.revokedSessionTokens ?? []), ...staleTokens]),
+    ];
+    store.sessions = store.sessions.filter((item) => item.userId !== userId);
+
+    const session = createSession(user);
+    store.sessions = store.sessions
+      .filter((item) => new Date(item.expiresAt).getTime() > Date.now())
+      .concat(session);
+
+    return { user: publicUser(user), session };
+  });
 }
 
 type ProviderAnalyticsEvent = "profile-view" | "enquiry" | "message-received";
