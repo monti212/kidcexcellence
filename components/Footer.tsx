@@ -39,7 +39,7 @@ export default function Footer() {
               Providers
             </h4>
             <ul className="space-y-2 text-sm text-white/72">
-              <li><Link href="/auth" className="hover:text-white">List a service</Link></li>
+              <li><Link href="/auth?role=provider" className="hover:text-white">List a service</Link></li>
               <li><Link href="/safety" className="hover:text-white">Verification standard</Link></li>
               <li><Link href="/search?category=schools" className="hover:text-white">Schools</Link></li>
               <li><Link href="/search?category=nannies" className="hover:text-white">Nannies</Link></li>

@@ -39,12 +39,23 @@ function providerUploads(store: Awaited<ReturnType<typeof readStore>>, userId: s
   return store.uploads.filter((upload) => upload.userId === userId);
 }
 
+function createdWithinDays(createdAt: string, days: number) {
+  const created = new Date(createdAt).getTime();
+  if (Number.isNaN(created)) return false;
+
+  const since = new Date();
+  since.setHours(0, 0, 0, 0);
+  since.setDate(since.getDate() - (days - 1));
+  return created >= since.getTime();
+}
+
 function dashboardPayload(
   store: Awaited<ReturnType<typeof readStore>>,
   admin: { name: string; email: string }
 ) {
-  const registeredProviders = store.users
-    .filter((user) => user.role === "provider")
+  const providerUsers = store.users.filter((user) => user.role === "provider");
+  const parentUsers = store.users.filter((user) => user.role === "parent");
+  const registeredProviders = providerUsers
     .map((user) => {
       const profile = store.providerProfiles[user.id];
       const uploads = providerUploads(store, user.id);
@@ -122,8 +133,12 @@ function dashboardPayload(
     registeredProviders,
     stats: {
       totalProviders: accountProvidersFromStore(store).length,
-      totalParents: store.users.filter((user) => user.role === "parent").length,
-      registeredProviders: store.users.filter((user) => user.role === "provider").length,
+      totalParents: parentUsers.length,
+      registeredProviders: providerUsers.length,
+      providerSignupsToday: providerUsers.filter((user) => createdWithinDays(user.createdAt, 1)).length,
+      providerSignupsLast7Days: providerUsers.filter((user) => createdWithinDays(user.createdAt, 7)).length,
+      parentSignupsToday: parentUsers.filter((user) => createdWithinDays(user.createdAt, 1)).length,
+      parentSignupsLast7Days: parentUsers.filter((user) => createdWithinDays(user.createdAt, 7)).length,
     },
     platformAnalytics: platformAnalyticsSummary(store),
     admin,

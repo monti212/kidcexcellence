@@ -432,6 +432,10 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(queuePayload.platformAnalytics.todayVisitors, 2);
     assert.equal(queuePayload.platformAnalytics.todayPageViews, 3);
     assert.ok(queuePayload.platformAnalytics.topPages.some((page) => page.path === "/search"));
+    assert.equal(typeof queuePayload.stats.providerSignupsToday, "number");
+    assert.equal(typeof queuePayload.stats.providerSignupsLast7Days, "number");
+    assert.equal(typeof queuePayload.stats.parentSignupsToday, "number");
+    assert.equal(typeof queuePayload.stats.parentSignupsLast7Days, "number");
     assert.equal(queuePayload.admin.email, "admin-test@example.com");
 
     const decision = await request("/api/admin/verifications", {
@@ -673,12 +677,55 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(signup.status, 200);
     const cookie = cookieFrom(signup);
 
+    const signupCounterAdminLogin = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "login",
+        role: "admin",
+        email: "admin-test@example.com",
+        password: "password123",
+      }),
+    });
+    assert.equal(signupCounterAdminLogin.status, 200);
+    const signupCounterAdminCookie = cookieFrom(signupCounterAdminLogin);
+    const signupCounterAdminDashboard = await request("/api/admin/verifications", {
+      headers: { Cookie: signupCounterAdminCookie },
+    });
+    assert.equal(signupCounterAdminDashboard.status, 200);
+    const signupCounterAdminDashboardPayload = await json(signupCounterAdminDashboard);
+    assert.ok(signupCounterAdminDashboardPayload.stats.registeredProviders >= 1);
+    assert.ok(signupCounterAdminDashboardPayload.stats.providerSignupsToday >= 1);
+    assert.ok(signupCounterAdminDashboardPayload.stats.providerSignupsLast7Days >= 1);
+
     const starterDiscovery = await request("/api/providers?q=Integration%20Provider");
     assert.equal(starterDiscovery.status, 200);
     const starterDiscoveryPayload = await json(starterDiscovery);
     assert.equal(starterDiscoveryPayload.providers.length, 1);
     assert.equal(starterDiscoveryPayload.providers[0].name, "Integration Provider");
     assert.equal(starterDiscoveryPayload.providers[0].price, 0);
+
+    const signupStore = JSON.parse(await readFile(env.PLATFORM_STORE_PATH, "utf8"));
+    const signedUpProvider = signupStore.users.find((user) => user.email === email);
+    assert.ok(signedUpProvider);
+    delete signupStore.providerProfiles[signedUpProvider.id];
+    await writeFile(
+      env.PLATFORM_STORE_PATH,
+      `${JSON.stringify(signupStore, null, 2)}\n`,
+      "utf8"
+    );
+
+    const backfilledDiscovery = await request("/api/providers?q=Integration%20Provider");
+    assert.equal(backfilledDiscovery.status, 200);
+    const backfilledDiscoveryPayload = await json(backfilledDiscovery);
+    assert.equal(backfilledDiscoveryPayload.providers.length, 1);
+    assert.equal(backfilledDiscoveryPayload.providers[0].name, "Integration Provider");
+    assert.ok(
+      backfilledDiscoveryPayload.categories.find((category) => category.id === "schools").count >= 1
+    );
 
     await rm(env.PLATFORM_STORE_PATH, { force: true });
     const restoredSession = await request("/api/auth", {

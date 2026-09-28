@@ -547,18 +547,25 @@ async function persistStore(store: PlatformStore) {
 
 function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
   const initial = createInitialStore();
-  const providerProfiles = Object.fromEntries(
+  const users = (store.users ?? initial.users).map((user) => ({
+    ...user,
+    roles: accountRoles(user),
+  }));
+  const providerProfiles: Record<string, ProviderProfileRecord> = Object.fromEntries(
     Object.entries(store.providerProfiles ?? {}).map(([userId, profile]) => [
       userId,
       {
         ...profile,
         userId,
         displayName: profile.displayName ?? "",
+        category: profile.category ?? "schools",
         location: profile.location ?? "",
         bio: profile.bio ?? "",
         phone: profile.phone ?? "",
         whatsapp: profile.whatsapp ?? "",
-        services: profile.services ?? [],
+        services: profile.services?.length
+          ? profile.services
+          : [getCategoryLabel(profile.category ?? "schools")],
         experience: profile.experience ?? "",
         availability: profile.availability ?? "",
         price: profile.price ?? "",
@@ -578,7 +585,8 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
         vision: profile.vision ?? "",
         values: profile.values ?? "",
         medicalAids: profile.medicalAids ?? "",
-        published: profile.published ?? false,
+        liveIn: profile.liveIn ?? false,
+        published: profile.published ?? true,
         verificationStatus: profile.verificationStatus ?? "not_submitted",
         verificationPaymentStatus: profile.verificationPaymentStatus ?? "unpaid",
         verificationFeeAmount: profile.verificationFeeAmount,
@@ -587,14 +595,24 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
         verificationPaymentReference: profile.verificationPaymentReference,
         verificationPackageId: profile.verificationPackageId,
         verificationPackageName: profile.verificationPackageName,
+        feeRows: profile.feeRows ?? [],
+        savedAt:
+          profile.savedAt ??
+          users.find((user) => user.id === userId)?.createdAt ??
+          new Date().toISOString(),
       },
     ])
-  );
+  ) as Record<string, ProviderProfileRecord>;
+  users.forEach((user) => {
+    if (user.role === "provider" && !providerProfiles[user.id]) {
+      providerProfiles[user.id] = createStarterProviderProfile(
+        user,
+        user.createdAt || new Date().toISOString()
+      );
+    }
+  });
   return {
-    users: (store.users ?? initial.users).map((user) => ({
-      ...user,
-      roles: accountRoles(user),
-    })),
+    users,
     sessions: store.sessions ?? initial.sessions,
     revokedSessionTokens: store.revokedSessionTokens ?? initial.revokedSessionTokens,
     accountTokens: store.accountTokens ?? initial.accountTokens,

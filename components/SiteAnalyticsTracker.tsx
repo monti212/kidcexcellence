@@ -26,17 +26,14 @@ export function SiteAnalyticsTracker() {
 
   useEffect(() => {
     if (!pathname || pathname.startsWith("/admin")) return;
-    const controller = new AbortController();
 
     fetch("/api/analytics", {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ visitorId: visitorId(), pathname }),
-      signal: controller.signal,
+      keepalive: true,
     }).catch(() => undefined);
-
-    return () => controller.abort();
   }, [pathname]);
 
   return null;

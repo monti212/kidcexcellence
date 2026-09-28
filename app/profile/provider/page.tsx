@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -312,6 +312,11 @@ function ProviderProfileContent() {
   const [uploads, setUploads] = useState<ProviderUpload[]>([]);
   const [feeRows, setFeeRows] = useState<FeeRow[]>(storedProfile.feeRows);
   const [analytics, setAnalytics] = useState<ProviderAnalytics>(DEFAULT_PROVIDER_ANALYTICS);
+  const providerProfileHasLocalEditsRef = useRef(false);
+
+  const markProviderProfileEdited = useCallback(() => {
+    providerProfileHasLocalEditsRef.current = true;
+  }, []);
 
   const isSchool = ["schools", "nurseries"].includes(category);
   const isIndividualCare = ["nannies", "helpers", "babysitters"].includes(category);
@@ -424,6 +429,9 @@ function ProviderProfileContent() {
       ...(payload.analytics ?? {}),
       daily: Array.isArray(payload.analytics?.daily) ? payload.analytics.daily : [],
     });
+    if (providerProfileHasLocalEditsRef.current) {
+      return;
+    }
     if (!payload.profile) {
       setDisplayName(user?.name ?? "");
       setCategory(requestedVettingCategory || user?.category || DEFAULT_PROVIDER_PROFILE.category);
@@ -628,6 +636,7 @@ function ProviderProfileContent() {
 
     const payload = await response.json();
     const savedProfile = { ...nextProfile, ...payload.profile };
+    providerProfileHasLocalEditsRef.current = false;
     setStoredProfile(savedProfile);
     setPublished(Boolean(payload.profile.published));
     setVerificationStatus(payload.profile.verificationStatus ?? "not_submitted");
@@ -1112,12 +1121,16 @@ function ProviderProfileContent() {
               </div>
 
               {isIndividualCare && (
-                <div className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:grid-cols-2">
+                <div
+                  onChange={markProviderProfileEdited}
+                  className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:grid-cols-2"
+                >
                   <div>
                     <Label className="text-sm font-medium text-[var(--brand-ink)]">Age</Label>
                     <Input
-                      type="number"
-                      min="18"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={age}
                       onChange={(event) => setAge(event.target.value)}
                       placeholder="e.g. 32"
@@ -1127,9 +1140,10 @@ function ProviderProfileContent() {
                   <div>
                     <Label className="text-sm font-medium text-[var(--brand-ink)]">Availability / resume work date</Label>
                     <Input
-                      type="date"
+                      type="text"
                       value={workStartDate}
                       onChange={(event) => setWorkStartDate(event.target.value)}
+                      placeholder="e.g. 01/10/2026"
                       className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
                     />
                   </div>
@@ -1137,9 +1151,10 @@ function ProviderProfileContent() {
                     <Label className="text-sm font-medium text-[var(--brand-ink)]">Stay arrangement</Label>
                     <Select
                       value={stayArrangement}
-                      onValueChange={(value) =>
-                        setStayArrangement(value === "stay-in" ? "stay-in" : "stay-out")
-                      }
+                      onValueChange={(value) => {
+                        markProviderProfileEdited();
+                        setStayArrangement(value === "stay-in" ? "stay-in" : "stay-out");
+                      }}
                     >
                       <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
                         <SelectValue />
@@ -1152,7 +1167,13 @@ function ProviderProfileContent() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-[var(--brand-ink)]">Do you have kids?</Label>
-                    <Select value={hasChildren} onValueChange={(value) => setHasChildren(value === "yes" ? "yes" : "no")}>
+                    <Select
+                      value={hasChildren}
+                      onValueChange={(value) => {
+                        markProviderProfileEdited();
+                        setHasChildren(value === "yes" ? "yes" : "no");
+                      }}
+                    >
                       <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
                         <SelectValue />
                       </SelectTrigger>
@@ -1166,8 +1187,9 @@ function ProviderProfileContent() {
                     <div>
                       <Label className="text-sm font-medium text-[var(--brand-ink)]">Number of kids</Label>
                       <Input
-                        type="number"
-                        min="1"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={childrenCount}
                         onChange={(event) => setChildrenCount(event.target.value)}
                         placeholder="e.g. 2"
@@ -1182,7 +1204,10 @@ function ProviderProfileContent() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setWillingToRelocate(!willingToRelocate)}
+                      onClick={() => {
+                        markProviderProfileEdited();
+                        setWillingToRelocate(!willingToRelocate);
+                      }}
                       className="text-[var(--brand-leaf)]"
                       aria-label={willingToRelocate ? "Disable relocation" : "Enable relocation"}
                     >
@@ -1196,8 +1221,9 @@ function ProviderProfileContent() {
                   <div>
                     <Label className="text-sm font-medium text-[var(--brand-ink)]">Years of work experience</Label>
                     <Input
-                      type="number"
-                      min="0"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={yearsExperience}
                       onChange={(event) => setYearsExperience(event.target.value)}
                       placeholder="e.g. 5"
