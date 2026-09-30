@@ -227,7 +227,8 @@ export function accountProvidersFromStore(store: {
 }) {
   return store.users.flatMap((user) => {
     const profile = store.providerProfiles[user.id];
-    if (user.role !== "provider" || !profile?.published) return [];
+    const hasProviderRole = user.role === "provider" || user.roles?.includes("provider");
+    if (!hasProviderRole || !profile?.published) return [];
     return [
       buildAccountProvider(
         user,

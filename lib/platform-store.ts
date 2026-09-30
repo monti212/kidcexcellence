@@ -604,7 +604,7 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
     ])
   ) as Record<string, ProviderProfileRecord>;
   users.forEach((user) => {
-    if (user.role === "provider" && !providerProfiles[user.id]) {
+    if (accountRoles(user).includes("provider") && !providerProfiles[user.id]) {
       providerProfiles[user.id] = createStarterProviderProfile(
         user,
         user.createdAt || new Date().toISOString()

@@ -1378,6 +1378,16 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(backToParentPayload.user.role, "parent");
     assert.deepEqual(backToParentPayload.user.roles.sort(), ["parent", "provider"]);
 
+    const visibleWhileParentActive = await json(await request("/api/providers"));
+    assert.equal(
+      visibleWhileParentActive.providers.some(
+        (provider) =>
+          provider.email === email && provider.name === "Switched Provider Listing"
+      ),
+      true,
+      "a published provider profile must remain visible even when parent is the active role"
+    );
+
     // Provider-only write surfaces reject the account while parent is active.
     // (The provider profile GET is scoped to the caller's own record and is
     // not role-gated, so it stays readable by design.)

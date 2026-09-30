@@ -53,7 +53,9 @@ function dashboardPayload(
   store: Awaited<ReturnType<typeof readStore>>,
   admin: { name: string; email: string }
 ) {
-  const providerUsers = store.users.filter((user) => user.role === "provider");
+  const providerUsers = store.users.filter(
+    (user) => user.role === "provider" || user.roles?.includes("provider")
+  );
   const parentUsers = store.users.filter((user) => user.role === "parent");
   const registeredProviders = providerUsers
     .map((user) => {
