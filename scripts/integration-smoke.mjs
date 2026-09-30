@@ -1234,10 +1234,10 @@ describe("Kidcellence platform APIs", () => {
       }),
     });
     assert.equal(unpublish.status, 200);
-    assert.equal((await json(unpublish)).publicId, null);
+    assert.equal((await json(unpublish)).publicId, profilePayload.publicId);
 
-    const hiddenProvider = await request(`/api/providers/${profilePayload.publicId}`);
-    assert.equal(hiddenProvider.status, 404);
+    const stillVisibleProvider = await request(`/api/providers/${profilePayload.publicId}`);
+    assert.equal(stillVisibleProvider.status, 200);
   });
   it("switches active account type between parent and provider without losing provider data", async () => {
     const email = `switcher-${Date.now()}@example.com`;
@@ -1336,8 +1336,8 @@ describe("Kidcellence platform APIs", () => {
     const searchResults = await json(await request("/api/providers"));
     assert.equal(
       searchResults.providers.some((provider) => provider.email === email),
-      false,
-      "an unpublished switched provider must not appear in search"
+      true,
+      "a signed-up provider should appear in search even while their starter profile is unpublished"
     );
 
     const publish = await request("/api/profiles/provider", {

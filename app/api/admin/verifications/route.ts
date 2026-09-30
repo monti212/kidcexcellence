@@ -54,10 +54,30 @@ function dashboardPayload(
   admin: { name: string; email: string }
 ) {
   const providerUsers = store.users.filter(
-    (user) => user.role === "provider" || user.roles?.includes("provider")
+    (user) =>
+      user.role === "provider" ||
+      user.roles?.includes("provider") ||
+      Boolean(store.providerProfiles[user.id]) ||
+      Boolean(user.category)
   );
+  const providerUserIds = new Set(providerUsers.map((user) => user.id));
+  const profileOnlyProviderUsers = Object.values(store.providerProfiles)
+    .filter((profile) => !providerUserIds.has(profile.userId))
+    .map((profile) => ({
+      id: profile.userId,
+      role: "provider" as const,
+      roles: ["provider" as const],
+      name: profile.displayName || "Provider",
+      email: "",
+      phone: profile.phone,
+      location: profile.location,
+      category: profile.category,
+      passwordHash: "",
+      createdAt: profile.savedAt,
+    }));
+  const allProviderUsers = [...providerUsers, ...profileOnlyProviderUsers];
   const parentUsers = store.users.filter((user) => user.role === "parent");
-  const registeredProviders = providerUsers
+  const registeredProviders = allProviderUsers
     .map((user) => {
       const profile = store.providerProfiles[user.id];
       const uploads = providerUploads(store, user.id);
@@ -136,9 +156,9 @@ function dashboardPayload(
     stats: {
       totalProviders: accountProvidersFromStore(store).length,
       totalParents: parentUsers.length,
-      registeredProviders: providerUsers.length,
-      providerSignupsToday: providerUsers.filter((user) => createdWithinDays(user.createdAt, 1)).length,
-      providerSignupsLast7Days: providerUsers.filter((user) => createdWithinDays(user.createdAt, 7)).length,
+      registeredProviders: allProviderUsers.length,
+      providerSignupsToday: allProviderUsers.filter((user) => createdWithinDays(user.createdAt, 1)).length,
+      providerSignupsLast7Days: allProviderUsers.filter((user) => createdWithinDays(user.createdAt, 7)).length,
       parentSignupsToday: parentUsers.filter((user) => createdWithinDays(user.createdAt, 1)).length,
       parentSignupsLast7Days: parentUsers.filter((user) => createdWithinDays(user.createdAt, 7)).length,
     },

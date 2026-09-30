@@ -311,7 +311,7 @@ function AdminDashboard() {
             { label: "Provider Signups Today", value: stats.providerSignupsToday, icon: <UserPlus className="w-5 h-5 text-sky-600" />, bg: "bg-sky-50", border: "border-sky-100" },
             { label: "Provider Signups 7 Days", value: stats.providerSignupsLast7Days, icon: <UserPlus className="w-5 h-5 text-violet-500" />, bg: "bg-violet-50", border: "border-violet-100" },
             { label: "Registered Providers", value: stats.registeredProviders, icon: <Users className="w-5 h-5 text-indigo-500" />, bg: "bg-indigo-50", border: "border-indigo-100" },
-            { label: "Published Providers", value: stats.totalProviders, icon: <Users className="w-5 h-5 text-blue-500" />, bg: "bg-blue-50", border: "border-blue-100" },
+            { label: "Visible Provider Listings", value: stats.totalProviders, icon: <Users className="w-5 h-5 text-blue-500" />, bg: "bg-blue-50", border: "border-blue-100" },
             { label: "Parent Signups Today", value: stats.parentSignupsToday, icon: <UserPlus className="w-5 h-5 text-emerald-600" />, bg: "bg-emerald-50", border: "border-emerald-50" },
             { label: "Parents 7 Days", value: stats.parentSignupsLast7Days, icon: <Users className="w-5 h-5 text-teal-600" />, bg: "bg-teal-50", border: "border-teal-100" },
             { label: "Verified Providers", value: approvedProviders.length, icon: <CheckCircle2 className="w-5 h-5 text-green-500" />, bg: "bg-green-50", border: "border-green-100" },

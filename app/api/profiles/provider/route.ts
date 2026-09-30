@@ -284,6 +284,6 @@ export async function POST(request: Request) {
       profile.displayName || auth.user.name,
       auth.session.userId
     ),
-    publicId: profile.published ? `account-${userId}` : null,
+    publicId: `account-${userId}`,
   });
 }

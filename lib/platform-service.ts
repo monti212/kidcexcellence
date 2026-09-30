@@ -217,6 +217,18 @@ export function buildAccountProvider(
   };
 }
 
+function userCanListAsProvider(
+  user: PlatformUser,
+  providerProfiles: Record<string, ProviderProfileRecord>
+) {
+  return (
+    user.role === "provider" ||
+    user.roles?.includes("provider") ||
+    Boolean(providerProfiles[user.id]) ||
+    Boolean(user.category)
+  );
+}
+
 export function accountProvidersFromStore(store: {
   users: PlatformUser[];
   providerProfiles: Record<string, ProviderProfileRecord>;
@@ -225,10 +237,11 @@ export function accountProvidersFromStore(store: {
     approvedProviders: ApprovedVerification[];
   };
 }) {
-  return store.users.flatMap((user) => {
+  const listedProviderIds = new Set<string>();
+  const accountProviders = store.users.flatMap((user) => {
     const profile = store.providerProfiles[user.id];
-    const hasProviderRole = user.role === "provider" || user.roles?.includes("provider");
-    if (!hasProviderRole || !profile?.published) return [];
+    if (!userCanListAsProvider(user, store.providerProfiles) || !profile) return [];
+    listedProviderIds.add(user.id);
     return [
       buildAccountProvider(
         user,
@@ -242,6 +255,37 @@ export function accountProvidersFromStore(store: {
       ),
     ];
   });
+
+  const profileOnlyProviders = Object.entries(store.providerProfiles).flatMap(
+    ([userId, profile]) => {
+      if (listedProviderIds.has(userId)) return [];
+      return [
+        buildAccountProvider(
+          {
+            id: userId,
+            role: "provider",
+            roles: ["provider"],
+            name: profile.displayName || "Provider",
+            email: "",
+            phone: profile.phone,
+            location: profile.location,
+            category: profile.category,
+            passwordHash: "",
+            createdAt: profile.savedAt,
+          },
+          profile,
+          store.uploads,
+          providerIsApproved(
+            store.verifications.approvedProviders,
+            profile.displayName,
+            userId
+          )
+        ),
+      ];
+    }
+  );
+
+  return [...accountProviders, ...profileOnlyProviders];
 }
 
 export function allProvidersFromStore(store: {
