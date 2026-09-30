@@ -324,6 +324,15 @@ type PlatformStorageDriver = "filesystem" | "netlify-blobs";
 
 export function platformStorageDriver(): PlatformStorageDriver {
   const configuredDriver = process.env.PLATFORM_STORAGE_DRIVER?.trim().toLowerCase();
+
+  if (
+    process.env.NETLIFY === "true" &&
+    configuredDriver === "filesystem" &&
+    process.env.PLATFORM_ALLOW_NETLIFY_FILESYSTEM_STORAGE !== "true"
+  ) {
+    return "netlify-blobs";
+  }
+
   if (configuredDriver === "netlify-blobs") return "netlify-blobs";
   if (configuredDriver === "filesystem") return "filesystem";
 
