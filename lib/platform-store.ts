@@ -322,6 +322,40 @@ const UPLOAD_BLOB_PREFIX = "uploads/";
 const BLOB_PATH_PREFIX = "blob:";
 type PlatformStorageDriver = "filesystem" | "netlify-blobs";
 
+/**
+ * Whether Netlify Blobs is actually usable in this process.
+ *
+ * `@netlify/blobs` resolves its credentials from `globalThis.netlifyBlobsContext`
+ * or `NETLIFY_BLOBS_CONTEXT` and throws `MissingBlobsEnvironmentError` from
+ * `getStore()` when neither is present. Reading the same signal here means the
+ * driver follows what the runtime can really do, rather than depending on
+ * `PLATFORM_STORAGE_DRIVER` surviving into the function environment.
+ */
+function netlifyBlobsAvailable() {
+  return Boolean(
+    (globalThis as { netlifyBlobsContext?: unknown }).netlifyBlobsContext ||
+      process.env.NETLIFY_BLOBS_CONTEXT ||
+      process.env.NETLIFY === "true"
+  );
+}
+
+/**
+ * True when the filesystem store would land somewhere that does not survive a
+ * cold start. `runtimeDataRoot` only falls back to the OS temp directory in
+ * production when neither `PLATFORM_STORE_PATH` nor `PLATFORM_DATA_DIR` is set,
+ * so an explicitly configured path (a mounted volume, or the test harness) is
+ * never treated as ephemeral.
+ */
+function ephemeralFilesystemStore() {
+  return (
+    process.env.NODE_ENV === "production" &&
+    !process.env.PLATFORM_STORE_PATH &&
+    !process.env.PLATFORM_DATA_DIR
+  );
+}
+
+let warnedAboutEphemeralOverride = false;
+
 export function platformStorageDriver(): PlatformStorageDriver {
   const configuredDriver = process.env.PLATFORM_STORAGE_DRIVER?.trim().toLowerCase();
 
@@ -334,11 +368,48 @@ export function platformStorageDriver(): PlatformStorageDriver {
   }
 
   if (configuredDriver === "netlify-blobs") return "netlify-blobs";
-  if (configuredDriver === "filesystem") return "filesystem";
 
-  if (process.env.NETLIFY === "true") return "netlify-blobs";
+  if (configuredDriver === "filesystem") {
+    // Honouring this would write every signup to storage that is wiped on the
+    // next cold start, losing accounts silently. Durable storage wins instead.
+    if (ephemeralFilesystemStore() && netlifyBlobsAvailable()) {
+      if (!warnedAboutEphemeralOverride) {
+        warnedAboutEphemeralOverride = true;
+        console.warn(
+          "[platform-store] PLATFORM_STORAGE_DRIVER=filesystem resolves to an " +
+            "ephemeral path in production. Using Netlify Blobs instead to avoid " +
+            "silent data loss. Set PLATFORM_STORE_PATH to a durable volume to " +
+            "keep filesystem storage."
+        );
+      }
+      return "netlify-blobs";
+    }
+    return "filesystem";
+  }
+
+  if (netlifyBlobsAvailable()) return "netlify-blobs";
 
   return "filesystem";
+}
+
+/**
+ * Fails fast when the only storage available is ephemeral. Accepting writes
+ * into a directory that disappears is worse than refusing them: signups look
+ * successful, sessions keep working through cookie rehydration, and the data is
+ * gone by the next request.
+ */
+function assertDurableStorage(driver: PlatformStorageDriver) {
+  if (driver !== "filesystem") return;
+  if (!ephemeralFilesystemStore()) return;
+  if (process.env.PLATFORM_ALLOW_EPHEMERAL_STORE === "true") return;
+
+  throw new Error(
+    "Refusing to use ephemeral storage in production: the platform store would " +
+      `be written to ${storePath}, which does not survive a cold start. Set ` +
+      "PLATFORM_STORAGE_DRIVER=netlify-blobs (on Netlify), or point " +
+      "PLATFORM_STORE_PATH at a durable volume. Set " +
+      "PLATFORM_ALLOW_EPHEMERAL_STORE=true only for throwaway local runs."
+  );
 }
 
 function shouldUseNetlifyBlobs() {
@@ -545,6 +616,8 @@ function normalizePlatformAnalyticsRecord(
 }
 
 async function persistStore(store: PlatformStore) {
+  assertDurableStorage(platformStorageDriver());
+
   if (shouldUseNetlifyBlobs()) {
     await platformBlobStore().setJSON(PLATFORM_STORE_BLOB_KEY, store);
     return;
@@ -679,6 +752,8 @@ async function readFilesystemStoreSnapshot() {
 }
 
 export async function readStore(): Promise<PlatformStore> {
+  assertDurableStorage(platformStorageDriver());
+
   if (shouldUseNetlifyBlobs()) {
     const stored = await platformBlobStore().get(PLATFORM_STORE_BLOB_KEY, {
       type: "json",

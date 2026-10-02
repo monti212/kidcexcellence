@@ -173,6 +173,7 @@ function AdminDashboard() {
   } = adminState;
   const [searchQuery, setSearchQuery] = useState("");
   const [actionError, setActionError] = useState("");
+  const [dashboardError, setDashboardError] = useState("");
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [lastDashboardRefreshAt, setLastDashboardRefreshAt] = useState<Date | null>(null);
   const filteredApprovedProviders = approvedProviders.filter((provider) =>
@@ -185,10 +186,26 @@ function AdminDashboard() {
       cache: "no-store",
     }).catch(() => null);
     const payload = response?.ok ? await response.json().catch(() => null) : null;
+
+    // Without this, a failed request leaves the dashboard on its all-zero
+    // default, which is indistinguishable from a platform that genuinely has no
+    // providers, parents or traffic. Say so instead of reporting zeros.
     if (payload) {
       setAdminState(payload);
+      setDashboardError("");
       setLastDashboardRefreshAt(new Date());
+    } else if (!response) {
+      setDashboardError(
+        "Could not reach the server, so these figures are out of date."
+      );
+    } else {
+      const failure = await response.json().catch(() => null);
+      setDashboardError(
+        failure?.error ??
+          `The dashboard could not be loaded (HTTP ${response.status}), so these figures are out of date.`
+      );
     }
+
     setDashboardLoading(false);
   }, []);
 
@@ -436,6 +453,12 @@ function AdminDashboard() {
               )}
             </div>
           </div>
+
+          {dashboardError && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
+              {dashboardError}
+            </div>
+          )}
 
           {actionError && (
             <div className="mb-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">

@@ -1567,4 +1567,75 @@ describe("Kidcellence platform APIs", () => {
     assert.deepEqual(withNewCookie.user.roles, ["parent"]);
   });
 
+  it("reports dashboard load failures instead of showing zeroed metrics", async () => {
+    const adminSource = await readFile(
+      path.join(process.cwd(), "app", "admin", "page.tsx"),
+      "utf8"
+    );
+
+    // A failed refresh must not leave the all-zero default on screen looking
+    // like real data. The client has to distinguish "request failed" from
+    // "genuinely zero" (this is client state, so it is not in the server HTML).
+    assert.match(adminSource, /setDashboardError/);
+    assert.match(adminSource, /dashboardError &&/);
+    const refreshBody = adminSource.slice(
+      adminSource.indexOf("const refreshDashboard"),
+      adminSource.indexOf("useEffect(() => {")
+    );
+    assert.match(refreshBody, /else if \(!response\)/);
+    assert.match(refreshBody, /response\.status/);
+    assert.match(refreshBody, /setDashboardError\(""\)/);
+
+    // The guard that refuses ephemeral production storage must cover both the
+    // read and the write path, so a misconfigured deploy cannot quietly accept
+    // signups into storage that disappears.
+    const storeSource = await readFile(
+      path.join(process.cwd(), "lib", "platform-store.ts"),
+      "utf8"
+    );
+    assert.equal(
+      storeSource.match(/assertDurableStorage\(platformStorageDriver\(\)\)/g)?.length,
+      2
+    );
+    // Blob availability must be read from the runtime signal @netlify/blobs
+    // itself uses, not from PLATFORM_STORAGE_DRIVER alone.
+    assert.match(storeSource, /NETLIFY_BLOBS_CONTEXT/);
+    // An explicitly configured store path is durable and must never be
+    // treated as ephemeral (the test harness and mounted volumes rely on it).
+    assert.match(storeSource, /!process\.env\.PLATFORM_STORE_PATH/);
+  });
+
+  it("keeps serving the admin dashboard while the store stays durable", async () => {
+    const email = "admin-test@example.com";
+    const login = await request("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({
+        mode: "login",
+        role: "admin",
+        email,
+        password: "password123",
+      }),
+    });
+    assert.equal(login.status, 200);
+    const cookie = cookieFrom(login);
+
+    // This suite sets PLATFORM_STORE_PATH, so the durability guard must stay
+    // out of the way and the dashboard must report real counts.
+    const dashboard = await request("/api/admin/verifications", {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(dashboard.status, 200);
+    const payload = await json(dashboard);
+    assert.equal(typeof payload.stats.totalParents, "number");
+    assert.equal(typeof payload.stats.registeredProviders, "number");
+    assert.ok(
+      payload.stats.registeredProviders > 0,
+      "earlier tests registered providers, so this must not read zero"
+    );
+  });
+
 });
