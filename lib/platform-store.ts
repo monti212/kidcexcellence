@@ -354,8 +354,6 @@ function ephemeralFilesystemStore() {
   );
 }
 
-let warnedAboutEphemeralOverride = false;
-
 export function platformStorageDriver(): PlatformStorageDriver {
   const configuredDriver = process.env.PLATFORM_STORAGE_DRIVER?.trim().toLowerCase();
 
@@ -369,24 +367,11 @@ export function platformStorageDriver(): PlatformStorageDriver {
 
   if (configuredDriver === "netlify-blobs") return "netlify-blobs";
 
-  if (configuredDriver === "filesystem") {
-    // Honouring this would write every signup to storage that is wiped on the
-    // next cold start, losing accounts silently. Durable storage wins instead.
-    if (ephemeralFilesystemStore() && netlifyBlobsAvailable()) {
-      if (!warnedAboutEphemeralOverride) {
-        warnedAboutEphemeralOverride = true;
-        console.warn(
-          "[platform-store] PLATFORM_STORAGE_DRIVER=filesystem resolves to an " +
-            "ephemeral path in production. Using Netlify Blobs instead to avoid " +
-            "silent data loss. Set PLATFORM_STORE_PATH to a durable volume to " +
-            "keep filesystem storage."
-        );
-      }
-      return "netlify-blobs";
-    }
-    return "filesystem";
-  }
+  if (configuredDriver === "filesystem") return "filesystem";
 
+  // Covers the case the check above cannot see: a runtime where NETLIFY is not
+  // set but blobs are configured, so PLATFORM_STORAGE_DRIVER never arriving
+  // does not silently mean ephemeral local storage.
   if (netlifyBlobsAvailable()) return "netlify-blobs";
 
   return "filesystem";
@@ -402,6 +387,7 @@ function assertDurableStorage(driver: PlatformStorageDriver) {
   if (driver !== "filesystem") return;
   if (!ephemeralFilesystemStore()) return;
   if (process.env.PLATFORM_ALLOW_EPHEMERAL_STORE === "true") return;
+  if (process.env.PLATFORM_ALLOW_NETLIFY_FILESYSTEM_STORAGE === "true") return;
 
   throw new Error(
     "Refusing to use ephemeral storage in production: the platform store would " +
