@@ -1638,4 +1638,88 @@ describe("Kidcellence platform APIs", () => {
     );
   });
 
+  it("lets an admin remove a provider account and its listing", async () => {
+    const email = `spam-provider-${Date.now()}@example.com`;
+    const signup = await request("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: baseUrl },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "provider",
+        name: "Spam Provider",
+        email,
+        password: "password123",
+        category: "schools",
+        location: "Gaborone",
+      }),
+    });
+    assert.equal(signup.status, 200);
+    const providerCookie = cookieFrom(signup);
+    const providerUserId = (await json(signup)).user.id;
+
+    const listedBefore = await json(await request("/api/providers"));
+    assert.equal(listedBefore.providers.some((provider) => provider.email === email), true);
+
+    const adminLogin = await request("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: baseUrl },
+      body: JSON.stringify({
+        mode: "login",
+        role: "admin",
+        email: "admin-test@example.com",
+        password: "password123",
+      }),
+    });
+    assert.equal(adminLogin.status, 200);
+    const adminCookie = cookieFrom(adminLogin);
+    const adminUserId = (await json(adminLogin)).user.id;
+
+    const removeBody = (userId) => ({
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", Cookie: adminCookie, Origin: baseUrl },
+      body: JSON.stringify({ userId }),
+    });
+
+    const nonAdmin = await request("/api/admin/verifications", {
+      ...removeBody(providerUserId),
+      headers: { "Content-Type": "application/json", Cookie: providerCookie, Origin: baseUrl },
+    });
+    assert.equal(nonAdmin.status, 401);
+
+    const crossOrigin = await request("/api/admin/verifications", {
+      ...removeBody(providerUserId),
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: adminCookie,
+        Origin: "https://evil.example",
+      },
+    });
+    assert.equal(crossOrigin.status, 403);
+
+    const self = await request("/api/admin/verifications", removeBody(adminUserId));
+    assert.equal(self.status, 403, "an admin must not be able to remove themselves");
+
+    const removed = await request("/api/admin/verifications", removeBody(providerUserId));
+    assert.equal(removed.status, 200);
+    const dashboard = await json(removed);
+    assert.equal(
+      dashboard.registeredProviders.some((provider) => provider.userId === providerUserId),
+      false
+    );
+
+    const listedAfter = await json(await request("/api/providers"));
+    assert.equal(listedAfter.providers.some((provider) => provider.email === email), false);
+
+    // The cookie is self-contained, so removal must stop it rehydrating the account.
+    const staleSession = await json(
+      await request("/api/auth", { headers: { Cookie: providerCookie } })
+    );
+    assert.equal(staleSession.user, null);
+    const listedAfterStaleCookie = await json(await request("/api/providers"));
+    assert.equal(listedAfterStaleCookie.providers.some((provider) => provider.email === email), false);
+
+    const again = await request("/api/admin/verifications", removeBody(providerUserId));
+    assert.equal(again.status, 404);
+  });
+
 });

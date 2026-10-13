@@ -19,6 +19,7 @@ import {
   ExternalLink,
   FileText,
   UserPlus,
+  Trash2,
 } from "lucide-react";
 import {
   type ApprovedVerification,
@@ -261,6 +262,28 @@ function AdminDashboard() {
       return;
     }
     setActionError("Admin session required. Please sign in again.");
+  };
+
+  const removeProvider = async (provider: AdminRegisteredProvider) => {
+    const confirmed = window.confirm(
+      `Permanently remove ${provider.name} (${provider.email || "no email"})?\n\n` +
+        "This deletes their account, listing, uploads and conversations. It cannot be undone."
+    );
+    if (!confirmed) return;
+
+    setActionError("");
+    const response = await fetch("/api/admin/verifications", {
+      method: "DELETE",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: provider.userId }),
+    }).catch(() => null);
+    if (response?.ok) {
+      setAdminState(await response.json());
+      return;
+    }
+    const payload = await response?.json().catch(() => null);
+    setActionError(payload?.error ?? "Could not remove provider. Please sign in again.");
   };
 
   const categoryIcon = (category: string) =>
@@ -673,6 +696,15 @@ function AdminDashboard() {
                           </div>
                         )}
                       </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => removeProvider(provider)}
+                        className="shrink-0 rounded-full border-[var(--brand-coral)] text-[var(--brand-coral)] hover:bg-[var(--brand-coral)] hover:text-white"
+                      >
+                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                        Remove
+                      </Button>
                     </div>
                   </div>
                 );

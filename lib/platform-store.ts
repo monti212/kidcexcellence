@@ -273,6 +273,11 @@ export interface PlatformStore {
   users: PlatformUser[];
   sessions: PlatformSession[];
   revokedSessionTokens: string[];
+  /**
+   * Accounts an admin has removed. Session cookies are self-contained, so a
+   * removed user's cookie would otherwise rehydrate them into the store.
+   */
+  removedUserIds: string[];
   accountTokens: AccountTokenRecord[];
   parentProfiles: Record<string, ParentProfileRecord>;
   providerProfiles: Record<string, ProviderProfileRecord>;
@@ -415,6 +420,7 @@ function createInitialStore(): PlatformStore {
     users: [],
     sessions: [],
     revokedSessionTokens: [],
+    removedUserIds: [],
     accountTokens: [],
     parentProfiles: {},
     providerProfiles: {},
@@ -683,6 +689,7 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
     users,
     sessions: store.sessions ?? initial.sessions,
     revokedSessionTokens: store.revokedSessionTokens ?? initial.revokedSessionTokens,
+    removedUserIds: store.removedUserIds ?? initial.removedUserIds,
     accountTokens: store.accountTokens ?? initial.accountTokens,
     parentProfiles: Object.fromEntries(
       Object.entries(store.parentProfiles ?? {}).map(([userId, profile]) => [
@@ -1182,6 +1189,7 @@ export async function getSessionByToken(token?: string | null) {
   }
 
   if (!signedSession) return null;
+  if (store.removedUserIds.includes(signedSession.user.id)) return null;
 
   await updateStore((nextStore) => {
     if (!nextStore.users.some((item) => item.id === signedSession.user.id)) {
@@ -1906,6 +1914,66 @@ export async function appendConversationMessage(input: {
       conversation: conversationForViewer(conversation, input.viewerUserId),
     };
   });
+}
+
+/**
+ * Admin-only hard delete of a provider account and everything tied to it.
+ * Admin accounts cannot be removed this way.
+ */
+export async function removeProviderAccount(userId: string) {
+  const result = await updateStore((store) => {
+    const user = store.users.find((item) => item.id === userId);
+    const profile = store.providerProfiles[userId];
+    if (!user && !profile) return { status: "not_found" as const };
+    if (user && (accountRoles(user).includes("admin") || isAdminEmail(user.email))) {
+      return { status: "forbidden" as const };
+    }
+
+    const uploadPaths = store.uploads
+      .filter((upload) => upload.userId === userId)
+      .map((upload) => upload.path);
+    const sessionTokens = store.sessions
+      .filter((session) => session.userId === userId)
+      .map((session) => session.token);
+
+    store.users = store.users.filter((item) => item.id !== userId);
+    store.sessions = store.sessions.filter((session) => session.userId !== userId);
+    store.revokedSessionTokens = [
+      ...new Set([...store.revokedSessionTokens, ...sessionTokens]),
+    ];
+    store.removedUserIds = [...new Set([...store.removedUserIds, userId])];
+    store.accountTokens = store.accountTokens.filter((token) => token.userId !== userId);
+    delete store.parentProfiles[userId];
+    delete store.providerProfiles[userId];
+    delete store.providerAnalytics[userId];
+    store.uploads = store.uploads.filter((upload) => upload.userId !== userId);
+    store.conversations = store.conversations.filter(
+      (conversation) =>
+        conversation.parentUserId !== userId &&
+        conversation.providerUserId !== userId &&
+        conversation.providerId !== `account-${userId}`
+    );
+    store.verifications.pendingProviders = store.verifications.pendingProviders.filter(
+      (item) => item.userId !== userId
+    );
+    store.verifications.approvedProviders = store.verifications.approvedProviders.filter(
+      (item) => item.userId !== userId
+    );
+
+    return {
+      status: "removed" as const,
+      name: profile?.displayName || user?.name || "Provider",
+      uploadPaths,
+    };
+  });
+
+  if (result.status === "removed") {
+    await Promise.all(
+      result.uploadPaths.map((storagePath) => deleteUploadFile(storagePath).catch(() => undefined))
+    );
+  }
+
+  return result;
 }
 
 export async function decideVerification(id: string, action: "approve" | "reject") {

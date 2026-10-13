@@ -5,6 +5,7 @@ import {
   getSessionFromRequest,
   platformAnalyticsSummary,
   readStore,
+  removeProviderAccount,
 } from "@/lib/platform-store";
 import { accountProvidersFromStore, getCategoryLabel } from "@/lib/platform-service";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -219,6 +220,48 @@ export async function PATCH(request: Request) {
   }
 
   await decideVerification(String(body.id), action);
+  const store = await readStore();
+  return NextResponse.json(dashboardPayload(store, auth.user));
+}
+
+export async function DELETE(request: Request) {
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
+  }
+
+  const auth = await requireAdmin(request);
+  if (!auth) {
+    return NextResponse.json({ error: "Admin authentication required" }, { status: 401 });
+  }
+
+  const rateLimit = consumeRateLimit({
+    key: `admin-verification-mutation:${auth.session.userId}`,
+    limit: 30,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: "Too many admin actions. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfter) } }
+    );
+  }
+
+  const body = await request.json().catch(() => null);
+  if (!body?.userId) {
+    return NextResponse.json({ error: "Provider userId is required" }, { status: 400 });
+  }
+  if (String(body.userId) === auth.session.userId) {
+    return NextResponse.json({ error: "You cannot remove your own account" }, { status: 403 });
+  }
+
+  const result = await removeProviderAccount(String(body.userId));
+  if (result.status === "not_found") {
+    return NextResponse.json({ error: "Provider not found" }, { status: 404 });
+  }
+  if (result.status === "forbidden") {
+    return NextResponse.json({ error: "Admin accounts cannot be removed" }, { status: 403 });
+  }
+
   const store = await readStore();
   return NextResponse.json(dashboardPayload(store, auth.user));
 }
