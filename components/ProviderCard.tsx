@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, MapPin, MessageCircle, Star } from "lucide-react";
 import type { Provider } from "@/lib/mock-data";
 import { getCategoryIcon, getCategoryLabel } from "@/lib/platform-service";
+import { getService } from "@/lib/services";
 
 interface ProviderCardProps {
   provider: Provider;
@@ -11,19 +12,15 @@ interface ProviderCardProps {
   inCompare?: boolean;
 }
 
-const categoryStyles: Record<string, string> = {
-  schools: "bg-[rgba(84,178,191,0.16)] text-[var(--brand-sky)]",
-  nurseries: "bg-[rgba(255,204,47,0.24)] text-[#8a6500]",
-  nannies: "bg-[rgba(240,90,60,0.14)] text-[var(--brand-coral)]",
-  helpers: "bg-[rgba(84,178,191,0.16)] text-[var(--brand-sky)]",
-  babysitters: "bg-[rgba(255,204,47,0.24)] text-[#8a6500]",
-  "kiddies-transport": "bg-[rgba(84,178,191,0.16)] text-[var(--brand-sky)]",
-  "pediatric-clinics": "bg-[rgba(84,178,191,0.16)] text-[var(--brand-sky)]",
-  tutors: "bg-[rgba(240,90,60,0.14)] text-[var(--brand-coral)]",
+const toneStyles = {
+  sky: "bg-[rgba(84,178,191,0.16)] text-[var(--brand-sky)]",
+  gold: "bg-[rgba(255,204,47,0.24)] text-[#8a6500]",
+  coral: "bg-[rgba(240,90,60,0.14)] text-[var(--brand-coral)]",
 };
 
 export default function ProviderCard({ provider, onAddToCompare, inCompare }: ProviderCardProps) {
   const categoryIcon = getCategoryIcon(provider.category);
+  const categoryTone = getService(provider.category)?.tone;
   const hasPrice = provider.price > 0;
   const filledStars = Math.round(provider.rating);
 
@@ -36,7 +33,7 @@ export default function ProviderCard({ provider, onAddToCompare, inCompare }: Pr
           </div>
         </div>
         <div className="absolute left-3 top-3">
-          <Badge className={`rounded-md border-0 text-xs font-black ${categoryStyles[provider.category] ?? "bg-white text-[var(--brand-ink)]"}`}>
+          <Badge className={`rounded-md border-0 text-xs font-black ${categoryTone ? toneStyles[categoryTone] : "bg-white text-[var(--brand-ink)]"}`}>
             {getCategoryLabel(provider.category)}
           </Badge>
         </div>

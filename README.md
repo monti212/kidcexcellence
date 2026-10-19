@@ -19,6 +19,12 @@ Kidcellence is a Botswana childcare marketplace for parents and care providers. 
 
 The JSON store is suitable for local development and early demos. For production traffic, replace it with a managed database adapter while keeping the current API contracts stable.
 
+## Services
+
+Every provider category (nannies, schools, postpartum nurse care, …) is one
+entry in `lib/services.ts`. Adding a service means adding an entry there; see
+"Adding a service" in `AGENTS.md` for the checklist.
+
 ## Local Setup
 
 ```bash

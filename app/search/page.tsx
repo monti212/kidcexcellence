@@ -23,7 +23,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import ProviderCard from "@/components/ProviderCard";
-import type { Category, Provider } from "@/lib/mock-data";
+import type { Provider } from "@/lib/mock-data";
+import type { ServiceDefinition } from "@/lib/services";
 import {
   filterProviderList,
   getAdditionalPlatformCategories,
@@ -93,7 +94,7 @@ function SearchPageContent() {
     (selectedLocation !== "All Locations" ? 1 : 0) +
     (maxPrice < 10000 ? 1 : 0);
 
-  const renderCategoryFilter = (cat: Category) => (
+  const renderCategoryFilter = (cat: ServiceDefinition) => (
     <div key={cat.id} className="flex items-center gap-2">
       <Checkbox
         id={cat.id}

@@ -4,6 +4,7 @@ import {
   getCategoryById,
 } from "@/lib/platform-service";
 import { readStore } from "@/lib/platform-store";
+import { publicServiceSummary } from "@/lib/services";
 
 export async function GET(
   _request: Request,
@@ -17,8 +18,10 @@ export async function GET(
     return NextResponse.json({ error: "Provider not found" }, { status: 404 });
   }
 
+  const category = getCategoryById(provider.category);
+
   return NextResponse.json({
     provider,
-    category: getCategoryById(provider.category),
+    category: category ? publicServiceSummary(category) : undefined,
   });
 }

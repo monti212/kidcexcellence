@@ -10,6 +10,7 @@ import {
 import { providerIsApproved } from "@/lib/platform-service";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import { isPriceUnit, isServiceId, sanitizeServiceDetails } from "@/lib/services";
 
 export const runtime = "nodejs";
 
@@ -194,13 +195,21 @@ export async function POST(request: Request) {
     );
   }
 
+  const category = body.profile.category ?? "schools";
+  if (!isServiceId(category)) {
+    return NextResponse.json(
+      { error: "Choose a provider category from the list." },
+      { status: 400 }
+    );
+  }
+
   const currentStore = await readStore();
   const currentProfile = currentStore.providerProfiles[userId];
   const verificationStatus = currentProfile?.verificationStatus ?? "not_submitted";
   const requestedPublish = Boolean(body.profile.published);
   const normalized = {
     displayName: String(body.profile.displayName ?? auth.user.name).trim(),
-    category: String(body.profile.category ?? "schools"),
+    category,
     location: String(body.profile.location ?? auth.user.location ?? "").trim(),
     bio: String(body.profile.bio ?? "").trim(),
     phone: String(body.profile.phone ?? auth.user.phone ?? "").trim(),
@@ -214,9 +223,7 @@ export async function POST(request: Request) {
     experience: String(body.profile.experience ?? "").trim(),
     availability: String(body.profile.availability ?? "").trim(),
     price: String(body.profile.price ?? "").trim(),
-    priceUnit: ["monthly", "per day", "per hour", "termly"].includes(body.profile.priceUnit)
-      ? (body.profile.priceUnit as "monthly" | "per day" | "per hour" | "termly")
-      : "termly",
+    priceUnit: isPriceUnit(body.profile.priceUnit) ? body.profile.priceUnit : "termly",
     age: String(body.profile.age ?? "").trim(),
     stayArrangement: body.profile.stayArrangement === "stay-in" ? "stay-in" as const : "stay-out" as const,
     hasChildren: body.profile.hasChildren === "yes" ? "yes" as const : body.profile.hasChildren === "no" ? "no" as const : undefined,
@@ -237,6 +244,7 @@ export async function POST(request: Request) {
     vision: String(body.profile.vision ?? "").trim(),
     values: String(body.profile.values ?? "").trim(),
     medicalAids: String(body.profile.medicalAids ?? "").trim(),
+    serviceDetails: sanitizeServiceDetails(category, body.profile.serviceDetails),
     liveIn: Boolean(body.profile.liveIn),
     published: requestedPublish,
     verificationStatus,

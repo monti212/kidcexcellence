@@ -1,11 +1,11 @@
+import { PROVIDERS, type Provider } from "@/lib/mock-data";
 import {
-  ADDITIONAL_PLATFORM_CATEGORIES,
-  CATEGORIES,
-  CORE_SERVICE_CATEGORIES,
-  PROVIDERS,
-  getCategoryDisplayName,
-  type Provider,
-} from "@/lib/mock-data";
+  ADDITIONAL_SERVICES,
+  CORE_SERVICES,
+  SERVICES,
+  getService,
+  sanitizeServiceDetails,
+} from "@/lib/services";
 import type {
   PlatformUploadRecord,
   PlatformUser,
@@ -45,28 +45,32 @@ export interface ApprovedVerification {
 }
 
 export function getCategories() {
-  return CATEGORIES;
+  return SERVICES;
 }
 
 export function getCoreServiceCategories() {
-  return CORE_SERVICE_CATEGORIES;
+  return CORE_SERVICES;
 }
 
 export function getAdditionalPlatformCategories() {
-  return ADDITIONAL_PLATFORM_CATEGORIES;
+  return ADDITIONAL_SERVICES;
 }
 
 export function getCategoryById(id: string) {
-  return CATEGORIES.find((category) => category.id === id);
+  return getService(id);
 }
 
-export function getCategoryIcon(categoryId: string) {
-  return getCategoryById(categoryId)?.icon ?? "✨";
+/** Resolves a category id, or the label stored on verification records. */
+function getCategoryByIdOrLabel(value: string) {
+  return getService(value) ?? SERVICES.find((service) => service.label === value);
+}
+
+export function getCategoryIcon(categoryIdOrLabel: string) {
+  return getCategoryByIdOrLabel(categoryIdOrLabel)?.icon ?? "✨";
 }
 
 export function getCategoryLabel(categoryId: string) {
-  const category = getCategoryById(categoryId);
-  return category ? getCategoryDisplayName(category) : categoryId;
+  return getCategoryById(categoryId)?.label ?? categoryId;
 }
 
 export function getProviderById(id: string) {
@@ -109,6 +113,7 @@ export function filterProviderList(
         provider.name.toLowerCase().includes(normalizedQuery) ||
         provider.location.toLowerCase().includes(normalizedQuery) ||
         provider.category.toLowerCase().includes(normalizedQuery) ||
+        getCategoryLabel(provider.category).toLowerCase().includes(normalizedQuery) ||
         provider.services.some((service) => service.toLowerCase().includes(normalizedQuery))
     );
   }
@@ -162,6 +167,9 @@ export function buildAccountProvider(
       upload.documentKey === "company-profile"
   );
   const profilePrice = Number(profile.price) || 0;
+  // Stay-in, own kids, and relocation are household-care questions; every
+  // profile stores defaults for them, so only show them where they were asked.
+  const isCareWorker = getService(profile.category)?.profileTemplate === "care-worker";
 
   return {
     id: `account-${user.id}`,
@@ -181,10 +189,10 @@ export function buildAccountProvider(
         )}`,
     coverImage: coverImage ? `/api/uploads/${coverImage.id}` : undefined,
     age: Number(profile.age) || undefined,
-    stayArrangement: profile.stayArrangement,
-    hasChildren: profile.hasChildren,
-    willingToRelocate: profile.willingToRelocate,
-    childrenCount: Number(profile.childrenCount) || undefined,
+    stayArrangement: isCareWorker ? profile.stayArrangement : undefined,
+    hasChildren: isCareWorker ? profile.hasChildren : undefined,
+    willingToRelocate: isCareWorker ? profile.willingToRelocate : undefined,
+    childrenCount: isCareWorker ? Number(profile.childrenCount) || undefined : undefined,
     yearsExperience: Number(profile.yearsExperience) || undefined,
     references: profile.references,
     nextOfKin:
@@ -202,6 +210,7 @@ export function buildAccountProvider(
     values: profile.values,
     medicalAids: profile.medicalAids,
     companyProfileUrl: companyProfile ? `/api/uploads/${companyProfile.id}` : undefined,
+    serviceDetails: sanitizeServiceDetails(profile.category, profile.serviceDetails),
     services: profile.services,
     experience: profile.yearsExperience
       ? `${profile.yearsExperience} years${profile.experience ? ` · ${profile.experience}` : ""}`
