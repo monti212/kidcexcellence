@@ -201,6 +201,19 @@ const DEFAULT_PROVIDER_ANALYTICS: ProviderAnalytics = {
 
 type ProviderProfileTab = "basic" | "documents" | "pricing" | "gallery";
 
+// Module scope on purpose: an inline validator gets a new identity every
+// render, which re-creates setStoredProfile and refreshProviderProfile and
+// makes the profile fetch effect loop forever.
+function isStoredProviderProfile(value: unknown): value is StoredProviderProfile {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "category" in value &&
+    "liveIn" in value &&
+    "feeRows" in value
+  );
+}
+
 function isProviderProfileTab(value: string | null): value is ProviderProfileTab {
   return value === "basic" || value === "documents" || value === "pricing" || value === "gallery";
 }
@@ -241,12 +254,7 @@ function ProviderProfileContent() {
   const [storedProfile, setStoredProfile] = useLocalStorageState<StoredProviderProfile>(
     "kidcellence.provider.profile",
     DEFAULT_PROVIDER_PROFILE,
-    (value): value is StoredProviderProfile =>
-      typeof value === "object" &&
-      value !== null &&
-      "category" in value &&
-      "liveIn" in value &&
-      "feeRows" in value
+    isStoredProviderProfile
   );
   const [displayName, setDisplayName] = useState(storedProfile.displayName ?? "");
   const [category, setCategory] = useState(requestedVettingCategory || storedProfile.category);
