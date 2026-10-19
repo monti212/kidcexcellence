@@ -11,6 +11,7 @@ import {
 } from "@/lib/platform-store";
 import { consumeRateLimit, requestIp } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import { isServiceId } from "@/lib/services";
 
 export const runtime = "nodejs";
 
@@ -89,7 +90,7 @@ export async function POST(request: Request) {
       password,
       phone: typeof body?.phone === "string" ? body.phone : undefined,
       location: typeof body?.location === "string" ? body.location : undefined,
-      category: typeof body?.category === "string" ? body.category : undefined,
+      category: isServiceId(body?.category) ? body.category : undefined,
     });
     const response = NextResponse.json({
       user,

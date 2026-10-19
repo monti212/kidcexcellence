@@ -15,6 +15,7 @@ import {
   getSessionByToken,
   readStore,
 } from "@/lib/platform-store";
+import { serviceDetailEntries } from "@/lib/services";
 import {
   ArrowLeft,
   CalendarDays,
@@ -45,8 +46,10 @@ export default async function ProviderProfilePage({
   const auth = await getSessionByToken(sessionToken);
   const category = getCategoryById(provider.category);
   const categoryIcon = getCategoryIcon(provider.category);
-  const isSpecialist = ["pediatric-clinics", "pediatric-therapy", "child-psychologists"].includes(provider.category);
+  const isSpecialist = Boolean(category?.priceVisibleToParentsOnly);
   const canViewSpecialistPrice = !isSpecialist || auth?.user.role === "parent" || auth?.user.role === "admin";
+  const ServiceIcon = category?.Icon ?? ShieldCheck;
+  const serviceDetails = serviceDetailEntries(provider.category, provider.serviceDetails);
   const profileDetails = [
     provider.ownerFullName ? [UserRound, "Owner / contact person", provider.ownerFullName] : null,
     provider.age ? [UserRound, "Age", `${provider.age} years old`] : null,
@@ -75,6 +78,7 @@ export default async function ProviderProfilePage({
     provider.tradingHours ? [CalendarDays, "Trading hours", provider.tradingHours] : null,
     provider.numberPlate ? [Car, "Number plate", provider.numberPlate] : null,
     provider.prdp ? [ShieldCheck, "PRDP", provider.prdp] : null,
+    ...serviceDetails.map((detail) => [ServiceIcon, detail.label, detail.value]),
     [CalendarDays, "Availability", provider.availability],
     [ShieldCheck, "Experience", provider.experience],
   ].filter(Boolean) as Array<[typeof Star, string, string]>;
@@ -181,7 +185,7 @@ export default async function ProviderProfilePage({
               </div>
             </section>
 
-            {provider.fees && (
+            {provider.fees?.length ? (
               <section className="brand-card p-6">
                 <h2 className="text-2xl font-black text-[var(--brand-ink)]">Fee structure</h2>
                 <div className="mt-4 overflow-x-auto">
@@ -205,7 +209,7 @@ export default async function ProviderProfilePage({
                   </table>
                 </div>
               </section>
-            )}
+            ) : null}
 
             {(provider.mission || provider.vision || provider.values || provider.medicalAids || provider.references || provider.companyProfileUrl) && (
               <section className="brand-card p-6">

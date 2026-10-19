@@ -1,3 +1,5 @@
+import { SERVICES } from "@/lib/services";
+
 export type VettingPackageId = "standard" | "vip";
 
 export interface VettingPackage {
@@ -9,11 +11,9 @@ export interface VettingPackage {
   features: string[];
 }
 
-export const VETTING_PACKAGE_CATEGORIES = new Set([
-  "nannies",
-  "helpers",
-  "babysitters",
-]);
+export const VETTING_PACKAGE_CATEGORIES = new Set(
+  SERVICES.filter((service) => service.vettingPackages).map((service) => service.id)
+);
 
 export const VETTING_PACKAGES: VettingPackage[] = [
   {

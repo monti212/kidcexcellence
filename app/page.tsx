@@ -5,36 +5,24 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import ProviderCard from "@/components/ProviderCard";
 import { VETTING_PACKAGES } from "@/lib/vetting-packages";
+import type { Provider } from "@/lib/mock-data";
 import {
-  ADDITIONAL_PLATFORM_CATEGORIES,
-  CATEGORIES,
-  CORE_SERVICE_CATEGORY_COUNT,
-  CORE_SERVICE_CATEGORIES,
-  type Provider,
-} from "@/lib/mock-data";
+  ADDITIONAL_SERVICES,
+  CORE_SERVICES,
+  SERVICES,
+  getNestedServiceIds,
+  getService,
+  type ServiceSubcategory,
+} from "@/lib/services";
 import {
   ArrowRight,
-  Baby,
-  BookOpen,
-  Brain,
-  Car,
   CheckCircle2,
   ClipboardCheck,
-  Drama,
-  Handshake,
   HeartHandshake,
-  Hospital,
-  HouseHeart,
   MessageCircle,
-  PartyPopper,
-  School,
   ShieldCheck,
   Sparkles,
   Star,
-  Sprout,
-  Stethoscope,
-  Target,
-  UserRound,
 } from "lucide-react";
 
 const needCategoryStyles = [
@@ -56,30 +44,13 @@ const needCategoryStyles = [
   },
 ];
 
-const categoryIconMap: Record<string, typeof Baby> = {
-  babysitters: Baby,
-  nannies: UserRound,
-  helpers: HouseHeart,
-  schools: School,
-  nurseries: Sprout,
-  tutors: BookOpen,
-  "pediatric-clinics": Hospital,
-  "pediatric-therapy": Stethoscope,
-  "child-psychologists": Brain,
-  "after-school": Target,
-  "kiddies-transport": Car,
-  "kiddies-parties": PartyPopper,
-  agencies: Handshake,
-  "kiddies-entertainment": Drama,
-};
-
 function getVettingEnquiryHref(packageName: string, price: number) {
   const message = `Hi Kidcellence, I would like to enquire about the ${packageName} Vet With Us Package. The listed price is P${price}.`;
   return `https://wa.me/26775378699?text=${encodeURIComponent(message)}`;
 }
 
 function CategoryIcon({ categoryId }: { categoryId: string }) {
-  const Icon = categoryIconMap[categoryId] ?? HeartHandshake;
+  const Icon = getService(categoryId)?.Icon ?? HeartHandshake;
 
   return (
     <span className="grid h-12 w-12 place-items-center rounded-xl border border-[#fff6d3] text-[#fff6d3] shadow-sm">
@@ -89,7 +60,7 @@ function CategoryIcon({ categoryId }: { categoryId: string }) {
 }
 
 function CompactCategoryIcon({ categoryId }: { categoryId: string }) {
-  const Icon = categoryIconMap[categoryId] ?? HeartHandshake;
+  const Icon = getService(categoryId)?.Icon ?? HeartHandshake;
 
   return (
     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[rgba(84,178,191,0.2)] bg-[var(--brand-cream)] text-[var(--brand-sky)]">
@@ -101,7 +72,7 @@ function CompactCategoryIcon({ categoryId }: { categoryId: string }) {
 function CategorySubcategoryList({
   subcategories,
 }: {
-  subcategories: NonNullable<(typeof CATEGORIES)[number]["subcategories"]>;
+  subcategories: ServiceSubcategory[];
 }) {
   return (
     <div className="pointer-events-none absolute left-4 right-4 top-[7.25rem] z-[60] max-h-52 space-y-2 overflow-y-auto rounded-lg border border-[var(--brand-line)] bg-white p-3 opacity-0 shadow-lg transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-visible:pointer-events-auto group-focus-visible:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
@@ -153,11 +124,16 @@ export default function HomePage() {
     (provider) => provider.verified
   ).length;
   const categoryCounts = new Map(
-    CATEGORIES.map((category) => [
+    SERVICES.map((category) => [
       category.id,
       marketplaceProviders.filter((provider) => provider.category === category.id).length,
     ])
   );
+  const tileCount = (categoryId: string) =>
+    [categoryId, ...getNestedServiceIds(categoryId)].reduce(
+      (total, id) => total + (categoryCounts.get(id) ?? 0),
+      0
+    );
 
   return (
     <div className="brand-page">
@@ -221,7 +197,7 @@ export default function HomePage() {
             {[
               [String(marketplaceProviders.length), "listed providers"],
               [String(verifiedProviderCount), "verified profiles"],
-              [String(CORE_SERVICE_CATEGORY_COUNT), "service categories"],
+              [String(CORE_SERVICES.length), "service categories"],
             ].map(([value, label]) => (
               <div key={label} className="rounded-[1.5rem] border border-[var(--brand-line)] bg-white/80 p-4 shadow-sm">
                 <div className="text-2xl font-black text-[var(--brand-ink)]">{value}</div>
@@ -288,12 +264,9 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          {CORE_SERVICE_CATEGORIES.map((category, index) => {
+          {CORE_SERVICES.map((category, index) => {
             const accent = needCategoryStyles[index % needCategoryStyles.length];
-            const displayCount =
-              category.id === "schools"
-                ? (categoryCounts.get("schools") ?? 0) + (categoryCounts.get("nurseries") ?? 0)
-                : categoryCounts.get(category.id) ?? 0;
+            const displayCount = tileCount(category.id);
 
             return (
               <Link
@@ -316,7 +289,7 @@ export default function HomePage() {
         <div className="mt-8 border-t border-[var(--brand-line)] pt-6">
           <p className="brand-label">Additional options</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {ADDITIONAL_PLATFORM_CATEGORIES.map((category) => (
+            {ADDITIONAL_SERVICES.map((category) => (
               <Link
                 key={category.id}
                 href={`/search?category=${category.id}`}
@@ -328,7 +301,7 @@ export default function HomePage() {
                     <span className="text-sm font-black text-[var(--brand-ink)]">{category.name}</span>
                   </div>
                   <span className="text-xs font-bold text-[var(--brand-muted)]">
-                    {categoryCounts.get(category.id) ?? 0} providers
+                    {tileCount(category.id)} providers
                   </span>
                 </div>
               </Link>

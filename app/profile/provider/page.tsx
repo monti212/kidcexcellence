@@ -34,12 +34,20 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
-import { PROVIDER_CATEGORY_OPTIONS } from "@/lib/mock-data";
+import ServiceDetailFields from "@/components/ServiceDetailFields";
+import {
+  PRICE_UNITS,
+  PRICE_UNIT_ITEMS,
+  PROVIDER_CATEGORY_ITEMS,
+  PROVIDER_CATEGORY_OPTIONS,
+  getService,
+  isPriceUnit,
+  type PriceUnit,
+} from "@/lib/services";
 import { usePlatformSession } from "@/lib/use-platform-session";
 import {
   VERIFICATION_FEE,
   getVerificationDocuments,
-  getVerificationProviderType,
   missingVerificationProfileFields,
   missingVerificationDocuments,
 } from "@/lib/verification-requirements";
@@ -65,7 +73,7 @@ interface StoredProviderProfile {
   experience: string;
   availability: string;
   price: string;
-  priceUnit: "monthly" | "per day" | "per hour" | "termly";
+  priceUnit: PriceUnit;
   age?: string;
   stayArrangement?: "stay-in" | "stay-out";
   hasChildren?: "yes" | "no";
@@ -86,6 +94,7 @@ interface StoredProviderProfile {
   vision?: string;
   values?: string;
   medicalAids?: string;
+  serviceDetails?: Record<string, string>;
   liveIn: boolean;
   published: boolean;
   verificationStatus: "not_submitted" | "pending" | "approved" | "rejected";
@@ -201,6 +210,19 @@ const DEFAULT_PROVIDER_ANALYTICS: ProviderAnalytics = {
 
 type ProviderProfileTab = "basic" | "documents" | "pricing" | "gallery";
 
+// Module scope on purpose: an inline validator gets a new identity every
+// render, which re-creates setStoredProfile and refreshProviderProfile and
+// makes the profile fetch effect loop forever.
+function isStoredProviderProfile(value: unknown): value is StoredProviderProfile {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "category" in value &&
+    "liveIn" in value &&
+    "feeRows" in value
+  );
+}
+
 function isProviderProfileTab(value: string | null): value is ProviderProfileTab {
   return value === "basic" || value === "documents" || value === "pricing" || value === "gallery";
 }
@@ -241,12 +263,7 @@ function ProviderProfileContent() {
   const [storedProfile, setStoredProfile] = useLocalStorageState<StoredProviderProfile>(
     "kidcellence.provider.profile",
     DEFAULT_PROVIDER_PROFILE,
-    (value): value is StoredProviderProfile =>
-      typeof value === "object" &&
-      value !== null &&
-      "category" in value &&
-      "liveIn" in value &&
-      "feeRows" in value
+    isStoredProviderProfile
   );
   const [displayName, setDisplayName] = useState(storedProfile.displayName ?? "");
   const [category, setCategory] = useState(requestedVettingCategory || storedProfile.category);
@@ -285,6 +302,9 @@ function ProviderProfileContent() {
   const [vision, setVision] = useState(storedProfile.vision ?? "");
   const [values, setValues] = useState(storedProfile.values ?? "");
   const [medicalAids, setMedicalAids] = useState(storedProfile.medicalAids ?? "");
+  const [serviceDetails, setServiceDetails] = useState<Record<string, string>>(
+    storedProfile.serviceDetails ?? {}
+  );
   const [, setLiveIn] = useState(storedProfile.liveIn);
   const [published, setPublished] = useState(Boolean(storedProfile.published));
   const [verificationStatus, setVerificationStatus] = useState(
@@ -318,16 +338,17 @@ function ProviderProfileContent() {
     providerProfileHasLocalEditsRef.current = true;
   }, []);
 
-  const isSchool = ["schools", "nurseries"].includes(category);
-  const isIndividualCare = ["nannies", "helpers", "babysitters"].includes(category);
-  const isPediatric = ["pediatric-clinics", "pediatric-therapy", "child-psychologists"].includes(category);
-  const isTransport = category === "kiddies-transport";
-  const isParty = category === "kiddies-parties";
+  const service = getService(category);
+  const profileTemplate = service?.profileTemplate ?? "standard";
+  const isSchool = profileTemplate === "school";
+  const isIndividualCare = profileTemplate === "care-worker";
+  const isPediatric = profileTemplate === "pediatric";
+  const isTransport = profileTemplate === "transport";
+  const isParty = profileTemplate === "party";
   const documentUploads = uploads.filter((upload) => upload.type === "document");
   const galleryUploads = uploads.filter((upload) => upload.type === "gallery");
   const profileImageUpload = uploads.find((upload) => upload.type === "profile-image");
   const coverImageUpload = uploads.find((upload) => upload.type === "cover-image");
-  const verificationProviderType = getVerificationProviderType(category);
   const documents = getVerificationDocuments(category);
   const sensitiveDocuments = documents.filter((document) => document.sensitive);
   const standardDocuments = documents.filter((document) => !document.sensitive);
@@ -360,6 +381,7 @@ function ProviderProfileContent() {
       vision,
       values,
       medicalAids,
+      serviceDetails,
       feeRows,
     },
     {
@@ -486,6 +508,7 @@ function ProviderProfileContent() {
     setVision(payload.profile.vision ?? "");
     setValues(payload.profile.values ?? "");
     setMedicalAids(payload.profile.medicalAids ?? "");
+    setServiceDetails(payload.profile.serviceDetails ?? {});
     setLiveIn(Boolean(payload.profile.liveIn));
     setPublished(Boolean(payload.profile.published));
     setVerificationStatus(payload.profile.verificationStatus ?? "not_submitted");
@@ -528,6 +551,7 @@ function ProviderProfileContent() {
       vision: payload.profile.vision ?? "",
       values: payload.profile.values ?? "",
       medicalAids: payload.profile.medicalAids ?? "",
+      serviceDetails: payload.profile.serviceDetails ?? {},
       liveIn: Boolean(payload.profile.liveIn),
       published: Boolean(payload.profile.published),
       verificationStatus: payload.profile.verificationStatus ?? "not_submitted",
@@ -595,6 +619,7 @@ function ProviderProfileContent() {
       vision,
       values,
       medicalAids,
+      serviceDetails,
       liveIn: stayArrangement === "stay-in",
       published: nextPublished,
       verificationStatus,
@@ -1072,7 +1097,16 @@ function ProviderProfileContent() {
             <div className="bg-white rounded-lg border border-[var(--brand-line)] shadow-sm p-6 space-y-5">
               <div>
                 <Label className="text-sm font-medium text-[var(--brand-ink)]">Category</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v ?? "schools")}>
+                <Select
+                  items={PROVIDER_CATEGORY_ITEMS}
+                  value={category}
+                  onValueChange={(value) => {
+                    const nextCategory = value ?? "schools";
+                    const defaultUnit = getService(nextCategory)?.pricing?.defaultUnit;
+                    if (defaultUnit && !price) setPriceUnit(defaultUnit);
+                    setCategory(nextCategory);
+                  }}
+                >
                   <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
                     <SelectValue />
                   </SelectTrigger>
@@ -1342,12 +1376,23 @@ function ProviderProfileContent() {
                 </div>
               )}
 
+              {service?.detailFields?.length ? (
+                <ServiceDetailFields
+                  fields={service.detailFields}
+                  values={serviceDetails}
+                  onChange={(key, value) => {
+                    markProviderProfileEdited();
+                    setServiceDetails((previous) => ({ ...previous, [key]: value }));
+                  }}
+                />
+              ) : null}
+
               <div>
                 <Label className="text-sm font-medium text-[var(--brand-ink)]">Services</Label>
                 <Textarea
                   value={services}
                   onChange={(event) => setServices(event.target.value)}
-                  placeholder="Baby class, aftercare, holiday programme"
+                  placeholder={service?.servicesPlaceholder ?? "Baby class, aftercare, holiday programme"}
                   className="mt-1 resize-none rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
                   rows={3}
                 />
@@ -1527,14 +1572,7 @@ function ProviderProfileContent() {
 
               <div className="rounded-lg border border-[var(--brand-line)] bg-white p-4">
                 <div className="text-sm font-black text-[var(--brand-ink)]">
-                  Required documents for{" "}
-                  {verificationProviderType === "individual"
-                    ? "individual care providers"
-                    : isPediatric
-                      ? "paediatric specialists"
-                      : isSchool
-                        ? "schools and nurseries"
-                        : "organisations"}
+                  Required documents for {service?.verificationAudience ?? "organisations"}
                 </div>
                 <ul className="mt-3 space-y-2 text-xs text-[var(--brand-muted)]">
                   {documents.map((document) => {
@@ -1757,24 +1795,12 @@ function ProviderProfileContent() {
               ) : (
                 <div className="space-y-4">
                   <h3 className="mb-2 font-bold text-[var(--brand-ink)]">
-                    {isPediatric
-                      ? "Consultation price"
-                      : isTransport
-                        ? "Price per month"
-                        : isParty
-                          ? "Services and prices"
-                          : "Starting price"}
+                    {service?.pricing?.heading ?? "Starting price"}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-medium text-[var(--brand-ink)]">
-                        {isPediatric
-                          ? "Consultation price (BWP)"
-                          : isTransport
-                            ? "Monthly transport price (BWP)"
-                            : isParty
-                              ? "Starting package price (BWP)"
-                              : "Price (BWP)"}
+                        {service?.pricing?.inputLabel ?? "Price (BWP)"}
                       </Label>
                       <Input
                         type="number"
@@ -1788,19 +1814,19 @@ function ProviderProfileContent() {
                     <div>
                       <Label className="text-sm font-medium text-[var(--brand-ink)]">Billing unit</Label>
                       <Select
+                        items={PRICE_UNIT_ITEMS}
                         value={priceUnit}
-                        onValueChange={(value) =>
-                          setPriceUnit((value ?? "per hour") as StoredProviderProfile["priceUnit"])
-                        }
+                        onValueChange={(value) => setPriceUnit(isPriceUnit(value) ? value : "per hour")}
                       >
                         <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="per hour">Per hour</SelectItem>
-                          <SelectItem value="per day">Per day</SelectItem>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="termly">Termly</SelectItem>
+                          {PRICE_UNITS.map((unit) => (
+                            <SelectItem key={unit.value} value={unit.value}>
+                              {unit.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>

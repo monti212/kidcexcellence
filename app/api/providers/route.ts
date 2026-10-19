@@ -7,6 +7,7 @@ import {
   type ProviderSort,
 } from "@/lib/platform-service";
 import { readStore } from "@/lib/platform-store";
+import { publicServiceSummary } from "@/lib/services";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -19,11 +20,11 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     categories: getCoreServiceCategories().map((category) => ({
-      ...category,
+      ...publicServiceSummary(category),
       count: allProviders.filter((provider) => provider.category === category.id).length,
     })),
     additionalCategories: getAdditionalPlatformCategories().map((category) => ({
-      ...category,
+      ...publicServiceSummary(category),
       count: allProviders.filter((provider) => provider.category === category.id).length,
     })),
     providers: filterProviderList(allProviders, {

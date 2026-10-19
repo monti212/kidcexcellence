@@ -8,6 +8,7 @@ import {
   removeProviderAccount,
 } from "@/lib/platform-store";
 import { accountProvidersFromStore, getCategoryLabel } from "@/lib/platform-service";
+import { serviceDetailEntries } from "@/lib/services";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
 import {
@@ -126,6 +127,7 @@ function dashboardPayload(
               galleryCount: galleryImages.length,
             })
           : ["Saved provider profile"],
+        serviceDetails: serviceDetailEntries(category, profile?.serviceDetails),
       };
     })
     .sort((a, b) => {

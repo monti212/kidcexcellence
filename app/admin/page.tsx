@@ -22,6 +22,7 @@ import {
   Trash2,
 } from "lucide-react";
 import {
+  getCategoryIcon,
   type ApprovedVerification,
   type PendingVerification,
 } from "@/lib/platform-service";
@@ -82,6 +83,7 @@ interface AdminRegisteredProvider {
   uploads: AdminUpload[];
   missingDocuments: string[];
   missingProfileFields: string[];
+  serviceDetails: Array<{ key: string; label: string; value: string }>;
 }
 
 interface AdminState {
@@ -285,13 +287,6 @@ function AdminDashboard() {
     const payload = await response?.json().catch(() => null);
     setActionError(payload?.error ?? "Could not remove provider. Please sign in again.");
   };
-
-  const categoryIcon = (category: string) =>
-    category.toLowerCase().includes("nursery") ? "🌱"
-    : category.toLowerCase().includes("nanny") ? "👩‍👧"
-    : category.toLowerCase().includes("clinic") ? "🏥"
-    : category.toLowerCase().includes("tutor") ? "📚"
-    : "🏫";
 
   const statusBadgeClass = (status: AdminRegisteredProvider["verificationStatus"]) =>
     status === "approved" ? "bg-green-100 text-green-700"
@@ -505,7 +500,7 @@ function AdminDashboard() {
                 <div key={provider.id} className="border border-[var(--brand-line)] rounded-lg p-5 hover:border-emerald-200 transition-colors">
                   <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                     <div className="grid h-14 w-14 shrink-0 place-items-center rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] text-2xl">
-                      {categoryIcon(provider.category)}
+                      {getCategoryIcon(provider.category)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -632,7 +627,7 @@ function AdminDashboard() {
                   <div key={provider.userId} className="rounded-lg border border-[var(--brand-line)] p-5">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
                       <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] text-xl">
-                        {categoryIcon(provider.category)}
+                        {getCategoryIcon(provider.category)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
@@ -667,6 +662,17 @@ function AdminDashboard() {
                             {provider.published ? "Published listing" : "Draft listing"}
                           </Badge>
                         </div>
+
+                        {provider.serviceDetails.length > 0 && (
+                          <dl className="mt-4 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
+                            {provider.serviceDetails.map((detail) => (
+                              <div key={detail.key} className="flex gap-1.5">
+                                <dt className="font-black text-[var(--brand-ink)]">{detail.label}:</dt>
+                                <dd className="text-[var(--brand-muted)]">{detail.value}</dd>
+                              </div>
+                            ))}
+                          </dl>
+                        )}
 
                         {provider.uploads.length > 0 && (
                           <div className="mt-4 flex flex-wrap gap-2">

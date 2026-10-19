@@ -120,8 +120,6 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(homeMarkup.includes("500+"), false);
     assert.equal(homeMarkup.includes("reply tracking"), false);
     assert.equal(homeMarkup.includes("Live provider desk"), false);
-    assert.match(homeMarkup, />12<\/div><div[^>]*>\s*service categories/);
-    assert.equal(/>13<\/div><div[^>]*>\s*service categories/.test(homeMarkup), false);
     assert.match(homeMarkup, /href="\/privacy"/);
     assert.match(homeMarkup, /href="\/terms"/);
 
@@ -131,8 +129,22 @@ describe("Kidcellence platform APIs", () => {
 
     const providerIndex = await request("/api/providers");
     const providerIndexPayload = await json(providerIndex);
-    assert.equal(providerIndexPayload.categories.length, 12);
+    // The home page headline counts the same core services the API lists, so
+    // adding a service to lib/services.ts needs no change here.
+    const coreServiceCount = providerIndexPayload.categories.length;
+    assert.match(
+      homeMarkup,
+      new RegExp(`>${coreServiceCount}<\\/div><div[^>]*>\\s*service categories`)
+    );
+    const coreServiceIds = providerIndexPayload.categories.map((category) => category.id);
+    assert.ok(coreServiceIds.includes("postpartum-nurses"));
+    assert.equal(coreServiceIds.includes("nurseries"), false, "nurseries are discovered under schools");
     assert.equal(providerIndexPayload.additionalCategories.length, 1);
+    for (const category of providerIndexPayload.categories) {
+      for (const internalField of ["documents", "detailFields", "profileTemplate", "Icon"]) {
+        assert.equal(internalField in category, false, `${category.id} leaks ${internalField}`);
+      }
+    }
     const listedCategoryCount = [
       ...providerIndexPayload.categories,
       ...providerIndexPayload.additionalCategories,
@@ -1722,4 +1734,188 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(again.status, 404);
   });
 
+  it("onboards a postpartum nurse from the service catalogue alone", async () => {
+    const email = `postpartum-nurse-${Date.now()}@example.com`;
+    const signup = await request("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: baseUrl },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "provider",
+        name: "Integration Nurse",
+        email,
+        password: "password123",
+        category: "postpartum-nurses",
+        location: "Gaborone",
+      }),
+    });
+    assert.equal(signup.status, 200);
+    const cookie = cookieFrom(signup);
+    const userId = (await json(signup)).user.id;
+
+    const starter = await json(
+      await request("/api/profiles/provider", { headers: { Cookie: cookie } })
+    );
+    assert.equal(starter.profile.category, "postpartum-nurses");
+    assert.equal(starter.profile.priceUnit, "per visit", "starter profile uses the service's default unit");
+    assert.deepEqual(starter.profile.serviceDetails, {});
+
+    const requirements = await json(
+      await request("/api/verifications", { headers: { Cookie: cookie } })
+    );
+    assert.equal(requirements.providerType, "individual");
+    assert.deepEqual(requirements.packages, [], "nurses pay the flat verification fee");
+    const documentKeys = requirements.requiredDocuments.map((document) => document.key);
+    for (const key of [
+      "certified-id",
+      "nursing-registration-certificate",
+      "nursing-practising-certificate",
+      "nursing-qualifications",
+      "police-clearance",
+    ]) {
+      assert.ok(documentKeys.includes(key), `missing required document ${key}`);
+    }
+    for (const field of ["NMCB registration number", "Registered as", "Rate"]) {
+      assert.ok(requirements.missingProfileFields.includes(field), `expected ${field} to be required`);
+    }
+
+    const saveProfile = (profile) =>
+      request("/api/profiles/provider", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Cookie: cookie, Origin: baseUrl },
+        body: JSON.stringify({ profile }),
+      });
+    const profile = {
+      displayName: "Integration Nurse",
+      category: "postpartum-nurses",
+      location: "Gaborone",
+      bio: "Registered midwife supporting mothers in the first weeks after birth.",
+      phone: "+267 71 000 333",
+      services: ["Postnatal check-ups", "Breastfeeding support"],
+      price: "450",
+      priceUnit: "per visit",
+      published: true,
+      feeRows: [],
+      serviceDetails: {
+        nurseRegistrationNumber: "  RM 00123  ",
+        nursingQualification: "Registered Midwife",
+        careArrangement: "Not a listed option",
+        injectedField: "should be dropped",
+      },
+    };
+    const saved = await saveProfile(profile);
+    assert.equal(saved.status, 200);
+    const savedPayload = await json(saved);
+    assert.equal(savedPayload.profile.priceUnit, "per visit");
+    assert.deepEqual(savedPayload.profile.serviceDetails, {
+      nurseRegistrationNumber: "RM 00123",
+      nursingQualification: "Registered Midwife",
+    });
+
+    const listing = await json(await request(`/api/providers/${savedPayload.publicId}`));
+    assert.equal(listing.category.label, "Postpartum Nurse Care");
+    assert.equal("documents" in listing.category, false);
+    assert.deepEqual(listing.provider.serviceDetails, savedPayload.profile.serviceDetails);
+    assert.equal(listing.provider.stayArrangement, undefined, "household-care fields stay off nurse listings");
+    assert.equal(listing.provider.hasChildren, undefined);
+
+    const publicPage = await request(`/provider/${savedPayload.publicId}`);
+    assert.equal(publicPage.status, 200);
+    const publicMarkup = await publicPage.text();
+    assert.match(publicMarkup, /NMCB registration number/);
+    assert.match(publicMarkup, /RM 00123/);
+    assert.equal(publicMarkup.includes("Fee structure"), false);
+
+    const searchPayload = await json(await request("/api/providers?q=postpartum%20nurse"));
+    assert.ok(searchPayload.providers.some((provider) => provider.email === email));
+
+    const stillMissing = await json(
+      await request("/api/verifications", { headers: { Cookie: cookie } })
+    );
+    assert.equal(stillMissing.missingProfileFields.includes("NMCB registration number"), false);
+    assert.equal(stillMissing.missingProfileFields.includes("Rate"), false);
+    assert.ok(stillMissing.missingProfileFields.includes("Care offered"));
+    assert.ok(stillMissing.missingProfileFields.includes("Years of postnatal care experience"));
+
+    const adminLogin = await request("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: baseUrl },
+      body: JSON.stringify({
+        mode: "login",
+        role: "admin",
+        email: "admin-test@example.com",
+        password: "password123",
+      }),
+    });
+    assert.equal(adminLogin.status, 200);
+    const dashboard = await json(
+      await request("/api/admin/verifications", { headers: { Cookie: cookieFrom(adminLogin) } })
+    );
+    const adminRow = dashboard.registeredProviders.find((provider) => provider.userId === userId);
+    assert.equal(adminRow.category, "Postpartum Nurse Care");
+    assert.deepEqual(
+      adminRow.serviceDetails.map((detail) => [detail.label, detail.value]),
+      [
+        ["NMCB registration number", "RM 00123"],
+        ["Registered as", "Registered Midwife"],
+      ]
+    );
+
+    const unknownCategory = await saveProfile({ ...profile, category: "made-up-service" });
+    assert.equal(unknownCategory.status, 400);
+  });
+});
+
+describe("Service catalogue", () => {
+  const canImportTypeScript = Boolean(process.features?.typescript);
+
+  it(
+    "keeps every service definition internally consistent",
+    { skip: canImportTypeScript ? false : "needs a Node version that runs TypeScript (22.18+)" },
+    async () => {
+      const { SERVICES, PRICE_UNITS, CORE_SERVICES } = await import(
+        new URL("../lib/services.ts", import.meta.url)
+      );
+      const unitValues = new Set(PRICE_UNITS.map((unit) => unit.value));
+      const ids = SERVICES.map((service) => service.id);
+      assert.equal(new Set(ids).size, ids.length, "service ids must be unique");
+      assert.ok(CORE_SERVICES.length > 0);
+
+      for (const service of SERVICES) {
+        const where = `service ${service.id}`;
+        assert.match(service.id, /^[a-z0-9]+(-[a-z0-9]+)*$/, `${where}: id must be a slug`);
+        for (const key of ["name", "label", "icon", "verificationAudience"]) {
+          assert.ok(service[key]?.trim(), `${where}: ${key} is required`);
+        }
+        assert.ok(service.Icon, `${where}: Icon is required`);
+        assert.ok(service.documents.length > 0, `${where}: needs at least one verification document`);
+        const documentKeys = service.documents.map((document) => document.key);
+        assert.equal(new Set(documentKeys).size, documentKeys.length, `${where}: duplicate document key`);
+
+        if (service.placement === "nested") {
+          const parent = SERVICES.find((candidate) => candidate.id === service.parentId);
+          assert.ok(parent, `${where}: nested services need a parentId that exists`);
+          assert.notEqual(parent.placement, "nested", `${where}: parent must be listed itself`);
+        } else {
+          assert.equal(service.parentId, undefined, `${where}: only nested services take a parentId`);
+        }
+
+        if (service.pricing?.defaultUnit) {
+          assert.ok(unitValues.has(service.pricing.defaultUnit), `${where}: unknown default price unit`);
+        }
+
+        const fields = service.detailFields ?? [];
+        const fieldKeys = fields.map((field) => field.key);
+        assert.equal(new Set(fieldKeys).size, fieldKeys.length, `${where}: duplicate detail field key`);
+        for (const field of fields) {
+          assert.match(field.key, /^[a-z][A-Za-z0-9]*$/, `${where}: detail field keys are camelCase`);
+          if (field.type === "select") {
+            assert.ok(field.options?.length, `${where}: select field ${field.key} needs options`);
+          } else {
+            assert.equal(field.options, undefined, `${where}: only select fields take options`);
+          }
+        }
+      }
+    }
+  );
 });

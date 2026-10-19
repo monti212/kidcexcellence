@@ -1,14 +1,17 @@
+import {
+  DEFAULT_ORGANISATION_DOCUMENTS,
+  getService,
+  sanitizeServiceDetails,
+  type ServiceDefinition,
+  type VerificationDocumentRequirement,
+} from "@/lib/services";
+
+export type { VerificationDocumentRequirement };
+
 export const VERIFICATION_FEE = {
   amount: 250,
   currency: "BWP",
 };
-
-export interface VerificationDocumentRequirement {
-  key: string;
-  label: string;
-  hint: string;
-  sensitive?: boolean;
-}
 
 export interface VerificationProfileDraft {
   category?: string;
@@ -34,6 +37,7 @@ export interface VerificationProfileDraft {
   vision?: string;
   values?: string;
   medicalAids?: string;
+  serviceDetails?: Record<string, string>;
   feeRows?: Array<{
     grade?: string;
     termly?: string;
@@ -47,172 +51,12 @@ export interface VerificationUploadSummary {
   galleryCount: number;
 }
 
-const INDIVIDUAL_CATEGORIES = new Set(["nannies", "helpers", "babysitters", "tutors"]);
-const CARE_WORKER_CATEGORIES = new Set(["nannies", "helpers", "babysitters"]);
-const SCHOOL_CATEGORIES = new Set(["schools", "nurseries"]);
-const PEDIATRIC_SPECIALIST_CATEGORIES = new Set([
-  "pediatric-clinics",
-  "pediatric-therapy",
-  "child-psychologists",
-]);
-
 export function getVerificationProviderType(category: string) {
-  return INDIVIDUAL_CATEGORIES.has(category) ? "individual" : "organisation";
+  return getService(category)?.providerType ?? "organisation";
 }
 
 export function getVerificationDocuments(category: string): VerificationDocumentRequirement[] {
-  if (getVerificationProviderType(category) === "individual") {
-    return [
-      {
-        key: "certified-id",
-        label: "Certified copy of ID / passport",
-        hint: "Certified copy of a valid Omang, passport, or national identity document",
-        sensitive: true,
-      },
-      {
-        key: "cv",
-        label: "CV / Resume",
-        hint: "PDF or Word document showing care experience",
-      },
-      {
-        key: "proof-of-residence-affidavit",
-        label: "Certified proof of residence",
-        hint: "Certified proof of residence or residence affidavit",
-      },
-      {
-        key: "police-clearance",
-        label: "Police clearance / fingerprints",
-        hint: "Police clearance or fingerprint receipt where applicable",
-        sensitive: true,
-      },
-    ];
-  }
-
-  if (category === "kiddies-transport") {
-    return [
-      {
-        key: "vehicle-license-disk",
-        label: "Picture of valid car license disk",
-        hint: "Photo or scan of the current vehicle license disk",
-      },
-      {
-        key: "drivers-license",
-        label: "Valid driver's license",
-        hint: "Valid copy of the driver's license for kiddies transport",
-        sensitive: true,
-      },
-      {
-        key: "prdp",
-        label: "PRDP",
-        hint: "Valid professional driving permit",
-        sensitive: true,
-      },
-      {
-        key: "vehicle-picture",
-        label: "Picture of vehicle",
-        hint: "Clear picture of the taxi or combi used for transport",
-      },
-    ];
-  }
-
-  if (PEDIATRIC_SPECIALIST_CATEGORIES.has(category)) {
-    return [
-      {
-        key: "practising-license",
-        label: "Practising license",
-        hint: "Current practising license for the specialist in charge",
-        sensitive: true,
-      },
-      {
-        key: "private-practise-license",
-        label: "Private practise license",
-        hint: "Current private practise license where applicable",
-        sensitive: true,
-      },
-      {
-        key: "academic-qualifications",
-        label: "Academic qualifications / certificates",
-        hint: "Academic qualifications, certificates, and specialist credentials",
-        sensitive: true,
-      },
-      {
-        key: "trading-license",
-        label: "Trading license",
-        hint: "Current trading license for the practice or clinic",
-      },
-      {
-        key: "certificate-of-incorporation",
-        label: "Certificate of incorporation",
-        hint: "Company registration or certificate of incorporation",
-      },
-      {
-        key: "company-profile",
-        label: "Downloadable company profile",
-        hint: "PDF company profile for parents to download from your listing",
-      },
-    ];
-  }
-
-  if (category === "kiddies-parties") {
-    return [
-      {
-        key: "certificate-of-incorporation",
-        label: "Certificate of incorporation",
-        hint: "Company registration or certificate of incorporation",
-        sensitive: true,
-      },
-    ];
-  }
-
-  if (SCHOOL_CATEGORIES.has(category)) {
-    return [
-      {
-        key: "registration-certificate",
-        label: "Registration certificate",
-        hint: "School, nursery, or organisation registration certificate",
-      },
-      {
-        key: "prospectus",
-        label: "Prospectus",
-        hint: "School prospectus, curriculum overview, or parent information pack",
-      },
-      {
-        key: "operating-documentation",
-        label: "Relevant documentation",
-        hint: "Licence, accreditation, permit, or supporting operating document",
-      },
-      {
-        key: "representative-id",
-        label: "Representative ID",
-        hint: "Valid ID for the owner, principal, director, or authorised representative",
-        sensitive: true,
-      },
-    ];
-  }
-
-  return [
-    {
-      key: "registration-certificate",
-      label: "Registration certificate",
-      hint: "Business, school, clinic, or organisation registration certificate",
-    },
-    {
-      key: "prospectus",
-      label: "Prospectus",
-      hint: "School prospectus, curriculum overview, or parent information pack",
-    },
-    {
-      key: "operating-documentation",
-      label: "Relevant documentation",
-      hint: "Licence, accreditation, permit, or supporting operating document",
-    },
-    {
-      key: "representative-id",
-      label: "Representative ID",
-      hint: "Valid ID for the owner, principal, director, or authorised representative",
-      sensitive: true,
-    },
-  ];
+  return getService(category)?.documents ?? DEFAULT_ORGANISATION_DOCUMENTS;
 }
 
 function hasValue(value: unknown) {
@@ -227,17 +71,14 @@ function hasSchoolFees(profile: VerificationProfileDraft) {
   );
 }
 
-export function missingVerificationProfileFields(
+function missingTemplateFields(
+  template: ServiceDefinition["profileTemplate"],
   profile: VerificationProfileDraft,
   uploads: VerificationUploadSummary
 ) {
-  const category = profile.category ?? "";
   const missing: string[] = [];
 
-  if (!uploads.profileImageUploaded) missing.push("Display picture");
-  if (!uploads.coverImageUploaded) missing.push("Cover photo");
-
-  if (CARE_WORKER_CATEGORIES.has(category)) {
+  if (template === "care-worker") {
     if (!hasValue(profile.age)) missing.push("Age");
     if (!hasValue(profile.location)) missing.push("Location");
     if (!hasValue(profile.stayArrangement)) missing.push("Stay in or stay out");
@@ -257,7 +98,7 @@ export function missingVerificationProfileFields(
     return missing;
   }
 
-  if (category === "kiddies-transport") {
+  if (template === "transport") {
     if (!hasValue(profile.ownerFullName)) missing.push("Company name or driver full names");
     if (!hasValue(profile.location)) missing.push("Location");
     if (!hasValue(profile.numberPlate)) missing.push("Number plate");
@@ -267,7 +108,7 @@ export function missingVerificationProfileFields(
     return missing;
   }
 
-  if (category === "kiddies-parties") {
+  if (template === "party") {
     if (!hasValue(profile.ownerFullName)) missing.push("Owner full names");
     if (!hasValue(profile.location)) missing.push("Location");
     if (!hasValue(profile.tradingHours)) missing.push("Trading hours");
@@ -275,7 +116,7 @@ export function missingVerificationProfileFields(
     return missing;
   }
 
-  if (SCHOOL_CATEGORIES.has(category)) {
+  if (template === "school") {
     if (uploads.galleryCount < 1) missing.push("At least one school gallery picture");
     if (!hasSchoolFees(profile)) missing.push("School fee prices by grade");
     if (!hasValue(profile.bio)) missing.push("School description");
@@ -285,7 +126,7 @@ export function missingVerificationProfileFields(
     return missing;
   }
 
-  if (PEDIATRIC_SPECIALIST_CATEGORIES.has(category)) {
+  if (template === "pediatric") {
     if (!hasValue(profile.location)) missing.push("Location");
     if (Number(profile.price) <= 0) missing.push("Consultation price");
     if (!hasValue(profile.medicalAids)) missing.push("Medical aids accepted");
@@ -297,6 +138,28 @@ export function missingVerificationProfileFields(
 
   if (!hasValue(profile.location)) missing.push("Location");
   if (!hasValue(profile.bio)) missing.push("Description");
+  return missing;
+}
+
+export function missingVerificationProfileFields(
+  profile: VerificationProfileDraft,
+  uploads: VerificationUploadSummary
+) {
+  const service = getService(profile.category);
+  const missing: string[] = [];
+
+  if (!uploads.profileImageUploaded) missing.push("Display picture");
+  if (!uploads.coverImageUploaded) missing.push("Cover photo");
+
+  missing.push(...missingTemplateFields(service?.profileTemplate ?? "standard", profile, uploads));
+
+  if (service?.pricing?.requiredForVerification && Number(profile.price) <= 0) {
+    missing.push(service.pricing.heading);
+  }
+  const details = sanitizeServiceDetails(profile.category ?? "", profile.serviceDetails);
+  for (const field of service?.detailFields ?? []) {
+    if (field.required && !details[field.key]) missing.push(field.label);
+  }
   return missing;
 }
 

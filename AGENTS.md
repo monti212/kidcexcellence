@@ -100,12 +100,59 @@ The `PROVIDERS` array in `lib/mock-data.ts` is demo data gated behind
 `ENABLE_DEMO_PROVIDERS`. Do not add real listings there and do not enable it by
 default.
 
+## Services (provider categories)
+
+`lib/services.ts` is the service catalogue and the only place a service is
+defined. Each `SERVICES` entry drives the home page tile and headline count,
+search filters, signup and profile category pickers, listing badge and icon,
+verification documents, required profile details, pricing copy, the profile
+form's service-specific fields, the public listing, and the admin review card.
+If you find yourself writing `category === "some-id"` anywhere else, add a
+field to `ServiceDefinition` instead.
+
+### Adding a service
+
+1. Add one entry to `SERVICES`. The `id` is a plural slug
+   (`postpartum-nurses`) stored on every profile of that service: never rename
+   or delete one that has shipped.
+2. Use `profileTemplate: "standard"` and describe service-specific profile
+   fields in `detailFields`. Values live in `profile.serviceDetails`, are
+   sanitized against the catalogue on every save (unknown keys and off-list
+   select values are dropped), appear on the public listing and the admin
+   card, and `required` ones block verification submission. No changes to the
+   store, `normalizeStore`, the profile route, or the form are needed.
+3. List the verification `documents`. Reuse the shared constants
+   (`CERTIFIED_ID_DOCUMENT`, `POLICE_CLEARANCE_DOCUMENT`) where they fit.
+   `sensitive: true` documents are admin-only.
+4. Set what applies: `pricing` (copy, `defaultUnit`, whether a price is
+   required for verification), `servicesPlaceholder`, `tone`,
+   `priceVisibleToParentsOnly`, `vettingPackages`. A new billing unit goes in
+   `PRICE_UNITS`.
+5. Run `npm test`. The "Service catalogue" test checks the entry is internally
+   consistent, and the discovery assertions count services from the API, so a
+   new service needs no test edits. Add a flow test only for new rules. The
+   catalogue test imports TypeScript directly and needs Node 22.18+.
+6. Decide what code can't: which subscription tier the service sits in on
+   `/pricing` (hand-written copy) and whether it earns a footer link.
+
+Two traps:
+
+- **`detailFields` are public.** Anything private (ID numbers, addresses,
+  referee phone numbers) belongs in a document, not a field.
+- **Select options are part of stored data.** A stored value that no longer
+  matches an option is ignored everywhere (listing, admin card, verification
+  checks), so renaming an option sends those providers back to pick again.
+
+The five older templates (`care-worker`, `school`, `pediatric`, `transport`,
+`party`) predate the catalogue and keep their bespoke top-level profile
+columns and hand-built form sections. Do not add new columns for new services.
+
 ## Verification
 
 Lifecycle: `not_submitted → pending → approved | rejected`.
 `submitProviderVerification` gates on effective payment, required profile
-fields, and per-category documents (`lib/verification-requirements.ts`) before
-an admin can decide it.
+fields, and per-service documents (`lib/services.ts`, applied by
+`lib/verification-requirements.ts`) before an admin can decide it.
 
 Payment is layered: `effectiveVerificationPayment` treats an account inside its
 free month (`FREE_FULL_ACCESS_MONTHS`, from `createdAt`) as paid. Stripe is

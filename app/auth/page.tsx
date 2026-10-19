@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { BrandMark } from "@/components/BrandMark";
 import { Eye, EyeOff, Baby, Briefcase, ShieldCheck } from "lucide-react";
-import { PROVIDER_CATEGORY_OPTIONS } from "@/lib/mock-data";
+import { PROVIDER_CATEGORY_ITEMS, PROVIDER_CATEGORY_OPTIONS } from "@/lib/services";
 import { BOTSWANA_LOCATIONS } from "@/lib/botswana-locations";
 import { clearLegacyPlatformSession, notifyPlatformSessionChanged } from "@/lib/use-platform-session";
 
@@ -454,7 +454,11 @@ function SignupForm({
           </div>
           <div>
             <Label className="text-[var(--brand-ink)] font-medium text-sm">Category</Label>
-            <Select value={providerCategory} onValueChange={(value) => setProviderCategory(value ?? "")}>
+            <Select
+              items={PROVIDER_CATEGORY_ITEMS}
+              value={providerCategory}
+              onValueChange={(value) => setProviderCategory(value ?? "")}
+            >
               <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>

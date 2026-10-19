@@ -29,6 +29,7 @@ import {
   categorySupportsVettingPackages,
   getVettingPackage,
 } from "@/lib/vetting-packages";
+import { getService, type PriceUnit } from "@/lib/services";
 
 export type UserRole = "parent" | "provider" | "admin";
 export const SESSION_COOKIE_NAME = "kidcellence_session";
@@ -130,7 +131,7 @@ export interface ProviderProfileRecord {
   experience: string;
   availability: string;
   price: string;
-  priceUnit: "monthly" | "per day" | "per hour" | "termly";
+  priceUnit: PriceUnit;
   age?: string;
   stayArrangement?: "stay-in" | "stay-out";
   hasChildren?: "yes" | "no";
@@ -151,6 +152,11 @@ export interface ProviderProfileRecord {
   vision?: string;
   values?: string;
   medicalAids?: string;
+  /**
+   * Values for the service's catalogue-declared detail fields, keyed by
+   * field key. Sanitized against `lib/services.ts` on every write.
+   */
+  serviceDetails: Record<string, string>;
   liveIn: boolean;
   published: boolean;
   verificationStatus: "not_submitted" | "pending" | "approved" | "rejected";
@@ -659,6 +665,7 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
         vision: profile.vision ?? "",
         values: profile.values ?? "",
         medicalAids: profile.medicalAids ?? "",
+        serviceDetails: profile.serviceDetails ?? {},
         liveIn: profile.liveIn ?? false,
         published: profile.published ?? true,
         verificationStatus: profile.verificationStatus ?? "not_submitted",
@@ -974,7 +981,7 @@ function createStarterProviderProfile(user: PlatformUser, now: string): Provider
     experience: "Profile started",
     availability: "Contact provider",
     price: "",
-    priceUnit: "termly",
+    priceUnit: getService(category)?.pricing?.defaultUnit ?? "termly",
     age: "",
     stayArrangement: "stay-out",
     workStartDate: "",
@@ -990,6 +997,7 @@ function createStarterProviderProfile(user: PlatformUser, now: string): Provider
     vision: "",
     values: "",
     medicalAids: "",
+    serviceDetails: {},
     liveIn: false,
     published: true,
     verificationStatus: "not_submitted",
