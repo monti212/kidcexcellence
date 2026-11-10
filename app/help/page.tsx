@@ -40,51 +40,53 @@ const helpTopics = [
 
 export default function HelpPage() {
   return (
-    <div className="brand-page min-h-screen">
-      <header className="border-b border-[var(--brand-line)] bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid h-11 w-11 place-items-center rounded-lg bg-[var(--brand-sky)] text-[var(--brand-gold)]">
-            <CircleHelp className="h-5 w-5" />
-          </div>
-          <p className="brand-label mt-6">Help centre</p>
-          <h1 className="mt-2 text-4xl font-black text-[var(--brand-ink)] sm:text-5xl">
+    <div style={{ background: "#ffffff", color: "#3f3e44" }}>
+      <section style={{ background: "#f4fbfc" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "48px 16px 56px", display: "flex", flexDirection: "column", gap: 14 }}>
+          <span aria-hidden="true" style={{ width: 56, height: 56, borderRadius: "50%", background: "#54b2bf", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <CircleHelp className="h-6 w-6" />
+          </span>
+          <span style={{ alignSelf: "flex-start", background: "#fff5d3", fontWeight: 800, fontSize: 13, padding: "6px 12px", borderRadius: 999, letterSpacing: ".4px", textTransform: "uppercase" }}>
+            Help centre
+          </span>
+          <h1 style={{ margin: 0, fontSize: "clamp(34px, 6vw, 52px)", lineHeight: 1.08, fontWeight: 800, letterSpacing: "-1.5px" }}>
             Find the right next step.
           </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--brand-muted)]">
+          <p style={{ margin: 0, maxWidth: 640, fontSize: 18, lineHeight: 1.6, color: "#686973" }}>
             Access account, profile, listing, messaging, and safety support from one place.
           </p>
         </div>
-      </header>
+      </section>
 
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid gap-px overflow-hidden rounded-lg border border-[var(--brand-line)] bg-[var(--brand-line)] md:grid-cols-2">
-          {helpTopics.map(({ title, body, href, label, icon: Icon }) => (
-            <section key={title} className="bg-white p-6">
-              <Icon className="h-5 w-5 text-[var(--brand-leaf)]" />
-              <h2 className="mt-4 text-xl font-black text-[var(--brand-ink)]">{title}</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--brand-muted)]">{body}</p>
-              <Link
-                href={href}
-                className="mt-5 inline-block text-sm font-black text-[var(--brand-leaf)] hover:underline"
-              >
+      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 16px 80px", display: "flex", flexDirection: "column", gap: 32 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 20 }}>
+          {helpTopics.map(({ title, body, href, label, icon: Icon }, index) => (
+            <section key={title} className="kc-panel" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+              <span aria-hidden="true" style={{ width: 48, height: 48, borderRadius: "50%", background: index % 2 ? "#fff5d3" : "#f4fbfc", color: "#2a7b86", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon className="h-5 w-5" />
+              </span>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{title}</h2>
+              <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: "#686973" }}>{body}</p>
+              <Link href={href} style={{ marginTop: "auto", fontSize: 15, fontWeight: 800, color: "#2a7b86" }}>
                 {label}
               </Link>
             </section>
           ))}
         </div>
 
-        <section className="mt-10 border-y border-[var(--brand-line)] py-8">
-          <h2 className="text-2xl font-black text-[var(--brand-ink)]">Safety concern</h2>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--brand-muted)]">
+        <section style={{ background: "#fff5d3", borderRadius: 24, padding: 28, display: "flex", flexDirection: "column", gap: 12 }}>
+          <span style={{ alignSelf: "flex-start", background: "#ffffff", color: "#c2412a", fontWeight: 800, fontSize: 12, padding: "5px 10px", borderRadius: 999, letterSpacing: ".4px" }}>SAFETY</span>
+          <h2 style={{ margin: 0, fontSize: 26, fontWeight: 800 }}>Safety concern</h2>
+          <p style={{ margin: 0, maxWidth: 760, fontSize: 16, lineHeight: 1.7, color: "#686973" }}>
             For immediate danger or suspected harm, contact Botswana emergency services or the
             appropriate local authority first. For marketplace guidance, review the safety standard
             before continuing with a provider.
           </p>
-          <Link href="/safety" className="brand-button mt-5">
+          <Link href="/safety" className="kc-btn" style={{ alignSelf: "flex-start" }}>
             Review safety guidance
           </Link>
         </section>
-      </main>
+      </div>
     </div>
   );
 }

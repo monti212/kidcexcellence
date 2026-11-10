@@ -2,17 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Icon, Star } from "@/components/kidcellence/Icon";
 import {
-  ArrowLeft,
-  Star,
-  Trash2,
-  Check,
-  TrendingUp,
-} from "lucide-react";
+  AdminBand,
+  Avatar,
+  KpiCard,
+  Notice,
+  Pill,
+  panelStyle,
+} from "@/components/kidcellence/admin/AdminUi";
+import { routes } from "@/lib/kidcellence/routes";
+import { getCategoryLabel } from "@/lib/platform-service";
+import { usePlatformSession } from "@/lib/use-platform-session";
 
 interface FeaturedProvider {
   id: string;
@@ -25,7 +26,7 @@ interface FeaturedProvider {
   fee?: number;
 }
 
-export default function FeaturedProvidersAdmin() {
+function FeaturedProvidersAdmin() {
   const [providers, setProviders] = useState<FeaturedProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -126,141 +127,143 @@ export default function FeaturedProvidersAdmin() {
   const verifiedCount = providers.filter((p) => p.verified).length;
 
   return (
-    <div className="brand-page">
-      <section className="mx-auto grid max-w-4xl grid-cols-1 gap-6 px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/admin">
-              <Button variant="outline" size="sm" className="rounded-full">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-            </Link>
-            <h1 className="text-3xl font-black text-[var(--brand-ink)]">
-              Featured Providers
-            </h1>
-          </div>
-          <Badge className="bg-[var(--brand-sky)] text-white">
-            {featuredCount} featured
-          </Badge>
+    <div style={{ color: "#3f3e44", background: "#f4fbfc", minHeight: "100vh" }}>
+      <AdminBand
+        title="Featured Providers"
+        subtitle={`${featuredCount} featured`}
+        right={
+          <Link
+            href={routes.admin}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 18px", minHeight: 44, borderRadius: 999, background: "rgba(255,255,255,.18)", color: "#ffffff", fontWeight: 800, textDecoration: "none" }}
+          >
+            Back to verification desk
+          </Link>
+        }
+      />
+
+      <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px", display: "flex", flexDirection: "column", gap: 24 }}>
+        <Notice tone="warning">
+          Featured selections are held in server memory only. They reset whenever the server restarts or redeploys, and may differ between server instances, so they do not yet change what parents see.
+        </Notice>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: 16 }}>
+          <KpiCard label="Total providers" value={String(providers.length)} />
+          <KpiCard label="Verified" value={String(verifiedCount)} />
+          <KpiCard warm label="Featured" value={String(featuredCount)} />
         </div>
-
-        <Separator />
-
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            ["Total Providers", String(providers.length)],
-            ["Verified", String(verifiedCount)],
-            ["Featured", String(featuredCount)],
-          ].map(([label, value]) => (
-            <div
-              key={label}
-              className="rounded-lg border border-[var(--brand-line)] bg-white p-3"
-            >
-              <div className="text-xs font-bold uppercase text-[var(--brand-muted)]">
-                {label}
-              </div>
-              <div className="text-2xl font-black text-[var(--brand-ink)]">
-                {value}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <Separator />
 
         {message && (
-          <div
-            className={`rounded-lg border px-4 py-3 ${
-              message.startsWith("Error")
-                ? "border-red-200 bg-red-50 text-red-900"
-                : "border-green-200 bg-green-50 text-green-900"
-            }`}
-          >
-            {message}
-          </div>
+          <Notice tone={message.startsWith("Error") ? "error" : "success"}>{message}</Notice>
         )}
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <Input
-            type="text"
-            placeholder="Search by name or category..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="rounded-full border-[var(--brand-line)] bg-[var(--brand-paper)]"
-          />
-          <div className="flex gap-2">
-            <Button
-              onClick={promoteProviders}
-              disabled={selectedProviders.size === 0}
-              className="rounded-full bg-[var(--brand-sky)] px-4 font-black text-white hover:bg-[var(--brand-coral)]"
-            >
-              <TrendingUp className="mr-2 h-4 w-4" />
-              Promote ({selectedProviders.size})
-            </Button>
-            <Button
-              onClick={demoteProviders}
-              variant="outline"
-              disabled={selectedProviders.size === 0}
-              className="rounded-full border-[var(--brand-line)]"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Demote
-            </Button>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="text-center text-[var(--brand-muted)]">
-            Loading providers...
-          </div>
-        ) : filteredProviders.length === 0 ? (
-          <div className="text-center text-[var(--brand-muted)]">
-            No providers found
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredProviders.map((provider) => (
-              <div
-                key={provider.id}
-                className="flex items-center gap-4 rounded-lg border border-[var(--brand-line)] p-4"
+        <section style={panelStyle}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 14px", borderRadius: 999, border: "1px solid #d7edf0", background: "#ffffff", flex: "1 1 260px", minWidth: 0 }}>
+              <Icon name="search" size={18} color="#686973" />
+              <span className="kc-sr-only">Search providers</span>
+              <input
+                type="text"
+                placeholder="Search by name or category..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ border: 0, outline: 0, background: "transparent", minHeight: 44, flex: 1, minWidth: 0, fontSize: 14, color: "#3f3e44" }}
+              />
+            </label>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={promoteProviders}
+                disabled={selectedProviders.size === 0}
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 44, padding: "10px 18px", borderRadius: 999, border: 0, fontWeight: 800, background: selectedProviders.size === 0 ? "#f4fbfc" : "#ffcc2f", color: selectedProviders.size === 0 ? "#686973" : "#3f3e44", cursor: selectedProviders.size === 0 ? "not-allowed" : "pointer" }}
               >
-                <input
-                  type="checkbox"
-                  checked={selectedProviders.has(provider.id)}
-                  onChange={() => toggleProvider(provider.id)}
-                  className="h-5 w-5 rounded border-[var(--brand-line)]"
-                />
-                <div className="flex-1">
-                  <div className="font-black text-[var(--brand-ink)]">
-                    {provider.name}
-                  </div>
-                  <div className="text-sm text-[var(--brand-muted)]">
-                    {provider.category} • Rating: {provider.rating}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {provider.verified && (
-                    <Badge className="bg-green-100 text-green-900">
-                      <Check className="mr-1 h-3 w-3" /> Verified
-                    </Badge>
-                  )}
-                  {provider.featured && (
-                    <Badge className="bg-yellow-100 text-yellow-900">
-                      <Star className="mr-1 h-3 w-3" /> Featured
-                    </Badge>
-                  )}
-                </div>
-                {provider.promotionExpiresAt && (
-                  <div className="text-xs text-[var(--brand-muted)]">
-                    Expires: {new Date(provider.promotionExpiresAt).toLocaleDateString()}
-                  </div>
-                )}
-              </div>
-            ))}
+                <Star size={16} color={selectedProviders.size === 0 ? "#9fb9bd" : "#3f3e44"} />
+                Promote ({selectedProviders.size})
+              </button>
+              <button
+                type="button"
+                onClick={demoteProviders}
+                disabled={selectedProviders.size === 0}
+                className="kc-btn-outline"
+                style={{ padding: "10px 18px" }}
+              >
+                <Icon name="x" size={16} />
+                Demote
+              </button>
+            </div>
           </div>
-        )}
-      </section>
+
+          {loading ? (
+            <p style={{ margin: "24px 0", textAlign: "center", color: "#686973" }}>Loading providers...</p>
+          ) : filteredProviders.length === 0 ? (
+            <p style={{ margin: "24px 0", textAlign: "center", color: "#686973" }}>No providers found</p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))", gap: 16 }}>
+              {filteredProviders.map((provider) => {
+                const selected = selectedProviders.has(provider.id);
+                return (
+                  <label
+                    key={provider.id}
+                    style={{ border: `2px solid ${provider.featured ? "#ffcc2f" : selected ? "#54b2bf" : "#d7edf0"}`, borderRadius: 20, padding: 16, display: "flex", alignItems: "center", gap: 12, background: provider.featured ? "#fff5d3" : "#ffffff", cursor: "pointer", minWidth: 0 }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleProvider(provider.id)}
+                      aria-label={`Select ${provider.name}`}
+                      style={{ width: 20, height: 20, accentColor: "#2a7b86", flex: "0 0 auto" }}
+                    />
+                    <Avatar id={provider.id} name={provider.name} size={44} />
+                    <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                      <strong style={{ fontSize: 15, overflow: "hidden", textOverflow: "ellipsis" }}>{provider.name}</strong>
+                      <span style={{ fontSize: 13, color: "#686973" }}>
+                        {getCategoryLabel(provider.category)} · Rating: {provider.rating || "New"}
+                      </span>
+                      <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {provider.verified && <Pill tone="approved">Verified</Pill>}
+                        {provider.featured && <Pill tone="rejected">Featured</Pill>}
+                      </span>
+                      {provider.promotionExpiresAt && (
+                        <span style={{ fontSize: 12, color: "#686973" }}>
+                          Expires: {new Date(provider.promotionExpiresAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
+}
+
+export default function FeaturedProvidersPage() {
+  const { user, loading } = usePlatformSession();
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#686973", background: "#f4fbfc" }}>
+        Checking admin session...
+      </div>
+    );
+  }
+
+  // The API route enforces admin access; this only avoids showing admin
+  // controls to people who cannot use them.
+  if (user?.role !== "admin") {
+    return (
+      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px", background: "#f4fbfc" }}>
+        <div style={{ maxWidth: 420, background: "#ffffff", borderRadius: 24, padding: 32, border: "1px solid #d7edf0", textAlign: "center", display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
+          <Icon name="lock" size={36} color="#2a7b86" />
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Admin access required</h1>
+          <p style={{ margin: 0, color: "#686973", fontSize: 14 }}>Sign in with an admin account to manage featured providers.</p>
+          <Link href={routes.admin} className="kc-btn">Go to admin sign-in</Link>
+        </div>
+      </div>
+    );
+  }
+
+  return <FeaturedProvidersAdmin />;
 }

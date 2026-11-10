@@ -3,36 +3,23 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Icon } from "@/components/kidcellence/Icon";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+  DocumentRow,
+  Field,
+  FieldGroup,
+  Notice,
+  Panel,
+  StatTile,
+  Toggle,
+  UploadButton,
+} from "@/components/kidcellence/dashboard/ui";
 import {
-  BarChart3,
-  CheckCircle2,
-  CreditCard,
-  Eye,
-  Lock,
-  Upload,
-  ImagePlus,
-  LogIn,
-  MessageSquare,
-  TrendingUp,
-  X,
-  ToggleLeft,
-  ToggleRight,
-  UserPlus,
-} from "lucide-react";
+  VerificationBanner,
+  verificationStage,
+} from "@/components/kidcellence/dashboard/VerificationBanner";
+import { routes } from "@/lib/kidcellence/routes";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import { PROVIDER_CATEGORY_OPTIONS } from "@/lib/mock-data";
 import { usePlatformSession } from "@/lib/use-platform-session";
@@ -214,13 +201,23 @@ export default function ProviderProfilePage() {
 }
 
 function ProviderProfileLoading() {
+  return <DashboardMessage>Checking your provider account...</DashboardMessage>;
+}
+
+function DashboardMessage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen brand-page px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-xl rounded-lg border border-[var(--brand-line)] bg-white p-6 text-center text-sm font-bold text-[var(--brand-muted)] shadow-sm">
-        Checking your provider account...
+    <div style={{ background: "#f4fbfc", minHeight: "60vh", padding: "48px 16px" }}>
+      <div role="status" style={{ maxWidth: 560, margin: "0 auto", background: "#ffffff", borderRadius: 24, padding: 24, textAlign: "center", fontSize: 15, fontWeight: 700, color: "#686973", boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
+        {children}
       </div>
     </div>
   );
+}
+
+interface FullAccessSubscription {
+  status: "active" | "expired";
+  daysRemaining: number;
+  expiresAt: string;
 }
 
 function ProviderProfileContent() {
@@ -312,6 +309,7 @@ function ProviderProfileContent() {
   const [uploads, setUploads] = useState<ProviderUpload[]>([]);
   const [feeRows, setFeeRows] = useState<FeeRow[]>(storedProfile.feeRows);
   const [analytics, setAnalytics] = useState<ProviderAnalytics>(DEFAULT_PROVIDER_ANALYTICS);
+  const [subscription, setSubscription] = useState<FullAccessSubscription | null>(null);
   const providerProfileHasLocalEditsRef = useRef(false);
 
   const markProviderProfileEdited = useCallback(() => {
@@ -424,6 +422,7 @@ function ProviderProfileContent() {
 
     const payload = await response.json();
     setVerified(Boolean(payload.verified));
+    setSubscription(payload.subscription ?? null);
     setAnalytics({
       ...DEFAULT_PROVIDER_ANALYTICS,
       ...(payload.analytics ?? {}),
@@ -782,1161 +781,784 @@ function ProviderProfileContent() {
   const canSubmitVerification =
     verificationPaid && missingDocuments.length === 0 && missingProfileFields.length === 0;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen brand-page px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-xl rounded-lg border border-[var(--brand-line)] bg-white p-6 text-center text-sm font-bold text-[var(--brand-muted)] shadow-sm">
-          Checking your provider account...
-        </div>
-      </div>
+  const publicListingHref =
+    published && session ? routes.provider(`account-${session.userId}`) : undefined;
+  const firstName = (user?.name ?? "").trim().split(/\s+/)[0] ?? "";
+
+  const goToTab = (tab: ProviderProfileTab) => {
+    setActiveTab(tab);
+    window.requestAnimationFrame(() =>
+      document.getElementById("kc-listing-editor")?.scrollIntoView({ behavior: "smooth", block: "start" })
     );
+  };
+
+  if (loading) {
+    return <ProviderProfileLoading />;
   }
 
   if (!session || user?.role !== "provider") {
     return (
-      <div className="min-h-screen brand-page px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-xl rounded-lg border border-[var(--brand-line)] bg-white p-6 text-center shadow-sm sm:p-8">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg bg-[var(--brand-ivory)] text-[var(--brand-leaf)]">
-            <Lock className="h-7 w-7" />
-          </div>
-          <h1 className="mt-5 text-2xl font-black text-[var(--brand-ink)]">
+      <div style={{ background: "#f4fbfc", padding: "48px 16px 80px" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto", background: "#ffffff", borderRadius: 24, padding: "32px 24px", textAlign: "center", boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
+          <span style={{ width: 64, height: 64, margin: "0 auto", borderRadius: "50%", background: "#f4fbfc", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon name="lock" size={28} color="#2a7b86" />
+          </span>
+          <h1 style={{ margin: "20px 0 0", fontSize: 26, fontWeight: 800, letterSpacing: "-0.5px" }}>
             Sign in to manage a provider listing
           </h1>
-          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[var(--brand-muted)]">
+          <p style={{ margin: "10px auto 0", maxWidth: 440, fontSize: 15, lineHeight: 1.6, color: "#686973" }}>
             Provider accounts can add services, pricing, photos, documents, verification, and public listing details.
           </p>
-          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link href="/auth?mode=login">
-              <Button variant="outline" className="w-full rounded-full border-[var(--brand-line)] bg-white font-black text-[var(--brand-ink)] sm:w-auto">
-                <LogIn className="mr-2 h-4 w-4" />
-                Login
-              </Button>
-            </Link>
-            <Link href="/auth?role=provider">
-              <Button className="w-full rounded-full bg-[var(--brand-leaf)] font-black text-white hover:bg-[var(--brand-coral)] sm:w-auto">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Sign up as provider
-              </Button>
-            </Link>
+          <div style={{ marginTop: 24, display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
+            <Link href={routes.login} className="kc-btn-outline">Log in</Link>
+            <Link href={routes.providerSignup} className="kc-btn">Sign up as provider</Link>
           </div>
         </div>
       </div>
     );
   }
 
+  const stage = verificationStage({
+    status: verificationStatus,
+    verified,
+    missingProfileFields,
+    missingDocumentCount: missingDocuments.length,
+    documentCount: documents.length,
+    paid: verificationPaid,
+    publicListingHref,
+    goTo: goToTab,
+  });
+
+  const sideItems: Array<{ tab: ProviderProfileTab; label: string; icon: "file" | "chart" | "image" | "shieldCheck" }> = [
+    { tab: "basic", label: "Listing details", icon: "file" },
+    { tab: "pricing", label: "Pricing", icon: "chart" },
+    { tab: "gallery", label: "Photos", icon: "image" },
+    { tab: "documents", label: "Verification", icon: "shieldCheck" },
+  ];
+  const tabTriggerClass =
+    "min-h-11 flex-none rounded-full border border-[var(--kc-line)] bg-white px-4 text-[15px] font-bold text-[var(--kc-ink)] data-active:border-[var(--kc-teal-deep)] data-active:bg-[var(--kc-teal-deep)] data-active:text-white";
+  const sectionLabel = { margin: 0, fontSize: 16, fontWeight: 800 } as const;
+
   return (
-    <div className="min-h-screen brand-page py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-[var(--brand-ink)]">Provider Profile</h1>
-          <p className="text-[var(--brand-muted)] mt-1">Manage your listing information</p>
-        </div>
-
-        {/* Cover + Avatar */}
-        <div className="bg-white rounded-lg border border-[var(--brand-line)] shadow-sm overflow-hidden mb-6">
-          <div
-            className="h-36 relative overflow-hidden"
-            style={{
-              background: coverImageUpload
-                ? undefined
-                : "linear-gradient(135deg, var(--brand-leaf), var(--brand-gold))",
-            }}
+    <div style={{ color: "#3f3e44", background: "#f4fbfc" }}>
+      <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 16px 64px", gap: 24 }} className="flex flex-col sm:px-6 lg:flex-row lg:items-start">
+        {/* Side menu: a scrolling row on phones, a column beside the content on desktop. */}
+        <aside style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }} className="lg:sticky lg:top-24 lg:w-60 lg:shrink-0">
+          <nav
+            className="kc-side flex flex-row gap-1 overflow-x-auto lg:flex-col"
+            aria-label="Provider dashboard"
+            style={{ background: "#ffffff", borderRadius: 24, padding: 10, boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}
           >
-            {coverImageUpload && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={coverImageUpload.url}
-                alt="Provider cover photo"
-                className="h-full w-full object-cover"
-              />
-            )}
-            <label className="absolute bottom-3 right-3 inline-flex cursor-pointer items-center rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-xs font-black text-[var(--brand-ink)] shadow-sm hover:bg-white">
-              <input
-                type="file"
-                className="sr-only"
-                accept="image/png,image/jpeg,image/webp"
-                onChange={(event) =>
-                  uploadFile(event.target.files?.[0], "cover-image", "Cover photo")
-                }
-                disabled={loading}
-              />
-              <ImagePlus className="mr-1.5 h-3.5 w-3.5" />
-              Cover photo
-            </label>
-          </div>
-          <div className="px-6 pb-5">
-            <div className="relative -mt-12 mb-4 w-fit">
-              <div className="w-20 h-20 rounded-lg border-4 border-white shadow-md overflow-hidden bg-[var(--brand-ivory)] flex items-center justify-center text-4xl">
-                {profileImageUpload ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={profileImageUpload.url}
-                    alt="Provider profile picture"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  "🏫"
-                )}
-              </div>
-              <label className="absolute -bottom-2 -right-2 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--brand-line)] bg-white text-[var(--brand-leaf)] shadow-sm hover:bg-[var(--brand-ivory)]">
-                <input
-                  type="file"
-                  className="sr-only"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) =>
-                    uploadFile(event.target.files?.[0], "profile-image", "Profile picture")
-                  }
-                  disabled={loading}
-                />
-                <ImagePlus className="h-4 w-4" />
-              </label>
-            </div>
-            <div className="flex items-center gap-3">
-              <div>
-                <h2 className="text-lg font-bold text-[var(--brand-ink)]">{user?.name ?? "Provider profile"}</h2>
-                <p className="text-[var(--brand-muted)] text-sm">
-                  {user ? user.location ?? "Botswana" : "Sign in to sync this listing"}
-                </p>
-              </div>
-              {verified && (
-                <Badge className="rounded-full bg-green-50 text-green-700 border border-green-200 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Verified
-                </Badge>
-              )}
-              <Badge
-                className={`rounded-full border ${
-                  published
-                    ? "border-green-200 bg-green-50 text-green-700"
-                    : "border-[var(--brand-line)] bg-[var(--brand-ivory)] text-[var(--brand-muted)]"
-                }`}
-              >
-                {published ? "Published" : "Draft"}
-              </Badge>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-6 flex flex-col gap-3 rounded-lg border border-[var(--brand-line)] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="text-sm font-black text-[var(--brand-ink)]">
-              {published ? "Your listing is visible in provider search." : "Your listing is private."}
-            </div>
-            <div className="mt-1 text-xs text-[var(--brand-muted)]">
-              {verified
-                ? "Your verified badge is active."
-                : "Upload your documents for admin review to qualify for the verified badge."}
-            </div>
-          </div>
-          {published && session && (
-            <a
-              href={`/provider/account-${session.userId}`}
-              className="text-sm font-black text-[var(--brand-leaf)] hover:underline"
-            >
-              View public listing
+            <a href="#top" className="w-auto shrink-0 whitespace-nowrap lg:w-full">
+              <Icon name="chart" size={20} color="#686973" />Overview
             </a>
-          )}
-        </div>
-
-        <section className="mb-6">
-          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-sm font-black uppercase text-[var(--brand-leaf)]">
-                <BarChart3 className="h-4 w-4" />
-                Analytics
-              </div>
-              <h2 className="mt-1 text-2xl font-black text-[var(--brand-ink)]">
-                Your listing performance
-              </h2>
-            </div>
-            <div className="min-w-44">
-              <div className="flex items-center justify-between text-xs font-black text-[var(--brand-muted)]">
-                <span>Profile readiness</span>
-                <span>{analytics.profileCompletion}%</span>
-              </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
-                <div
-                  className="h-full rounded-full bg-[var(--brand-leaf)]"
-                  style={{ width: `${analytics.profileCompletion}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              {
-                label: "Views",
-                value: analytics.last28DaysViews,
-                detail: `${analytics.todayViews} today · ${analytics.last7DaysViews} this week`,
-                icon: Eye,
-                accent: "text-[var(--brand-sky)]",
-              },
-              {
-                label: "Engagement",
-                value: analytics.engagement,
-                detail: "Enquiries and parent messages",
-                icon: TrendingUp,
-                accent: "text-[var(--brand-coral)]",
-              },
-              {
-                label: "Enquiries",
-                value: analytics.enquiries,
-                detail: "New parent conversations started",
-                icon: MessageSquare,
-                accent: "text-[var(--brand-leaf)]",
-              },
-              {
-                label: "Messages",
-                value: analytics.messagesReceived,
-                detail: "Inbound parent messages",
-                icon: MessageSquare,
-                accent: "text-[var(--brand-gold)]",
-              },
-            ].map((metric) => {
-              const MetricIcon = metric.icon;
-              return (
-                <div
-                  key={metric.label}
-                  className="rounded-lg border border-[var(--brand-line)] bg-white p-4 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-xs font-bold text-[var(--brand-muted)]">
-                        {metric.label}
-                      </div>
-                      <div className="mt-1 text-3xl font-black text-[var(--brand-ink)]">
-                        {metric.value.toLocaleString()}
-                      </div>
-                    </div>
-                    <MetricIcon className={`h-5 w-5 ${metric.accent}`} />
-                  </div>
-                  <div className="mt-2 text-xs font-bold text-[var(--brand-muted)]">
-                    {metric.detail}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-3 rounded-lg border border-[var(--brand-line)] bg-white p-4 shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-sm font-black text-[var(--brand-ink)]">
-                  28-day view trend
-                </div>
-                <div className="mt-1 text-xs font-bold text-[var(--brand-muted)]">
-                  {analytics.profileViews.toLocaleString()} lifetime views
-                  {analytics.lastViewedAt
-                    ? ` · last viewed ${new Date(analytics.lastViewedAt).toLocaleDateString()}`
-                    : ""}
-                </div>
-              </div>
-              <Badge
-                className={`w-fit rounded-full border ${
-                  analyticsTrend >= 0
-                    ? "border-green-200 bg-green-50 text-green-700"
-                    : "border-red-200 bg-red-50 text-red-700"
-                }`}
+            {sideItems.map((item) => (
+              <button
+                key={item.tab}
+                type="button"
+                onClick={() => goToTab(item.tab)}
+                aria-current={activeTab === item.tab ? "true" : undefined}
+                className="w-auto shrink-0 whitespace-nowrap lg:w-full"
               >
+                <Icon name={item.icon} size={20} color={activeTab === item.tab ? "#2a7b86" : "#686973"} />
+                {item.label}
+              </button>
+            ))}
+            <Link href={routes.messages} className="w-auto shrink-0 whitespace-nowrap lg:w-full">
+              <Icon name="message" size={20} color="#686973" />Messages
+            </Link>
+            {publicListingHref && (
+              <Link href={publicListingHref} className="w-auto shrink-0 whitespace-nowrap lg:w-full">
+                <Icon name="eye" size={20} color="#686973" />Public listing
+              </Link>
+            )}
+          </nav>
+          {subscription && (
+            <div style={{ background: "#fff5d3", borderRadius: 18, padding: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+              <strong style={{ fontSize: 14 }}>
+                {subscription.status === "active" ? "Free month" : "Free month ended"}
+              </strong>
+              <span style={{ fontSize: 13, color: "#686973", lineHeight: 1.5 }}>
+                {subscription.status === "active"
+                  ? `${subscription.daysRemaining} day${subscription.daysRemaining === 1 ? "" : "s"} of full access left, until ${new Date(subscription.expiresAt).toLocaleDateString()}.`
+                  : `Full access ended ${new Date(subscription.expiresAt).toLocaleDateString()}.`}{" "}
+                <Link href={routes.pricing} style={{ color: "#2a7b86", fontWeight: 700 }}>See pricing</Link>
+              </span>
+            </div>
+          )}
+        </aside>
+
+        <div id="top" style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 24, scrollMarginTop: 96 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ margin: 0, color: "#686973", fontWeight: 600 }}>{firstName ? `Dumela, ${firstName}` : "Dumela"}</p>
+              <h1 style={{ margin: "4px 0 0", fontSize: 36, fontWeight: 800, letterSpacing: "-1px" }}>Your listing</h1>
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, background: "#ffffff", border: "1px solid #d7edf0", borderRadius: 14, padding: "8px 14px", minHeight: 44 }}>
+                <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: "50%", background: published ? "#2a7b86" : "#9fb9bd" }} />
+                {published ? "Listing visible to parents" : "Listing private (draft)"}
+              </span>
+              {verified && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 14, background: "#2a7b86", color: "#ffffff", borderRadius: 14, padding: "8px 14px", minHeight: 44 }}>
+                  <Icon name="shieldCheck" size={18} color="#ffffff" />Verified
+                </span>
+              )}
+              {publicListingHref && (
+                <Link href={publicListingHref} style={{ display: "flex", alignItems: "center", padding: "12px 18px", minHeight: 44, borderRadius: 14, background: "#2a7b86", color: "#ffffff", fontWeight: 800, textDecoration: "none" }}>
+                  View public listing
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <VerificationBanner stage={stage} />
+
+          {/* Performance, from /api/profiles/provider analytics */}
+          <section aria-label="Listing performance" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: 16 }}>
+            <StatTile icon="eye" label="Profile views, 28 days" value={analytics.last28DaysViews.toLocaleString()} detail={`${analytics.todayViews} today · ${analytics.last7DaysViews} this week`} />
+            <StatTile icon="message" label="Enquiries" value={analytics.enquiries.toLocaleString()} detail="New parent conversations started" />
+            <StatTile icon="message" label="Messages" value={analytics.messagesReceived.toLocaleString()} detail="Inbound parent messages" />
+            <StatTile icon="check" label="Listing complete" value={`${analytics.profileCompletion}%`} detail="Publish readiness" warm />
+          </section>
+
+          <Panel
+            title="28-day view trend"
+            description={
+              <>
+                {analytics.profileViews.toLocaleString()} lifetime views · engagement {analytics.engagement.toLocaleString()}
+                {analytics.lastViewedAt ? ` · last viewed ${new Date(analytics.lastViewedAt).toLocaleDateString()}` : ""}
+              </>
+            }
+            action={
+              <span style={{ fontSize: 14, fontWeight: 800, padding: "6px 12px", borderRadius: 999, background: analyticsTrend >= 0 ? "#f4fbfc" : "#fff5d3", color: analyticsTrend >= 0 ? "#2a7b86" : "#c2412a", border: "1px solid #d7edf0" }}>
                 {analyticsTrend >= 0 ? "+" : ""}
                 {analyticsTrend}%
-              </Badge>
-            </div>
-            <div className="mt-4 flex h-20 items-end gap-1">
+              </span>
+            }
+          >
+            <div style={{ display: "flex", height: 80, alignItems: "flex-end", gap: 4 }}>
               {analyticsBars.map((day) => (
                 <div
                   key={day.date}
-                  className="flex-1 rounded-t bg-[var(--brand-sky)]/70"
                   title={`${day.date}: ${day.profileViews} view${day.profileViews === 1 ? "" : "s"}`}
                   style={{
+                    flex: 1,
+                    borderRadius: "6px 6px 0 0",
+                    background: "#54b2bf",
                     height: `${Math.max(8, (day.profileViews / analyticsSparklineMax) * 80)}px`,
                     opacity: day.profileViews ? 1 : 0.22,
                   }}
                 />
               ))}
             </div>
-          </div>
-        </section>
+          </Panel>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ProviderProfileTab)}>
-          <TabsList className="grid grid-cols-4 bg-white border border-[var(--brand-line)] rounded-lg p-1 shadow-sm mb-6 w-full">
-            <TabsTrigger value="basic" className="rounded-lg text-sm">Basic Info</TabsTrigger>
-            <TabsTrigger value="documents" className="rounded-lg text-sm">Documents</TabsTrigger>
-            <TabsTrigger value="pricing" className="rounded-lg text-sm">Pricing</TabsTrigger>
-            <TabsTrigger value="gallery" className="rounded-lg text-sm">Gallery</TabsTrigger>
-          </TabsList>
+          {/* Listing editor */}
+          <div id="kc-listing-editor" style={{ scrollMarginTop: 96, minWidth: 0 }}>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ProviderProfileTab)}>
+              <TabsList className="mb-4 flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0 group-data-horizontal/tabs:h-auto">
+                <TabsTrigger value="basic" className={tabTriggerClass}>Listing details</TabsTrigger>
+                <TabsTrigger value="documents" className={tabTriggerClass}>Verification</TabsTrigger>
+                <TabsTrigger value="pricing" className={tabTriggerClass}>Pricing</TabsTrigger>
+                <TabsTrigger value="gallery" className={tabTriggerClass}>Photos</TabsTrigger>
+              </TabsList>
 
-          {/* Basic Info */}
-          <TabsContent value="basic">
-            <div className="bg-white rounded-lg border border-[var(--brand-line)] shadow-sm p-6 space-y-5">
-              <div>
-                <Label className="text-sm font-medium text-[var(--brand-ink)]">Category</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v ?? "schools")}>
-                  <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PROVIDER_CATEGORY_OPTIONS.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="provider-display-name" className="text-sm font-medium text-[var(--brand-ink)]">
-                  Public display name
-                </Label>
-                <Input
-                  id="provider-display-name"
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  placeholder={isSchool ? "Sunshine Early Learning Centre" : "Kefilwe Modise"}
-                  className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-[var(--brand-ink)]">Location / Area</Label>
-                <Input
-                  value={location}
-                  onChange={(event) => setLocation(event.target.value)}
-                  placeholder="Phakalane, Gaborone"
-                  className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-[var(--brand-ink)]">About / Description</Label>
-                <Textarea
-                  value={bio}
-                  onChange={(event) => setBio(event.target.value)}
-                  placeholder="Describe your care approach, qualifications, and what families can expect."
-                  className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)] resize-none"
-                  rows={4}
-                />
-              </div>
-
-              {isIndividualCare && (
-                <div
-                  onChange={markProviderProfileEdited}
-                  className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:grid-cols-2"
-                >
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Age</Label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={age}
-                      onChange={(event) => setAge(event.target.value)}
-                      placeholder="e.g. 32"
-                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Availability / resume work date</Label>
-                    <Input
-                      type="text"
-                      value={workStartDate}
-                      onChange={(event) => setWorkStartDate(event.target.value)}
-                      placeholder="e.g. 01/10/2026"
-                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Stay arrangement</Label>
-                    <Select
-                      value={stayArrangement}
-                      onValueChange={(value) => {
-                        markProviderProfileEdited();
-                        setStayArrangement(value === "stay-in" ? "stay-in" : "stay-out");
-                      }}
-                    >
-                      <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="stay-in">Stay in</SelectItem>
-                        <SelectItem value="stay-out">Stay out</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Do you have kids?</Label>
-                    <Select
-                      value={hasChildren}
-                      onValueChange={(value) => {
-                        markProviderProfileEdited();
-                        setHasChildren(value === "yes" ? "yes" : "no");
-                      }}
-                    >
-                      <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="no">No</SelectItem>
-                        <SelectItem value="yes">Yes</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {hasChildren === "yes" && (
-                    <div>
-                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Number of kids</Label>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={childrenCount}
-                        onChange={(event) => setChildrenCount(event.target.value)}
-                        placeholder="e.g. 2"
-                        className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
+              {/* Listing details */}
+              <TabsContent value="basic">
+                <Panel title="Listing details" description="What parents see on your public listing.">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Category">
+                      <select className="kc-input" value={category} onChange={(event) => setCategory(event.target.value || "schools")}>
+                        {PROVIDER_CATEGORY_OPTIONS.map((option) => (
+                          <option key={option.id} value={option.id}>{option.name}</option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Public display name">
+                      <input
+                        id="provider-display-name"
+                        className="kc-input"
+                        value={displayName}
+                        onChange={(event) => setDisplayName(event.target.value)}
+                        placeholder={isSchool ? "Sunshine Early Learning Centre" : "Kefilwe Modise"}
                       />
-                    </div>
-                  )}
-                  <div className="sm:col-span-2 flex items-center justify-between rounded-lg border border-[var(--brand-line)] bg-white p-4">
-                    <div>
-                      <div className="text-sm font-medium text-[var(--brand-ink)]">Willing to relocate</div>
-                      <div className="text-xs text-gray-400">Open to moving for work</div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        markProviderProfileEdited();
-                        setWillingToRelocate(!willingToRelocate);
-                      }}
-                      className="text-[var(--brand-leaf)]"
-                      aria-label={willingToRelocate ? "Disable relocation" : "Enable relocation"}
-                    >
-                      {willingToRelocate ? (
-                        <ToggleRight className="h-8 w-8" />
-                      ) : (
-                        <ToggleLeft className="h-8 w-8 text-gray-300" />
+                    </Field>
+                    <Field label="Location / Area" className="sm:col-span-2">
+                      <input className="kc-input" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Phakalane, Gaborone" />
+                    </Field>
+                    <Field label="About / Description" className="sm:col-span-2">
+                      <textarea
+                        className="kc-input"
+                        style={{ resize: "vertical" }}
+                        value={bio}
+                        onChange={(event) => setBio(event.target.value)}
+                        placeholder="Describe your care approach, qualifications, and what families can expect."
+                        rows={4}
+                      />
+                    </Field>
+                  </div>
+
+                  {isIndividualCare && (
+                    <FieldGroup onChange={markProviderProfileEdited} className="sm:grid-cols-2">
+                      <Field label="Age">
+                        <input className="kc-input" type="text" inputMode="numeric" pattern="[0-9]*" value={age} onChange={(event) => setAge(event.target.value)} placeholder="e.g. 32" />
+                      </Field>
+                      <Field label="Availability / resume work date">
+                        <input className="kc-input" type="text" value={workStartDate} onChange={(event) => setWorkStartDate(event.target.value)} placeholder="e.g. 01/10/2026" />
+                      </Field>
+                      <Field label="Stay arrangement">
+                        <select
+                          className="kc-input"
+                          value={stayArrangement}
+                          onChange={(event) => {
+                            markProviderProfileEdited();
+                            setStayArrangement(event.target.value === "stay-in" ? "stay-in" : "stay-out");
+                          }}
+                        >
+                          <option value="stay-in">Stay in</option>
+                          <option value="stay-out">Stay out</option>
+                        </select>
+                      </Field>
+                      <Field label="Do you have kids?">
+                        <select
+                          className="kc-input"
+                          value={hasChildren}
+                          onChange={(event) => {
+                            markProviderProfileEdited();
+                            setHasChildren(event.target.value === "yes" ? "yes" : "no");
+                          }}
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </Field>
+                      {hasChildren === "yes" && (
+                        <Field label="Number of kids">
+                          <input className="kc-input" type="text" inputMode="numeric" pattern="[0-9]*" value={childrenCount} onChange={(event) => setChildrenCount(event.target.value)} placeholder="e.g. 2" />
+                        </Field>
                       )}
-                    </button>
+                      <div className="sm:col-span-2">
+                        <Toggle
+                          label="Willing to relocate"
+                          description="Open to moving for work"
+                          checked={willingToRelocate}
+                          onToggle={() => {
+                            markProviderProfileEdited();
+                            setWillingToRelocate(!willingToRelocate);
+                          }}
+                        />
+                      </div>
+                      <Field label="Years of work experience">
+                        <input className="kc-input" type="text" inputMode="numeric" pattern="[0-9]*" value={yearsExperience} onChange={(event) => setYearsExperience(event.target.value)} placeholder="e.g. 5" />
+                      </Field>
+                      <Field label="References">
+                        <input className="kc-input" value={references} onChange={(event) => setReferences(event.target.value)} placeholder="Available on request or list referee names" />
+                      </Field>
+                      <Field label="Brief work experience" className="sm:col-span-2">
+                        <textarea
+                          className="kc-input"
+                          style={{ resize: "vertical" }}
+                          value={workExperienceSummary}
+                          onChange={(event) => setWorkExperienceSummary(event.target.value)}
+                          placeholder="Summarise previous families, duties, ages cared for, and household responsibilities."
+                          rows={3}
+                        />
+                      </Field>
+                      <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
+                        <Field label="Next of kin name">
+                          <input className="kc-input" value={nextOfKinName} onChange={(event) => setNextOfKinName(event.target.value)} />
+                        </Field>
+                        <Field label="Relationship">
+                          <input className="kc-input" value={nextOfKinRelationship} onChange={(event) => setNextOfKinRelationship(event.target.value)} />
+                        </Field>
+                        <Field label="Next of kin phone">
+                          <input className="kc-input" value={nextOfKinPhone} onChange={(event) => setNextOfKinPhone(event.target.value)} />
+                        </Field>
+                      </div>
+                    </FieldGroup>
+                  )}
+
+                  {isSchool && (
+                    <FieldGroup>
+                      <Field label="Mission">
+                        <textarea className="kc-input" style={{ resize: "vertical" }} value={mission} onChange={(event) => setMission(event.target.value)} rows={2} />
+                      </Field>
+                      <Field label="Vision">
+                        <textarea className="kc-input" style={{ resize: "vertical" }} value={vision} onChange={(event) => setVision(event.target.value)} rows={2} />
+                      </Field>
+                      <Field label="Values">
+                        <textarea className="kc-input" style={{ resize: "vertical" }} value={values} onChange={(event) => setValues(event.target.value)} rows={2} />
+                      </Field>
+                    </FieldGroup>
+                  )}
+
+                  {isPediatric && (
+                    <FieldGroup>
+                      <Field label="Trading hours">
+                        <input className="kc-input" value={tradingHours} onChange={(event) => setTradingHours(event.target.value)} placeholder="Monday to Friday, 8:00 AM - 5:00 PM" />
+                      </Field>
+                      <Field label="Medical aids accepted">
+                        <textarea
+                          className="kc-input"
+                          style={{ resize: "vertical" }}
+                          value={medicalAids}
+                          onChange={(event) => setMedicalAids(event.target.value)}
+                          placeholder="BPOMAS, PULA, ALL, CASH ONLY, or list the accepted schemes."
+                          rows={3}
+                        />
+                      </Field>
+                    </FieldGroup>
+                  )}
+
+                  {isTransport && (
+                    <FieldGroup className="sm:grid-cols-2">
+                      <Field label="Company or driver full names">
+                        <input className="kc-input" value={ownerFullName} onChange={(event) => setOwnerFullName(event.target.value)} />
+                      </Field>
+                      <Field label="Number plate">
+                        <input className="kc-input" value={numberPlate} onChange={(event) => setNumberPlate(event.target.value)} />
+                      </Field>
+                      <Field label="PRDP" className="sm:col-span-2">
+                        <input className="kc-input" value={prdp} onChange={(event) => setPrdp(event.target.value)} />
+                      </Field>
+                    </FieldGroup>
+                  )}
+
+                  {isParty && (
+                    <FieldGroup className="sm:grid-cols-2">
+                      <Field label="Owner full names">
+                        <input className="kc-input" value={ownerFullName} onChange={(event) => setOwnerFullName(event.target.value)} />
+                      </Field>
+                      <Field label="Trading hours">
+                        <input className="kc-input" value={tradingHours} onChange={(event) => setTradingHours(event.target.value)} placeholder="Saturday to Sunday, 9:00 AM - 6:00 PM" />
+                      </Field>
+                    </FieldGroup>
+                  )}
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Services" hint="Separate services with commas." className="sm:col-span-2">
+                      <textarea
+                        className="kc-input"
+                        style={{ resize: "vertical" }}
+                        value={services}
+                        onChange={(event) => setServices(event.target.value)}
+                        placeholder="Baby class, aftercare, holiday programme"
+                        rows={3}
+                      />
+                    </Field>
+                    <Field label="Experience">
+                      <input className="kc-input" value={experience} onChange={(event) => setExperience(event.target.value)} placeholder="10 years of childcare experience" />
+                    </Field>
+                    <Field label="Availability">
+                      <input className="kc-input" value={availability} onChange={(event) => setAvailability(event.target.value)} placeholder="Monday to Friday, 7:00 AM - 5:30 PM" />
+                    </Field>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Years of work experience</Label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={yearsExperience}
-                      onChange={(event) => setYearsExperience(event.target.value)}
-                      placeholder="e.g. 5"
-                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">References</Label>
-                    <Input
-                      value={references}
-                      onChange={(event) => setReferences(event.target.value)}
-                      placeholder="Available on request or list referee names"
-                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Brief work experience</Label>
-                    <Textarea
-                      value={workExperienceSummary}
-                      onChange={(event) => setWorkExperienceSummary(event.target.value)}
-                      placeholder="Summarise previous families, duties, ages cared for, and household responsibilities."
-                      className="mt-1 resize-none rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="sm:col-span-2 grid gap-3 sm:grid-cols-3">
-                    <div>
-                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Next of kin name</Label>
-                      <Input value={nextOfKinName} onChange={(event) => setNextOfKinName(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
+
+                  <div style={{ borderTop: "1px solid #d7edf0", paddingTop: 16 }}>
+                    <h3 style={sectionLabel}>Contact information</h3>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <Field label="Phone number">
+                        <input className="kc-input" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+267 71 234 567" />
+                      </Field>
+                      <Field label="WhatsApp number">
+                        <input className="kc-input" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} placeholder="+26771234567" />
+                      </Field>
+                      <Field label="Email address" className="sm:col-span-2">
+                        <input className="kc-input" type="email" value={user?.email ?? ""} readOnly style={{ background: "#f4fbfc" }} />
+                      </Field>
                     </div>
-                    <div>
-                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Relationship</Label>
-                      <Input value={nextOfKinRelationship} onChange={(event) => setNextOfKinRelationship(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
+                  </div>
+                </Panel>
+              </TabsContent>
+
+              {/* Verification */}
+              <TabsContent value="documents">
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  <Panel
+                    title="Verification checklist"
+                    description={`Required documents for ${
+                      verificationProviderType === "individual"
+                        ? "individual care providers"
+                        : isPediatric
+                          ? "paediatric specialists"
+                          : isSchool
+                            ? "schools and nurseries"
+                            : "organisations"
+                    }. Once approved, your public profile displays the Verified badge.`}
+                  >
+                    <Notice>
+                      Your first month includes full provider access, so verification checkout is waived while it is active.
+                    </Notice>
+                    {[...sensitiveDocuments, ...standardDocuments].map((doc, index) => {
+                      const uploaded = documentUploads.find((upload) => upload.documentKey === doc.key);
+                      return (
+                        <DocumentRow
+                          key={doc.key}
+                          index={index}
+                          label={doc.label}
+                          hint={doc.hint}
+                          fileName={uploaded?.fileName}
+                          sensitive={Boolean(doc.sensitive)}
+                          disabled={loading}
+                          onFile={(file) => uploadFile(file, "document", doc.label, doc.key)}
+                          onRemove={uploaded ? () => deleteUpload(uploaded.id) : undefined}
+                        />
+                      );
+                    })}
+                    {uploadMessage && <Notice>{uploadMessage}</Notice>}
+                  </Panel>
+
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
+                    <Panel
+                      title={hasVettingPackages ? "Nanny/helper vetting package" : "Verification fee"}
+                      style={{ flex: "999 1 360px" }}
+                    >
+                      {hasVettingPackages ? (
+                        <div style={{ display: "grid", gap: 10 }}>
+                          {VETTING_PACKAGES.map((plan) => {
+                            const selected = verificationPackageId === plan.id;
+                            return (
+                              <button
+                                key={plan.id}
+                                type="button"
+                                aria-pressed={selected}
+                                onClick={() => {
+                                  if (verificationPaid) return;
+                                  setVerificationPackageId(plan.id);
+                                  setVerificationPackageName(plan.name);
+                                }}
+                                style={{
+                                  textAlign: "left",
+                                  padding: 16,
+                                  borderRadius: 18,
+                                  background: selected ? "#ffffff" : "#f4fbfc",
+                                  border: `2px solid ${selected ? "#2a7b86" : "#d7edf0"}`,
+                                  cursor: verificationPaid ? "default" : "pointer",
+                                  color: "#3f3e44",
+                                }}
+                              >
+                                <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                                  <strong style={{ fontSize: 16 }}>{plan.name}</strong>
+                                  <strong style={{ fontSize: 20 }}>{verificationPaid ? "Included" : `P${plan.price}`}</strong>
+                                </span>
+                                <span style={{ display: "block", marginTop: 4, fontSize: 13, lineHeight: 1.5, color: "#686973" }}>{plan.summary}</span>
+                              </button>
+                            );
+                          })}
+                          <div style={{ borderRadius: 16, background: "#f4fbfc", padding: 14 }}>
+                            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".6px", textTransform: "uppercase", color: "#686973" }}>
+                              {selectedVettingPackage.name} includes
+                            </div>
+                            <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "grid", gap: 6 }}>
+                              {selectedVettingPackage.features.map((feature) => (
+                                <li key={feature} style={{ display: "flex", gap: 8, fontSize: 13, lineHeight: 1.5, color: "#686973" }}>
+                                  <Icon name="check" size={16} color="#2a7b86" strokeWidth={2.6} style={{ flex: "0 0 auto", marginTop: 2 }} />
+                                  <span>{feature}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-1px" }}>
+                            {verificationPaid ? "P0" : `P${VERIFICATION_FEE.amount}`}
+                          </div>
+                          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#686973" }}>Included during the free full-access month.</p>
+                        </div>
+                      )}
+                      {verificationPaid ? (
+                        <span style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 800, color: "#2a7b86", background: "#f4fbfc", border: "1px solid #d7edf0", borderRadius: 999, padding: "6px 12px" }}>
+                          <Icon name="check" size={16} color="#2a7b86" strokeWidth={2.6} />
+                          Included{verificationPackageName ? ` · ${verificationPackageName}` : ""}
+                        </span>
+                      ) : (
+                        <button type="button" onClick={payVerificationFee} className="kc-btn" style={{ alignSelf: "flex-start" }}>
+                          Go to payment page - P{verificationPrice}
+                        </button>
+                      )}
+                      {verificationFeePaidAt && (
+                        <p style={{ margin: 0, fontSize: 13, color: "#686973" }}>
+                          Paid {new Date(verificationFeePaidAt).toLocaleDateString()}{" "}
+                          {verificationPaymentReference && `· ${verificationPaymentReference}`}
+                        </p>
+                      )}
+                    </Panel>
+
+                    <Panel title="Profile details required" style={{ flex: "1 1 280px" }}>
+                      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
+                        {missingProfileFields.length ? (
+                          missingProfileFields.map((field) => (
+                            <li key={field} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14 }}>
+                              <span aria-hidden="true" style={{ width: 18, height: 18, marginTop: 1, borderRadius: "50%", border: "2px solid #d7edf0", flex: "0 0 auto" }} />
+                              <span>{field}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <li style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14 }}>
+                            <Icon name="check" size={18} color="#2a7b86" strokeWidth={2.6} style={{ flex: "0 0 auto" }} />
+                            <span>All profile details for this provider type are complete.</span>
+                          </li>
+                        )}
+                      </ul>
+                    </Panel>
+                  </div>
+
+                  <section style={{ background: "#ffffff", borderRadius: 24, padding: 26, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between", boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
+                    <div style={{ flex: "1 1 280px", minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>
+                        {verificationStatus === "approved" && "Verification approved"}
+                        {verificationStatus === "pending" && "Verification under review"}
+                        {verificationStatus === "rejected" && "Updates required"}
+                        {verificationStatus === "not_submitted" && "Ready for verification?"}
+                      </p>
+                      <p style={{ margin: "4px 0 0", fontSize: 14, lineHeight: 1.5, color: "#686973" }}>
+                        {verificationStatus === "approved" && "Your public profile displays the Verified badge."}
+                        {verificationStatus === "pending" && "An administrator is reviewing your submitted documents."}
+                        {verificationStatus === "rejected" && "Update your documents, then submit them for another review."}
+                        {verificationStatus === "not_submitted" &&
+                          (verificationPaid
+                            ? missingProfileFields.length
+                              ? `Missing profile details: ${missingProfileFields.join(", ")}.`
+                              : missingDocuments.length
+                                ? `Missing documents: ${missingDocuments.map((document) => document.label).join(", ")}.`
+                                : "All required details and documents are uploaded. Submit when ready."
+                            : "Payment is only needed after the free full-access month ends.")}
+                      </p>
                     </div>
-                    <div>
-                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Phone</Label>
-                      <Input value={nextOfKinPhone} onChange={(event) => setNextOfKinPhone(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
+                    {(verificationStatus === "not_submitted" || verificationStatus === "rejected") && (
+                      <button type="button" onClick={submitVerification} disabled={!canSubmitVerification} className="kc-btn">
+                        <Icon name="shieldCheck" size={18} color="#ffffff" />
+                        Submit for review
+                      </button>
+                    )}
+                  </section>
+                </div>
+              </TabsContent>
+
+              {/* Pricing */}
+              <TabsContent value="pricing">
+                {isSchool ? (
+                  <Panel
+                    title="Fee structure by grade"
+                    action={
+                      <button type="button" onClick={addFeeRow} className="kc-btn-outline">
+                        <Icon name="plus" size={18} />Add grade
+                      </button>
+                    }
+                  >
+                    <div style={{ display: "grid", gap: 10 }}>
+                      <div className="grid grid-cols-3 gap-2" style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".6px", textTransform: "uppercase", color: "#686973" }}>
+                        <span>Grade / Level</span>
+                        <span>Per term (BWP)</span>
+                        <span>Per year (BWP)</span>
+                      </div>
+                      {feeRows.map((row, idx) => (
+                        <div key={idx} className="grid grid-cols-3 items-center gap-2">
+                          <input className="kc-input" aria-label={`Grade ${idx + 1}`} value={row.grade} onChange={(e) => updateFeeRow(idx, "grade", e.target.value)} placeholder="e.g. Nursery" />
+                          <input className="kc-input" aria-label={`Grade ${idx + 1} per term`} value={row.termly} onChange={(e) => updateFeeRow(idx, "termly", e.target.value)} placeholder="0" type="number" />
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+                            <input className="kc-input" aria-label={`Grade ${idx + 1} per year`} value={row.annually} onChange={(e) => updateFeeRow(idx, "annually", e.target.value)} placeholder="0" type="number" />
+                            <button
+                              type="button"
+                              onClick={() => removeFeeRow(idx)}
+                              aria-label={`Remove grade ${idx + 1}`}
+                              style={{ flex: "0 0 auto", width: 36, height: 44, border: 0, background: "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            >
+                              <Icon name="x" size={16} color="#686973" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                </div>
-              )}
+                  </Panel>
+                ) : (
+                  <Panel
+                    title={
+                      isPediatric
+                        ? "Consultation price"
+                        : isTransport
+                          ? "Price per month"
+                          : isParty
+                            ? "Services and prices"
+                            : "Starting price"
+                    }
+                  >
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field
+                        label={
+                          isPediatric
+                            ? "Consultation price (BWP)"
+                            : isTransport
+                              ? "Monthly transport price (BWP)"
+                              : isParty
+                                ? "Starting package price (BWP)"
+                                : "Price (BWP)"
+                        }
+                      >
+                        <input className="kc-input" type="number" min="0" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="e.g. 350" />
+                      </Field>
+                      <Field label="Billing unit">
+                        <select
+                          className="kc-input"
+                          value={priceUnit}
+                          onChange={(event) =>
+                            setPriceUnit((event.target.value || "per hour") as StoredProviderProfile["priceUnit"])
+                          }
+                        >
+                          <option value="per hour">Per hour</option>
+                          <option value="per day">Per day</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="termly">Termly</option>
+                        </select>
+                      </Field>
+                    </div>
+                    {isIndividualCare && (
+                      <Toggle
+                        label="Stay in arrangement"
+                        description="Provider can live with the family"
+                        checked={stayArrangement === "stay-in"}
+                        onToggle={() => setStayArrangement(stayArrangement === "stay-in" ? "stay-out" : "stay-in")}
+                      />
+                    )}
+                  </Panel>
+                )}
+              </TabsContent>
 
-              {isSchool && (
-                <div className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Mission</Label>
-                    <Textarea value={mission} onChange={(event) => setMission(event.target.value)} rows={2} className="mt-1 resize-none rounded-lg border-[var(--brand-line)]" />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Vision</Label>
-                    <Textarea value={vision} onChange={(event) => setVision(event.target.value)} rows={2} className="mt-1 resize-none rounded-lg border-[var(--brand-line)]" />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Values</Label>
-                    <Textarea value={values} onChange={(event) => setValues(event.target.value)} rows={2} className="mt-1 resize-none rounded-lg border-[var(--brand-line)]" />
-                  </div>
-                </div>
-              )}
+              {/* Photos */}
+              <TabsContent value="gallery">
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  <Panel title="Profile picture and cover" description="Your profile picture appears on listing cards; the cover photo heads your public page.">
+                    <div style={{ borderRadius: 20, overflow: "hidden", border: "1px solid #d7edf0" }}>
+                      <div
+                        className={coverImageUpload ? undefined : "kc-dots"}
+                        style={{ height: 150, position: "relative", backgroundColor: "#54b2bf" }}
+                      >
+                        {coverImageUpload && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={coverImageUpload.url} alt="Provider cover photo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        )}
+                        <div style={{ position: "absolute", right: 12, bottom: 12 }}>
+                          <UploadButton
+                            label="Cover photo"
+                            ariaLabel="Upload cover photo"
+                            variant="outline"
+                            accept="image/png,image/jpeg,image/webp"
+                            disabled={loading}
+                            onFile={(file) => uploadFile(file, "cover-image", "Cover photo")}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ padding: "0 18px 18px", display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
+                        <div style={{ marginTop: -44, width: 96, height: 96, borderRadius: "50%", border: "4px solid #ffffff", background: "#f4fbfc", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 20px rgba(63,62,68,.12)", flex: "0 0 auto" }}>
+                          {profileImageUpload ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={profileImageUpload.url} alt="Provider profile picture" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <Icon name="image" size={32} color="#2a7b86" />
+                          )}
+                        </div>
+                        <div style={{ flex: "1 1 160px", minWidth: 0, paddingTop: 12 }}>
+                          <strong style={{ fontSize: 17, display: "block", overflowWrap: "anywhere" }}>{displayName || user?.name || "Provider profile"}</strong>
+                          <span style={{ fontSize: 14, color: "#686973" }}>{location || user?.location || "Botswana"}</span>
+                        </div>
+                        <UploadButton
+                          label="Profile picture"
+                          ariaLabel="Upload profile picture"
+                          accept="image/png,image/jpeg,image/webp"
+                          disabled={loading}
+                          onFile={(file) => uploadFile(file, "profile-image", "Profile picture")}
+                        />
+                      </div>
+                    </div>
+                  </Panel>
 
-              {isPediatric && (
-                <div className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Trading hours</Label>
-                    <Input
-                      value={tradingHours}
-                      onChange={(event) => setTradingHours(event.target.value)}
-                      placeholder="Monday to Friday, 8:00 AM - 5:00 PM"
-                      className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Medical aids accepted</Label>
-                    <Textarea
-                      value={medicalAids}
-                      onChange={(event) => setMedicalAids(event.target.value)}
-                      placeholder="BPOMAS, PULA, ALL, CASH ONLY, or list the accepted schemes."
-                      rows={3}
-                      className="mt-1 resize-none rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                    />
-                  </div>
+                  <Panel
+                    id="photos"
+                    title="Photo gallery"
+                    description="JPG, PNG or WebP, up to 5MB each."
+                    action={<span style={{ fontSize: 14, color: "#686973", fontWeight: 600 }}>{galleryUploads.length} uploaded</span>}
+                  >
+                    {uploadMessage && <Notice>{uploadMessage}</Notice>}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 140px), 1fr))", gap: 14 }}>
+                      {galleryUploads.map((upload) => (
+                        <div key={upload.id} style={{ aspectRatio: "1", borderRadius: 18, overflow: "hidden", position: "relative", background: "#f4fbfc" }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={upload.url} alt={upload.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          <button
+                            type="button"
+                            onClick={() => deleteUpload(upload.id)}
+                            aria-label={`Remove ${upload.fileName}`}
+                            style={{ position: "absolute", top: 8, right: 8, width: 36, height: 36, borderRadius: "50%", border: 0, background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,.15)" }}
+                          >
+                            <Icon name="x" size={14} color="#3f3e44" strokeWidth={2.4} />
+                          </button>
+                        </div>
+                      ))}
+                      <label style={{ aspectRatio: "1", borderRadius: 18, border: "2px dashed #54b2bf", background: "#f4fbfc", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, fontWeight: 800, fontSize: 14, color: "#2a7b86", cursor: "pointer", textAlign: "center", padding: 8 }}>
+                        <input
+                          type="file"
+                          className="kc-sr-only"
+                          accept="image/png,image/jpeg,image/webp"
+                          onChange={(event) => {
+                            uploadFile(event.target.files?.[0], "gallery", "Gallery photo");
+                            event.target.value = "";
+                          }}
+                          disabled={loading}
+                        />
+                        <Icon name="plus" size={26} color="#2a7b86" />
+                        Add photo
+                      </label>
+                    </div>
+                    {galleryUploads.length === 0 && (
+                      <p style={{ margin: 0, fontSize: 14, color: "#686973" }}>No gallery photos uploaded yet.</p>
+                    )}
+                  </Panel>
                 </div>
-              )}
+              </TabsContent>
+            </Tabs>
+          </div>
 
-              {isTransport && (
-                <div className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:grid-cols-2">
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Company or driver full names</Label>
-                    <Input value={ownerFullName} onChange={(event) => setOwnerFullName(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Number plate</Label>
-                    <Input value={numberPlate} onChange={(event) => setNumberPlate(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">PRDP</Label>
-                    <Input value={prdp} onChange={(event) => setPrdp(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
-                  </div>
-                </div>
-              )}
-
-              {isParty && (
-                <div className="grid gap-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:grid-cols-2">
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Owner full names</Label>
-                    <Input value={ownerFullName} onChange={(event) => setOwnerFullName(event.target.value)} className="mt-1 rounded-lg border-[var(--brand-line)]" />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-[var(--brand-ink)]">Trading hours</Label>
-                    <Input
-                      value={tradingHours}
-                      onChange={(event) => setTradingHours(event.target.value)}
-                      placeholder="Saturday to Sunday, 9:00 AM - 6:00 PM"
-                      className="mt-1 rounded-lg border-[var(--brand-line)]"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <Label className="text-sm font-medium text-[var(--brand-ink)]">Services</Label>
-                <Textarea
-                  value={services}
-                  onChange={(event) => setServices(event.target.value)}
-                  placeholder="Baby class, aftercare, holiday programme"
-                  className="mt-1 resize-none rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                  rows={3}
-                />
-                <p className="mt-1 text-xs text-[var(--brand-muted)]">Separate services with commas.</p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <Label className="text-sm font-medium text-[var(--brand-ink)]">Experience</Label>
-                  <Input
-                    value={experience}
-                    onChange={(event) => setExperience(event.target.value)}
-                    placeholder="10 years of childcare experience"
-                    className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-[var(--brand-ink)]">Availability</Label>
-                  <Input
-                    value={availability}
-                    onChange={(event) => setAvailability(event.target.value)}
-                    placeholder="Monday to Friday, 7:00 AM - 5:30 PM"
-                    className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              <h4 className="font-semibold text-[var(--brand-ink)]">Contact Information</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-[var(--brand-ink)]">Phone Number</Label>
-                  <Input
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                    placeholder="+267 71 234 567"
-                    className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-[var(--brand-ink)]">WhatsApp Number</Label>
-                  <Input
-                    value={whatsapp}
-                    onChange={(event) => setWhatsapp(event.target.value)}
-                    placeholder="+26771234567"
-                    className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label className="text-sm font-medium text-[var(--brand-ink)]">Email Address</Label>
-                  <Input
-                    type="email"
-                    value={user?.email ?? ""}
-                    readOnly
-                    className="mt-1 rounded-lg border-[var(--brand-line)] bg-[var(--brand-ivory)]"
-                  />
-                </div>
+          {/* Save / publish */}
+          <section style={{ background: "#ffffff", borderRadius: 24, padding: 20, display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
+              <p style={{ margin: 0, fontSize: 14, color: "#686973", flex: "1 1 240px" }}>
+                {published ? "Your listing is visible in provider search." : "Your listing is private."}{" "}
+                {verified ? "Your verified badge is active." : "Upload your documents for admin review to qualify for the verified badge."}
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                <button type="button" onClick={() => void saveProviderProfile(false)} disabled={loading} className="kc-btn-outline">
+                  {published ? "Unpublish" : "Save draft"}
+                </button>
+                <button type="button" onClick={() => void saveProviderProfile(true)} disabled={loading} className="kc-btn">
+                  {published ? "Update published listing" : "Publish listing"}
+                </button>
               </div>
             </div>
-          </TabsContent>
-
-          {/* Documents */}
-          <TabsContent value="documents">
-            <div className="bg-white rounded-lg border border-[var(--brand-line)] shadow-sm p-6 space-y-5">
-              <p className="text-[var(--brand-muted)] text-sm bg-blue-50 rounded-lg p-3 border border-blue-100">
-                Your first month includes full provider access, so verification checkout is waived while it is active.
-                Upload the required documents for your provider type.
-                Once approved, your public profile displays the Verified badge.
-              </p>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4">
-                  <div className="flex items-center gap-2 text-sm font-black text-[var(--brand-ink)]">
-                    <CreditCard className="h-4 w-4 text-[var(--brand-leaf)]" />
-                    {hasVettingPackages ? "Nanny/helper vetting package" : "Verification fee"}
-                  </div>
-                  {hasVettingPackages ? (
-                    <div className="mt-3 grid gap-2">
-                      {VETTING_PACKAGES.map((plan) => {
-                        const selected = verificationPackageId === plan.id;
-                        return (
-                          <button
-                            key={plan.id}
-                            type="button"
-                            onClick={() => {
-                              if (verificationPaid) return;
-                              setVerificationPackageId(plan.id);
-                              setVerificationPackageName(plan.name);
-                            }}
-                            className={`rounded-lg border p-3 text-left transition-colors ${
-                              selected
-                                ? "border-[var(--brand-leaf)] bg-white"
-                                : "border-[var(--brand-line)] bg-[var(--brand-ivory)] hover:border-[var(--brand-leaf)]"
-                            } ${verificationPaid ? "cursor-default" : "cursor-pointer"}`}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-sm font-black text-[var(--brand-ink)]">
-                                {plan.name}
-                              </span>
-                              <span className="text-lg font-black text-[var(--brand-ink)]">
-                                {verificationPaid ? "Included" : `P ${plan.price}`}
-                              </span>
-                            </div>
-                            <p className="mt-1 text-xs leading-5 text-[var(--brand-muted)]">
-                              {plan.summary}
-                            </p>
-                          </button>
-                        );
-                      })}
-                      <div className="rounded-lg bg-white px-3 py-2">
-                        <div className="text-xs font-black uppercase tracking-[0.12em] text-[var(--brand-muted)]">
-                          {selectedVettingPackage.name} includes
-                        </div>
-                        <ul className="mt-2 space-y-1 text-xs leading-5 text-[var(--brand-muted)]">
-                          {selectedVettingPackage.features.map((feature) => (
-                            <li key={feature} className="flex gap-2">
-                              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand-leaf)]" />
-                              <span>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mt-2 text-2xl font-black text-[var(--brand-ink)]">
-                        {verificationPaid ? "P 0" : `P ${VERIFICATION_FEE.amount}`}
-                      </div>
-                      <p className="mt-1 text-xs text-[var(--brand-muted)]">
-                        Included during the free full-access month.
-                      </p>
-                    </>
-                  )}
-                  {verificationPaid ? (
-                    <Badge className="mt-3 rounded-full border-green-200 bg-green-50 text-green-700">
-                      Included{verificationPackageName ? ` · ${verificationPackageName}` : ""}
-                    </Badge>
-                  ) : (
-                    <Button
-                      type="button"
-                      onClick={payVerificationFee}
-                      className="mt-3 h-9 rounded-lg bg-[var(--brand-leaf)] text-xs font-black text-white hover:bg-[var(--brand-coral)]"
-                    >
-                      Go to payment page - P {verificationPrice}
-                    </Button>
-                  )}
-                  {verificationFeePaidAt && (
-                    <p className="mt-2 text-xs text-[var(--brand-muted)]">
-                      Paid {new Date(verificationFeePaidAt).toLocaleDateString()}{" "}
-                      {verificationPaymentReference && `· ${verificationPaymentReference}`}
-                    </p>
-                  )}
-                </div>
-
-                <div className="rounded-lg border border-[var(--brand-line)] bg-white p-4">
-                  <div className="text-sm font-black text-[var(--brand-ink)]">
-                    Profile details required
-                  </div>
-                  <ul className="mt-3 space-y-2 text-xs text-[var(--brand-muted)]">
-                    {missingProfileFields.length ? (
-                      missingProfileFields.map((field) => (
-                        <li key={field} className="flex items-start gap-2">
-                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-300" />
-                          <span>{field}</span>
-                        </li>
-                      ))
-                    ) : (
-                      <li className="flex items-start gap-2">
-                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600" />
-                        <span>All profile details for this provider type are complete.</span>
+            {saveMessage && (
+              <div role="status" style={{ borderRadius: 16, background: "#f4fbfc", border: "1px solid #d7edf0", padding: "12px 16px", fontSize: 14 }}>
+                <div style={{ fontWeight: 800 }}>{saveMessage}</div>
+                {publishRequirements.length > 0 && (
+                  <ul style={{ listStyle: "none", margin: "10px 0 0", padding: 0, display: "grid", gap: 8 }}>
+                    {publishRequirements.map((issue) => (
+                      <li key={`${issue.section}-${issue.field}`} style={{ borderRadius: 12, background: "#ffffff", padding: "10px 12px" }}>
+                        <button
+                          type="button"
+                          onClick={() => goToTab(issue.tab)}
+                          style={{ border: 0, background: "none", padding: 0, fontWeight: 800, color: "#2a7b86", textAlign: "left", textDecoration: "underline" }}
+                        >
+                          {issue.section}: {issue.field}
+                        </button>
+                        <span style={{ display: "block", fontSize: 13, lineHeight: 1.5, color: "#686973" }}>{issue.hint}</span>
                       </li>
-                    )}
+                    ))}
                   </ul>
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-[var(--brand-line)] bg-white p-4">
-                <div className="text-sm font-black text-[var(--brand-ink)]">
-                  Required documents for{" "}
-                  {verificationProviderType === "individual"
-                    ? "individual care providers"
-                    : isPediatric
-                      ? "paediatric specialists"
-                      : isSchool
-                        ? "schools and nurseries"
-                        : "organisations"}
-                </div>
-                <ul className="mt-3 space-y-2 text-xs text-[var(--brand-muted)]">
-                  {documents.map((document) => {
-                    const uploaded = documentUploads.some(
-                      (upload) => upload.documentKey === document.key
-                    );
-                    return (
-                      <li key={document.key} className="flex items-start gap-2">
-                        <CheckCircle2
-                          className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
-                            uploaded ? "text-green-600" : "text-gray-300"
-                          }`}
-                        />
-                        <span>
-                          <span className="font-bold text-[var(--brand-ink)]">
-                            {document.label}
-                          </span>{" "}
-                          {document.hint}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-
-              <div className="flex flex-col gap-3 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-bold text-[var(--brand-ink)]">
-                    {verificationStatus === "approved" && "Verification approved"}
-                    {verificationStatus === "pending" && "Verification under review"}
-                    {verificationStatus === "rejected" && "Updates required"}
-                    {verificationStatus === "not_submitted" && "Ready for verification?"}
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--brand-muted)]">
-                    {verificationStatus === "approved" &&
-                      "Your public profile displays the Verified badge."}
-                    {verificationStatus === "pending" &&
-                      "An administrator is reviewing your submitted documents."}
-                    {verificationStatus === "rejected" &&
-                      "Update your documents, then submit them for another review."}
-                    {verificationStatus === "not_submitted" &&
-                      (verificationPaid
-                        ? missingProfileFields.length
-                          ? `Missing profile details: ${missingProfileFields.join(", ")}.`
-                          : missingDocuments.length
-                            ? `Missing documents: ${missingDocuments.map((document) => document.label).join(", ")}.`
-                            : "All required details and documents are uploaded. Submit when ready."
-                        : "Payment is only needed after the free full-access month ends.")}
-                  </p>
-                </div>
-                {(verificationStatus === "not_submitted" ||
-                  verificationStatus === "rejected") && (
-                  <Button
-                    type="button"
-                    onClick={submitVerification}
-                    disabled={!canSubmitVerification}
-                    className="shrink-0 rounded-lg bg-[var(--brand-leaf)] text-white hover:bg-[var(--brand-leaf)]/90"
-                  >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Submit for review
-                  </Button>
                 )}
               </div>
-
-              {/* Admin-only sensitive documents */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Lock className="w-4 h-4 text-red-500" />
-                  <span className="text-sm font-semibold text-red-600">Admin Review Only</span>
-                  <Badge className="rounded-full text-xs bg-red-50 text-red-600 border-red-200">Sensitive</Badge>
-                </div>
-
-                {sensitiveDocuments.map((doc) => {
-                  const uploaded = documentUploads.find((upload) => upload.documentKey === doc.key);
-                  return (
-                  <div key={doc.label} className="border border-red-100 rounded-lg p-4 bg-red-50/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-[var(--brand-ink)] text-sm">{doc.label}</div>
-                        <div className="text-gray-400 text-xs mt-0.5">{doc.hint}</div>
-                      </div>
-                      <label className="inline-flex cursor-pointer items-center rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50">
-                        <input
-                          type="file"
-                          className="sr-only"
-                          accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp"
-                          onChange={(event) => uploadFile(event.target.files?.[0], "document", doc.label, doc.key)}
-                          disabled={loading}
-                        />
-                        <Lock className="mr-1 h-3.5 w-3.5" />
-                        <Upload className="mr-1 h-3.5 w-3.5" />
-                        Upload
-                      </label>
-                    </div>
-                    <div className="mt-3 flex min-h-10 items-center justify-between rounded-lg bg-gray-200/60 px-3">
-                      <span className="text-xs text-gray-500">
-                        {uploaded ? `${uploaded.fileName} · visible to admin only` : "Visible to admin only"}
-                      </span>
-                      {uploaded && (
-                        <button
-                          onClick={() => deleteUpload(uploaded.id)}
-                          className="text-gray-400 hover:text-red-500"
-                          aria-label={`Remove ${doc.label}`}
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-                })}
-              </div>
-
-              <Separator />
-
-              {/* Standard documents */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-[var(--brand-ink)] text-sm">Supporting Documents</h4>
-                {standardDocuments.map((doc) => {
-                  const uploaded = documentUploads.find((upload) => upload.documentKey === doc.key);
-                  return (
-                  <div key={doc.label} className="border border-[var(--brand-line)] rounded-lg p-4 hover:border-[var(--brand-line)] transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-[var(--brand-ink)] text-sm">{doc.label}</div>
-                        <div className="text-gray-400 text-xs mt-0.5">{doc.hint}</div>
-                      </div>
-                      <label className="inline-flex cursor-pointer items-center rounded-lg border border-[var(--brand-line)] px-3 py-2 text-xs font-bold text-[var(--brand-leaf)] hover:bg-[var(--brand-ivory)]">
-                        <input
-                          type="file"
-                          className="sr-only"
-                          accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp"
-                          onChange={(event) => uploadFile(event.target.files?.[0], "document", doc.label, doc.key)}
-                          disabled={loading}
-                        />
-                        <Upload className="w-3.5 h-3.5 mr-1" />
-                        Upload
-                      </label>
-                    </div>
-                    <div className="mt-3 flex min-h-8 items-center justify-between rounded-lg border border-dashed border-[var(--brand-line)] bg-gray-50 px-3">
-                      <span className="text-xs text-gray-400">{uploaded ? uploaded.fileName : "No file uploaded"}</span>
-                      {uploaded && (
-                        <button
-                          onClick={() => deleteUpload(uploaded.id)}
-                          className="text-gray-400 hover:text-red-500"
-                          aria-label={`Remove ${doc.label}`}
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-                })}
-              </div>
-              {uploadMessage && (
-                <div className="rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-3 text-sm font-bold text-[var(--brand-leaf)]">
-                  {uploadMessage}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Pricing */}
-          <TabsContent value="pricing">
-            <div className="bg-white rounded-lg border border-[var(--brand-line)] shadow-sm p-6">
-              {isSchool ? (
-                <>
-                  <div className="flex items-center justify-between mb-5">
-                    <h3 className="font-bold text-[var(--brand-ink)]">Fee Structure by Grade</h3>
-                    <Button
-                      size="sm"
-                      onClick={addFeeRow}
-                      className="rounded-lg text-white text-xs"
-                      style={{ background: "var(--brand-leaf)" }}
-                    >
-                      + Add Grade
-                    </Button>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-3 gap-3 text-xs font-semibold text-[var(--brand-muted)] uppercase tracking-wide px-2">
-                      <span>Grade / Level</span>
-                      <span>Per Term (BWP)</span>
-                      <span>Per Year (BWP)</span>
-                    </div>
-                    {feeRows.map((row, idx) => (
-                      <div key={idx} className="grid grid-cols-3 gap-3 items-center">
-                        <Input
-                          value={row.grade}
-                          onChange={(e) => updateFeeRow(idx, "grade", e.target.value)}
-                          placeholder="e.g. Nursery"
-                          className="rounded-lg border-[var(--brand-line)] text-sm focus-visible:ring-[var(--brand-leaf)]"
-                        />
-                        <Input
-                          value={row.termly}
-                          onChange={(e) => updateFeeRow(idx, "termly", e.target.value)}
-                          placeholder="0"
-                          type="number"
-                          className="rounded-lg border-[var(--brand-line)] text-sm focus-visible:ring-[var(--brand-leaf)]"
-                        />
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={row.annually}
-                            onChange={(e) => updateFeeRow(idx, "annually", e.target.value)}
-                            placeholder="0"
-                            type="number"
-                            className="rounded-lg border-[var(--brand-line)] text-sm focus-visible:ring-[var(--brand-leaf)]"
-                          />
-                          <button
-                            onClick={() => removeFeeRow(idx)}
-                            className="text-gray-400 hover:text-red-500 shrink-0"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-4">
-                  <h3 className="mb-2 font-bold text-[var(--brand-ink)]">
-                    {isPediatric
-                      ? "Consultation price"
-                      : isTransport
-                        ? "Price per month"
-                        : isParty
-                          ? "Services and prices"
-                          : "Starting price"}
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-[var(--brand-ink)]">
-                        {isPediatric
-                          ? "Consultation price (BWP)"
-                          : isTransport
-                            ? "Monthly transport price (BWP)"
-                            : isParty
-                              ? "Starting package price (BWP)"
-                              : "Price (BWP)"}
-                      </Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={price}
-                        onChange={(event) => setPrice(event.target.value)}
-                        placeholder="e.g. 350"
-                        className="mt-1 rounded-lg border-[var(--brand-line)] focus-visible:ring-[var(--brand-leaf)]"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-[var(--brand-ink)]">Billing unit</Label>
-                      <Select
-                        value={priceUnit}
-                        onValueChange={(value) =>
-                          setPriceUnit((value ?? "per hour") as StoredProviderProfile["priceUnit"])
-                        }
-                      >
-                        <SelectTrigger className="mt-1 rounded-lg border-[var(--brand-line)]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="per hour">Per hour</SelectItem>
-                          <SelectItem value="per day">Per day</SelectItem>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="termly">Termly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  {isIndividualCare && (
-                    <div className="mt-2 flex items-center justify-between rounded-lg border border-[var(--brand-line)] p-4">
-                      <div>
-                        <div className="text-sm font-medium text-[var(--brand-ink)]">Stay in arrangement</div>
-                        <div className="text-xs text-gray-400">Provider can live with the family</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setStayArrangement(stayArrangement === "stay-in" ? "stay-out" : "stay-in")
-                        }
-                        className="text-[var(--brand-leaf)]"
-                        aria-label={stayArrangement === "stay-in" ? "Disable stay in" : "Enable stay in"}
-                      >
-                        {stayArrangement === "stay-in" ? (
-                          <ToggleRight className="h-8 w-8" />
-                        ) : (
-                          <ToggleLeft className="h-8 w-8 text-gray-300" />
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Gallery */}
-          <TabsContent value="gallery">
-            <div className="bg-white rounded-lg border border-[var(--brand-line)] shadow-sm p-6">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h3 className="font-bold text-[var(--brand-ink)]">Photo Gallery</h3>
-                  <p className="text-gray-400 text-xs mt-0.5">Upload photos to showcase your profile</p>
-                </div>
-                <label className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--brand-line)] px-3 py-2 text-xs font-bold text-[var(--brand-leaf)] hover:bg-[var(--brand-ivory)]">
-                  <input
-                    type="file"
-                    className="sr-only"
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={(event) => uploadFile(event.target.files?.[0], "gallery", "Gallery photo")}
-                    disabled={loading}
-                  />
-                  <ImagePlus className="w-3.5 h-3.5" />
-                  Add Photos
-                </label>
-              </div>
-
-              <label className="mb-4 block cursor-pointer rounded-lg border-2 border-dashed border-[var(--brand-line)] p-8 text-center transition-colors hover:border-[var(--brand-leaf)]">
-                <input
-                  type="file"
-                  className="sr-only"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) => uploadFile(event.target.files?.[0], "gallery", "Gallery photo")}
-                  disabled={loading}
-                />
-                <ImagePlus className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-400 text-sm">Drag and drop images here, or click to browse</p>
-                <p className="text-gray-300 text-xs mt-1">JPG, PNG up to 5MB each</p>
-              </label>
-
-              {uploadMessage && (
-                <div className="mb-4 rounded-lg border border-[var(--brand-line)] bg-[var(--brand-ivory)] px-4 py-3 text-sm font-bold text-[var(--brand-leaf)]">
-                  {uploadMessage}
-                </div>
-              )}
-
-              {galleryUploads.length ? (
-                <div className="grid grid-cols-3 gap-3">
-                  {galleryUploads.map((upload) => (
-                  <div key={upload.id} className="relative aspect-square rounded-lg overflow-hidden group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={upload.url} alt={upload.label} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        onClick={() => deleteUpload(upload.id)}
-                        className="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center"
-                        aria-label={`Remove ${upload.fileName}`}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed border-[var(--brand-line)] bg-gray-50 px-4 py-8 text-center text-sm text-gray-400">
-                  No gallery photos uploaded yet.
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        {/* Save */}
-        <div className="mt-6 flex flex-wrap justify-end gap-3">
-          <Button
-            variant="outline"
-            onClick={() => void saveProviderProfile(false)}
-            disabled={loading}
-            className="rounded-lg border-[var(--brand-line)] text-[var(--brand-muted)]"
-          >
-            {published ? "Unpublish" : "Save Draft"}
-          </Button>
-          <Button
-            onClick={() => void saveProviderProfile(true)}
-            disabled={loading}
-            className="rounded-lg text-white font-semibold px-8"
-            style={{ background: "var(--brand-leaf)" }}
-          >
-            {published ? "Update Published Listing" : "Publish Listing"}
-          </Button>
-        </div>
-        {saveMessage && (
-          <div className="mt-4 rounded-lg border border-[var(--brand-line)] bg-white px-4 py-3 text-sm text-[var(--brand-muted)]">
-            <div className="font-bold">{saveMessage}</div>
-            {publishRequirements.length > 0 && (
-              <ul className="mt-3 space-y-2">
-                {publishRequirements.map((issue) => (
-                  <li key={`${issue.section}-${issue.field}`} className="rounded-lg bg-[var(--brand-ivory)] px-3 py-2">
-                    <span className="font-black text-[var(--brand-ink)]">
-                      {issue.section}: {issue.field}
-                    </span>
-                    <span className="block text-xs leading-5 text-[var(--brand-muted)]">
-                      {issue.hint}
-                    </span>
-                  </li>
-                ))}
-              </ul>
             )}
-          </div>
-        )}
+          </section>
+        </div>
       </div>
     </div>
   );

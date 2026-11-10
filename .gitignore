@@ -55,3 +55,7 @@ next-env.d.ts
 /data/*.lock
 /data/*.corrupt-*
 /data/.*.tmp
+
+# Design export, kept locally for reference only
+/kidcellence-nextjs/
+/kidcellence-nextjs.zip

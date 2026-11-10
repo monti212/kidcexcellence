@@ -1462,11 +1462,16 @@ describe("Kidcellence platform APIs", () => {
     assert.ok(serverSwitchable, "expected SWITCHABLE_ROLES to assert on");
     assert.equal(serverSwitchable[1].includes("admin"), false);
 
-    const navbarSource = await readFile(
-      path.join(process.cwd(), "components", "Navbar.tsx"),
+    const headerSource = await readFile(
+      path.join(process.cwd(), "components", "kidcellence", "SiteHeader.tsx"),
       "utf8"
     );
-    assert.match(navbarSource, /href="\/settings"/);
+    assert.match(headerSource, /href=\{routes\.settings\}/);
+    const routesSource = await readFile(
+      path.join(process.cwd(), "lib", "kidcellence", "routes.ts"),
+      "utf8"
+    );
+    assert.match(routesSource, /settings: "\/settings"/);
   });
 
   it("keeps allowlisted admins out of the account type switcher", async () => {

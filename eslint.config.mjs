@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Design export kept locally for reference only; never built or shipped.
+    "kidcellence-nextjs/**",
   ]),
 ]);
 

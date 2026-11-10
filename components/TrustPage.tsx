@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { routes } from "@/lib/kidcellence/routes";
 
 interface TrustSection {
   title: string;
@@ -8,6 +8,8 @@ interface TrustSection {
   items?: string[];
 }
 
+// Shared layout for the safety, privacy and terms pages, in the Kidcellence
+// design language (ivory hero, white rounded panels, teal accents).
 export function TrustPage({
   eyebrow,
   title,
@@ -24,76 +26,64 @@ export function TrustPage({
   updated?: string;
 }) {
   return (
-    <div className="brand-page min-h-screen">
-      <header className="border-b border-[var(--brand-line)] bg-white">
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-black text-[var(--brand-leaf)] hover:underline"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Kidcellence
+    <div style={{ background: "#ffffff", color: "#3f3e44" }}>
+      <section style={{ background: "#f4fbfc", overflow: "hidden" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", padding: "48px 16px 56px", display: "flex", flexDirection: "column", gap: 20 }}>
+          <Link href={routes.home} style={{ alignSelf: "flex-start", fontSize: 14, fontWeight: 700, color: "#2a7b86" }}>
+            ← Back to Kidcellence
           </Link>
-          <div className="mt-8 flex items-start gap-4">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[var(--brand-sky)] text-[var(--brand-gold)]">
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 18, flexWrap: "wrap" }}>
+            <span
+              aria-hidden="true"
+              style={{ flex: "0 0 auto", width: 56, height: 56, borderRadius: "50%", background: "#54b2bf", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}
+            >
               {icon}
-            </div>
-            <div>
-              <p className="brand-label">{eyebrow}</p>
-              <h1 className="mt-2 text-4xl font-black text-[var(--brand-ink)] sm:text-5xl">
+            </span>
+            <div style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+              <span style={{ alignSelf: "flex-start", background: "#fff5d3", color: "#3f3e44", fontWeight: 800, fontSize: 13, padding: "6px 12px", borderRadius: 999, letterSpacing: ".4px", textTransform: "uppercase" }}>
+                {eyebrow}
+              </span>
+              <h1 style={{ margin: 0, fontSize: "clamp(34px, 6vw, 52px)", lineHeight: 1.08, fontWeight: 800, letterSpacing: "-1.5px" }}>
                 {title}
               </h1>
-              <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--brand-muted)]">
-                {introduction}
-              </p>
+              <p style={{ margin: 0, maxWidth: 720, fontSize: 18, lineHeight: 1.6, color: "#686973" }}>{introduction}</p>
               {updated && (
-                <p className="mt-3 text-xs font-bold text-[var(--brand-muted)]">
-                  Last updated {updated}
-                </p>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#686973" }}>Last updated {updated}</p>
               )}
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="divide-y divide-[var(--brand-line)] border-y border-[var(--brand-line)]">
-          {sections.map((section) => (
-            <section key={section.title} className="py-7">
-              <div className="grid gap-3 md:grid-cols-[220px_1fr] md:gap-10">
-                <h2 className="text-lg font-black text-[var(--brand-ink)]">
-                  {section.title}
-                </h2>
-                <div className="text-sm leading-7 text-[var(--brand-muted)]">
-                  {section.body && <p>{section.body}</p>}
-                  {section.items && (
-                    <ul className="space-y-2">
-                      {section.items.map((item) => (
-                        <li key={item} className="flex gap-3">
-                          <span
-                            className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand-leaf)]"
-                            aria-hidden="true"
-                          />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            </section>
-          ))}
-        </div>
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 16px 80px", display: "flex", flexDirection: "column", gap: 16 }}>
+        {sections.map((section) => (
+          <section
+            key={section.title}
+            className="kc-panel"
+            style={{ padding: 24, display: "flex", flexWrap: "wrap", gap: "12px 40px" }}
+          >
+            <h2 style={{ flex: "1 1 200px", margin: 0, fontSize: 20, fontWeight: 800 }}>{section.title}</h2>
+            <div style={{ flex: "999 1 420px", minWidth: 0, fontSize: 16, lineHeight: 1.7, color: "#686973" }}>
+              {section.body && <p style={{ margin: 0 }}>{section.body}</p>}
+              {section.items && (
+                <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+                  {section.items.map((item) => (
+                    <li key={item} style={{ display: "flex", gap: 12 }}>
+                      <span aria-hidden="true" style={{ flex: "0 0 auto", marginTop: 10, width: 8, height: 8, borderRadius: "50%", background: "#54b2bf" }} />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
+        ))}
 
-        <div className="mt-10 flex flex-wrap gap-3">
-          <Link href="/help" className="brand-button">
-            Visit help centre
-          </Link>
-          <Link href="/search" className="brand-button-secondary">
-            Browse providers
-          </Link>
+        <div style={{ marginTop: 24, display: "flex", flexWrap: "wrap", gap: 12 }}>
+          <Link href={routes.help} className="kc-btn">Visit help centre</Link>
+          <Link href={routes.browse} className="kc-btn-outline">Browse providers</Link>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

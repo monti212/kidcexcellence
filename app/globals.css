@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Avenir Next", Avenir, "Century Gothic", "Trebuchet MS", ui-sans-serif, sans-serif;
+  --font-sans: var(--kc-font), "Plus Jakarta Sans", system-ui, ui-sans-serif, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -54,6 +54,11 @@
   --color-brand-paper: #ffffff;
   --color-brand-cream: #fff5d3;
   --color-brand-muted: #686973;
+  --color-brand-teal: #2a7b86;
+  --color-brand-teal-hover: #1f5f68;
+  --color-brand-coral-deep: #c2412a;
+  --color-brand-ivory: #f4fbfc;
+  --color-brand-line: #d7edf0;
 }
 
 :root {
@@ -63,7 +68,7 @@
   --card-foreground: #3f3e44;
   --popover: #ffffff;
   --popover-foreground: #3f3e44;
-  --primary: #54b2bf;
+  --primary: #2a7b86;
   --primary-foreground: #ffffff;
   --secondary: #fff5d3;
   --secondary-foreground: #3f3e44;
@@ -74,7 +79,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: #d7edf0;
   --input: #d7edf0;
-  --ring: #54b2bf;
+  --ring: #2a7b86;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -100,6 +105,24 @@
   --brand-ivory: #f4fbfc;
   --brand-line: #d7edf0;
   --brand-muted: #686973;
+  /* Kidcellence design tokens (from the design export). Teal-deep is the
+     button and link colour: white text on it passes WCAG AA, on --brand-sky it does not. */
+  --brand-teal: #2a7b86;
+  --brand-teal-hover: #1f5f68;
+  --brand-coral-deep: #c2412a;
+  --brand-disabled: #9fb9bd;
+  --kc-ink: #3f3e44;
+  --kc-teal: #54b2bf;
+  --kc-teal-deep: #2a7b86;
+  --kc-teal-hover: #1f5f68;
+  --kc-gold: #ffcc2f;
+  --kc-coral: #f05a3c;
+  --kc-coral-deep: #c2412a;
+  --kc-muted: #686973;
+  --kc-line: #d7edf0;
+  --kc-ivory: #f4fbfc;
+  --kc-cream: #fff5d3;
+  --kc-paper: #ffffff;
 }
 
 @layer base {
@@ -112,6 +135,20 @@
   }
   html {
     @apply font-sans;
+  }
+  body {
+    color: var(--kc-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+  details summary {
+    cursor: pointer;
+    list-style: none;
+  }
+  details summary::-webkit-details-marker {
+    display: none;
   }
 }
 
@@ -131,7 +168,7 @@
   }
 
   .brand-button {
-    @apply inline-flex items-center justify-center rounded-full bg-[var(--brand-sky)] px-5 py-2.5 text-sm font-extrabold text-white shadow-sm transition-colors hover:bg-[var(--brand-coral)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-full bg-[var(--brand-teal)] px-5 py-2.5 text-sm font-extrabold text-white shadow-sm transition-colors hover:bg-[var(--brand-teal-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
 
   .brand-button-secondary {
@@ -140,10 +177,70 @@
   }
 
   .brand-label {
-    @apply text-[11px] font-extrabold uppercase tracking-[0.24em] text-[var(--brand-sky)];
+    @apply text-[11px] font-extrabold uppercase tracking-[0.24em] text-[var(--brand-teal)];
   }
 
   .brand-muted {
     color: var(--brand-muted);
+  }
+}
+
+/* Kidcellence design system. Ported from the design export's styles/kidcellence.css,
+   placed in the components layer so Tailwind utilities still win where both apply. */
+@layer components {
+  .kc-sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  /* Listing cards lift on hover. */
+  .kc-card { transition: transform .2s ease, box-shadow .2s ease; }
+  .kc-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(63,62,68,.12) !important; }
+
+  /* Dotted texture for photo placeholders (the colour comes from inline background-color). */
+  .kc-dots { background-image: radial-gradient(rgba(255,255,255,.55) 1.5px, transparent 1.6px); background-size: 16px 16px; }
+
+  /* Header nav links. */
+  .kc-nav a { color: var(--kc-ink); text-decoration: none; font-weight: 600; font-size: 15px; }
+  .kc-nav a:hover { color: var(--kc-teal-deep); }
+  .kc-nav a[aria-current="page"] { color: var(--kc-teal-deep); font-weight: 800; }
+
+  /* Filter chips. */
+  .kc-chip { font-weight: 700; font-size: 14px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--kc-line); background: #fff; color: var(--kc-ink); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+  .kc-chip[aria-pressed="true"], .kc-chip[aria-selected="true"] { background: var(--kc-ink); border-color: var(--kc-ink); color: #fff; }
+
+  /* Dashboard side menu. */
+  .kc-side a, .kc-side button { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; color: var(--kc-ink); text-decoration: none; font-weight: 600; font-size: 15px; min-height: 44px; background: transparent; border: 0; width: 100%; text-align: left; }
+  .kc-side a:hover, .kc-side button:hover { background: var(--kc-ivory); }
+  .kc-side [aria-current="page"], .kc-side [aria-current="true"] { background: var(--kc-ivory); color: var(--kc-teal-deep); font-weight: 800; }
+
+  /* Admin tables. */
+  .kc-table th { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--kc-muted); text-align: left; font-weight: 800; padding: 12px 14px; border-bottom: 1px solid var(--kc-line); white-space: nowrap; }
+  .kc-table td { padding: 12px 14px; border-bottom: 1px solid var(--kc-line); font-size: 14px; vertical-align: middle; }
+
+  /* Footer links. */
+  .kc-foot a { color: rgba(255,255,255,.78); text-decoration: none; font-size: 14px; }
+  .kc-foot a:hover { color: #fff; }
+
+  /* Form fields in the design's style. */
+  .kc-input { width: 100%; min-height: 48px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--kc-line); background: #fff; color: var(--kc-ink); font-size: 15px; font-weight: 500; }
+  .kc-input:focus { outline: 2px solid var(--kc-teal-deep); outline-offset: 1px; }
+  .kc-label { display: block; font-size: 13px; font-weight: 700; color: var(--kc-ink); margin-bottom: 6px; }
+
+  /* Buttons in the design's style. */
+  .kc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 12px 22px; border-radius: 999px; font-weight: 800; font-size: 15px; text-decoration: none; border: 0; background: var(--kc-teal-deep); color: #fff; box-shadow: 0 6px 16px rgba(42,123,134,.28); transition: background-color .15s ease; }
+  .kc-btn:hover { background: var(--kc-teal-hover); color: #fff; }
+  .kc-btn:disabled { background: var(--brand-disabled); box-shadow: none; cursor: not-allowed; }
+  .kc-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 12px 22px; border-radius: 999px; font-weight: 800; font-size: 15px; text-decoration: none; border: 2px solid var(--kc-teal-deep); background: #fff; color: var(--kc-teal-deep); }
+  .kc-btn-outline:hover { background: var(--kc-ivory); color: var(--kc-teal-hover); }
+  .kc-btn-outline:disabled { opacity: .5; cursor: not-allowed; }
+  .kc-btn-danger { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 12px 22px; border-radius: 999px; font-weight: 800; font-size: 15px; border: 0; background: var(--kc-coral-deep); color: #fff; }
+  .kc-btn-danger:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* Panels. */
+  .kc-panel { background: #fff; border-radius: 24px; box-shadow: 0 6px 20px rgba(63,62,68,.06); border: 1px solid var(--kc-line); }
+
+  /* Home has a separate phone design. These switch between the two at 640px. */
+  .kc-mobile-only { display: none; }
+  @media (max-width: 640px) {
+    .kc-desktop-only { display: none !important; }
+    .kc-mobile-only { display: block; }
   }
 }
