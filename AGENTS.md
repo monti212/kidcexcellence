@@ -26,9 +26,23 @@ file before changing anything server-side — most questions are answered in it.
 
 ## Architecture invariants
 
-**All writes go through `updateStore()`.** It does read → mutate → persist as a
-unit. Never write the store file directly, and never persist from inside a
-route handler.
+**All writes go through `updateStore()`.** It reads the latest version, runs
+your updater, and commits only if nothing changed in between, retrying
+otherwise (`lib/store-engine.ts`). Because the updater can run more than once,
+it must only mutate the store it is given: do side effects such as file
+deletes after it resolves. Throwing from the updater aborts without writing.
+Never write the store file directly, and never persist from inside a route
+handler.
+
+**Reads never write.** `readStore()` returns a read-only view with live
+analytics merged in; changes to it are discarded.
+
+**Analytics are a separate document** (`platform-analytics.json`), written
+through `updateAnalytics` and best-effort: an analytics failure must never fail
+the request that triggered it. Do not move them back into the main store.
+
+**Invalid stored JSON fails closed.** Never catch `StoreCorruptError` and fall
+back to an empty store. That fallback is what used to wipe data.
 
 **Route handlers are the only API boundary.** No server actions; `app/api/**`
 owns every mutation. Keep the response contracts stable if you swap the storage

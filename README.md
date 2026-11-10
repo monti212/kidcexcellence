@@ -82,6 +82,37 @@ Do not rely on the repository working directory or `/tmp` as durable storage on
 serverless platforms. Use Netlify Blobs, a mounted volume, or migrate
 `lib/platform-store.ts` to a real database and object storage.
 
+### Netlify Blobs store names
+
+Netlify shares site-wide Blobs stores across production, deploy previews and
+branch deploys, so the app never picks a store by default. Set these in the
+Netlify dashboard (Functions scope; `netlify.toml` values do not reach
+functions at runtime):
+
+| Variable | Production | Deploy previews and branch deploys |
+| --- | --- | --- |
+| `PLATFORM_BLOB_STORE_NAME` | `kidcellence-platform` | `kidcellence-platform-preview` |
+| `PLATFORM_BLOB_STORE_ALLOW_PRODUCTION` | `true` | not set |
+
+If `PLATFORM_BLOB_STORE_NAME` is missing, store access fails instead of falling
+back to production. Uploads use `kidcellence-uploads` in production and
+`<store name>-uploads` elsewhere.
+
+### Concurrency and recovery
+
+The store is two JSON documents: the main store (accounts, sessions, profiles,
+messages, uploads, payments) and `platform-analytics.json`. Every write is
+conditional (an ETag on Blobs, a content hash under a lock file on disk) and
+retries on conflict, so overlapping requests cannot drop each other's changes.
+Reads never write. Local files are replaced atomically, and the previous
+version is kept as `<file>.bak`.
+
+If a document is not valid JSON, the app refuses requests that need it and
+leaves it untouched; it never resets to an empty store. Local stores also get a
+`<file>.corrupt-<hash>` copy. To recover, stop the app, inspect the damaged file
+and the `.bak` (or a backup export), and restore the last good copy. Analytics
+failures never block accounts or messaging.
+
 ## Admin Access
 
 Set `ADMIN_EMAILS` to a comma-separated list of emails allowed to create or use admin accounts. The first successful admin sign-in for an allowlisted email creates the admin account in the runtime store. Kidcellence also includes built-in admin access for `monti@uhuruai.co`, `gaone@uhuruai.co`, `katlotarniah@gmail.com`, and `kidcellencebw@gmail.com`.

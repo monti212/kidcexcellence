@@ -29,6 +29,15 @@ import {
   categorySupportsVettingPackages,
   getVettingPackage,
 } from "@/lib/vetting-packages";
+import {
+  createBlobBackend,
+  createFileBackend,
+  readDocument,
+  resolveBlobStoreNames,
+  updateDocument,
+  type DocumentBackend,
+  type DocumentOptions,
+} from "@/lib/store-engine";
 
 export type UserRole = "parent" | "provider" | "admin";
 export const SESSION_COOKIE_NAME = "kidcellence_session";
@@ -319,10 +328,14 @@ const runtimeDataRoot =
     : path.join(/*turbopackIgnore: true*/ process.cwd(), "data"));
 const storePath =
   process.env.PLATFORM_STORE_PATH ?? path.join(runtimeDataRoot, "platform-store.json");
+// Analytics live in their own document so page-view traffic never contends
+// with accounts, messages or payments.
+const analyticsPath = path.join(path.dirname(storePath), "platform-analytics.json");
 export const uploadRootPath =
   process.env.PLATFORM_UPLOADS_DIR ?? path.join(runtimeDataRoot, "uploads");
 const scrypt = promisify(scryptCallback);
 const PLATFORM_STORE_BLOB_KEY = "platform-store.json";
+const PLATFORM_ANALYTICS_BLOB_KEY = "platform-analytics.json";
 const UPLOAD_BLOB_PREFIX = "uploads/";
 const BLOB_PATH_PREFIX = "blob:";
 type PlatformStorageDriver = "filesystem" | "netlify-blobs";
@@ -407,12 +420,22 @@ function shouldUseNetlifyBlobs() {
   return platformStorageDriver() === "netlify-blobs";
 }
 
+// Strong consistency: a read-modify-write must start from the latest version,
+// not an edge-cached copy that can be up to 60 seconds old.
 function platformBlobStore() {
-  return getStore("kidcellence-platform");
+  return getStore({ name: resolveBlobStoreNames(process.env).platform, consistency: "strong" });
 }
 
 function uploadBlobStore() {
-  return getStore("kidcellence-uploads");
+  return getStore(resolveBlobStoreNames(process.env).uploads);
+}
+
+function blobDocumentBackend(key: string): DocumentBackend {
+  const store = platformBlobStore();
+  return createBlobBackend(`Netlify Blobs ${key}`, {
+    getText: () => store.getWithMetadata(key, { type: "text" }),
+    setJSON: (value, condition) => store.setJSON(key, value, condition),
+  });
 }
 
 function createInitialStore(): PlatformStore {
@@ -607,18 +630,6 @@ function normalizePlatformAnalyticsRecord(
   };
 }
 
-async function persistStore(store: PlatformStore) {
-  assertDurableStorage(platformStorageDriver());
-
-  if (shouldUseNetlifyBlobs()) {
-    await platformBlobStore().setJSON(PLATFORM_STORE_BLOB_KEY, store);
-    return;
-  }
-
-  await mkdir(path.dirname(storePath), { recursive: true });
-  await writeFile(storePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
-}
-
 function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
   const initial = createInitialStore();
   const users = (store.users ?? initial.users).map((user) => ({
@@ -735,48 +746,120 @@ function normalizeStore(store: Partial<PlatformStore>): PlatformStore {
   };
 }
 
-async function readFilesystemStoreSnapshot() {
+interface AnalyticsDocument {
+  platformAnalytics: PlatformAnalyticsRecord;
+  providerAnalytics: Record<string, ProviderAnalyticsRecord>;
+  /** When this document was seeded from the analytics held in the main store. */
+  migratedFromMainStoreAt: string;
+}
+
+function normalizeAnalyticsDocument(raw: unknown): AnalyticsDocument {
+  const document = raw as Partial<AnalyticsDocument>;
+  return {
+    platformAnalytics: normalizePlatformAnalyticsRecord(document.platformAnalytics),
+    providerAnalytics: Object.fromEntries(
+      Object.entries(document.providerAnalytics ?? {}).map(([userId, analytics]) => [
+        userId,
+        normalizeProviderAnalyticsRecord(userId, analytics),
+      ])
+    ),
+    migratedFromMainStoreAt: document.migratedFromMainStoreAt ?? "",
+  };
+}
+
+function fileMainStoreDocument(): DocumentOptions<PlatformStore> {
+  return {
+    backend: createFileBackend(storePath),
+    normalize: (raw) => normalizeStore(raw as Partial<PlatformStore>),
+    createInitial: createInitialStore,
+  };
+}
+
+function mainStoreDocument(): DocumentOptions<PlatformStore> {
+  assertDurableStorage(platformStorageDriver());
+  if (!shouldUseNetlifyBlobs()) return fileMainStoreDocument();
+
+  return {
+    backend: blobDocumentBackend(PLATFORM_STORE_BLOB_KEY),
+    normalize: (raw) => normalizeStore(raw as Partial<PlatformStore>),
+    // A store moving onto Blobs starts from a local snapshot when one exists.
+    // It is only ever written with onlyIfNew, so it cannot replace an existing blob.
+    createInitial: () => readDocument(fileMainStoreDocument()),
+  };
+}
+
+function analyticsDocument(): DocumentOptions<AnalyticsDocument> {
+  assertDurableStorage(platformStorageDriver());
+  return {
+    backend: shouldUseNetlifyBlobs()
+      ? blobDocumentBackend(PLATFORM_ANALYTICS_BLOB_KEY)
+      : createFileBackend(analyticsPath),
+    normalize: normalizeAnalyticsDocument,
+    // Migration: the first write seeds this document from the analytics still in
+    // the main store. Creation is conditional (create-if-absent), so concurrent
+    // first writers end up with one document and the losers re-apply their
+    // event on top of it; nothing is seeded or counted twice. The main store's
+    // copy is left in place, frozen, so the previous release can still read it.
+    createInitial: async () => {
+      const store = await readMainStore();
+      return {
+        platformAnalytics: store.platformAnalytics,
+        providerAnalytics: store.providerAnalytics,
+        migratedFromMainStoreAt: new Date().toISOString(),
+      };
+    },
+    maxAttempts: 6,
+  };
+}
+
+/** Accounts, sessions, profiles, messages, uploads and payments. Never writes. */
+async function readMainStore(): Promise<PlatformStore> {
+  return readDocument(mainStoreDocument());
+}
+
+async function updateAnalytics<T>(updater: (analytics: AnalyticsDocument) => T) {
+  return updateDocument(analyticsDocument(), updater);
+}
+
+/**
+ * Analytics are best-effort: a failure here must never fail the request that
+ * triggered it, such as sending a message.
+ */
+async function recordAnalyticsSafely(updater: (analytics: AnalyticsDocument) => void) {
   try {
-    const contents = await readFile(storePath, "utf8");
-    return normalizeStore(JSON.parse(contents));
-  } catch {
-    return null;
+    await updateAnalytics(updater);
+  } catch (error) {
+    console.error("[platform-store] analytics update skipped:", error);
   }
 }
 
+/**
+ * The full store as routes see it, with live analytics merged in. Read-only:
+ * nothing is persisted, and changes to the returned object are discarded.
+ */
 export async function readStore(): Promise<PlatformStore> {
-  assertDurableStorage(platformStorageDriver());
-
-  if (shouldUseNetlifyBlobs()) {
-    const stored = await platformBlobStore().get(PLATFORM_STORE_BLOB_KEY, {
-      type: "json",
-    });
-    const store = stored
-      ? normalizeStore(stored as Partial<PlatformStore>)
-      : (await readFilesystemStoreSnapshot()) ?? createInitialStore();
-    if (!stored) {
-      await persistStore(store);
-    }
-    return store;
+  const [store, analytics] = await Promise.all([
+    readMainStore(),
+    readDocument(analyticsDocument()).catch((error) => {
+      // Unreadable analytics must not take accounts and messaging down with them.
+      console.error("[platform-store] analytics unavailable, using last migrated copy:", error);
+      return null;
+    }),
+  ]);
+  if (analytics) {
+    store.platformAnalytics = analytics.platformAnalytics;
+    store.providerAnalytics = analytics.providerAnalytics;
   }
-
-  const existingStore = await readFilesystemStoreSnapshot();
-  if (existingStore) {
-    const store = existingStore;
-    await persistStore(store);
-    return store;
-  }
-
-  const store = createInitialStore();
-  await persistStore(store);
   return store;
 }
 
+/**
+ * Read-modify-write on the main store with a conditional commit and retry.
+ * The updater may run more than once: only mutate the store it is given, and
+ * do side effects (file deletes, emails) after this resolves.
+ */
 export async function updateStore<T>(updater: (store: PlatformStore) => T | Promise<T>) {
-  const store = await readStore();
-  const result = await updater(store);
-  await persistStore(store);
-  return result;
+  return updateDocument(mainStoreDocument(), updater);
 }
 
 /**
@@ -1057,7 +1140,8 @@ export async function createOrLoginUser(input: {
     }
 
     user = {
-      id: `user-${Date.now()}`,
+      // The random suffix keeps two sign-ups in the same millisecond distinct.
+      id: `user-${Date.now()}-${randomBytes(4).toString("hex")}`,
       role: input.role,
       roles: [input.role],
       name: input.name?.trim() || (input.role === "provider" ? "New Provider" : input.role === "admin" ? "Admin" : "New Parent"),
@@ -1170,7 +1254,7 @@ export async function resetPasswordWithToken(token: string, password: string) {
 
 export async function getSessionByToken(token?: string | null) {
   if (!token) return null;
-  const store = await readStore();
+  const store = await readMainStore();
   if (store.revokedSessionTokens.includes(token)) return null;
   const signedSession = readSignedSessionToken(token);
   const session = store.sessions.find((item) => item.token === token);
@@ -1193,6 +1277,11 @@ export async function getSessionByToken(token?: string | null) {
 
   await updateStore((nextStore) => {
     if (!nextStore.users.some((item) => item.id === signedSession.user.id)) {
+      // Restoring a user from their cookie means the store had lost them.
+      console.warn(
+        `[platform-store] restored user ${signedSession.user.id} from a session cookie; ` +
+          "the store had no record of this account"
+      );
       nextStore.users.unshift({
         ...signedSession.user,
         passwordHash: signedSession.passwordHash ?? "restored-from-signed-session",
@@ -1329,7 +1418,7 @@ export async function switchActiveRole(userId: string, target: UserRole) {
 
 type ProviderAnalyticsEvent = "profile-view" | "enquiry" | "message-received";
 
-function ensureProviderAnalytics(store: PlatformStore, userId: string) {
+function ensureProviderAnalytics(store: Pick<AnalyticsDocument, "providerAnalytics">, userId: string) {
   store.providerAnalytics[userId] = normalizeProviderAnalyticsRecord(
     userId,
     store.providerAnalytics[userId]
@@ -1338,7 +1427,7 @@ function ensureProviderAnalytics(store: PlatformStore, userId: string) {
 }
 
 function bumpProviderAnalytics(
-  store: PlatformStore,
+  store: Pick<AnalyticsDocument, "providerAnalytics">,
   userId: string,
   event: ProviderAnalyticsEvent,
   now = new Date()
@@ -1497,7 +1586,7 @@ export async function recordPlatformPageView(input: {
     return false;
   }
 
-  return updateStore((store) => {
+  return updateAnalytics((store) => {
     const analytics = normalizePlatformAnalyticsRecord(store.platformAnalytics);
     const now = new Date();
     const today = dateKey(now);
@@ -1531,6 +1620,9 @@ export async function recordPlatformPageView(input: {
       .slice(-90);
     store.platformAnalytics = analytics;
     return true;
+  }).catch((error) => {
+    console.error("[platform-store] page view not recorded:", error);
+    return false;
   });
 }
 
@@ -1541,13 +1633,17 @@ export async function recordProviderProfileView(
   const providerUserId = providerAccountUserId({ id: providerId } as Provider);
   if (!providerUserId || providerUserId === viewerUserId) return false;
 
-  return updateStore((store) => {
-    const user = store.users.find((item) => item.id === providerUserId && item.role === "provider");
-    const profile = store.providerProfiles[providerUserId];
-    if (!user || !profile?.published) return false;
+  const store = await readMainStore();
+  const user = store.users.find((item) => item.id === providerUserId && item.role === "provider");
+  const profile = store.providerProfiles[providerUserId];
+  if (!user || !profile?.published) return false;
 
-    bumpProviderAnalytics(store, providerUserId, "profile-view");
+  return updateAnalytics((analytics) => {
+    bumpProviderAnalytics(analytics, providerUserId, "profile-view");
     return true;
+  }).catch((error) => {
+    console.error("[platform-store] profile view not recorded:", error);
+    return false;
   });
 }
 
@@ -1582,6 +1678,10 @@ export async function saveProviderProfile(
       ...(existing ?? {}),
       ...profile,
       userId,
+      // Owned by the verification flow and admins, not by profile edits. The
+      // route reads the status before this commit, so taking the caller's value
+      // could undo an approval that landed in between.
+      verificationStatus: existing?.verificationStatus ?? profile.verificationStatus,
       verificationPaymentStatus:
         existing?.verificationPaymentStatus ?? profile.verificationPaymentStatus ?? "unpaid",
       verificationFeeAmount: existing?.verificationFeeAmount ?? profile.verificationFeeAmount,
@@ -1638,19 +1738,19 @@ export async function recordVerificationPayment(userId: string, packageId?: stri
 }
 
 export async function listUploads(userId: string, type?: PlatformUploadRecord["type"]) {
-  const store = await readStore();
+  const store = await readMainStore();
   return store.uploads
     .filter((upload) => upload.userId === userId && (!type || upload.type === type))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function getUploadForUser(id: string, userId: string) {
-  const store = await readStore();
+  const store = await readMainStore();
   return store.uploads.find((upload) => upload.id === id && upload.userId === userId) ?? null;
 }
 
 export async function getPublishedProviderMediaUpload(id: string) {
-  const store = await readStore();
+  const store = await readMainStore();
   const upload = store.uploads.find(
     (item) =>
       item.id === id &&
@@ -1664,7 +1764,7 @@ export async function getPublishedProviderMediaUpload(id: string) {
 }
 
 export async function getVerificationUploadForAdmin(id: string) {
-  const store = await readStore();
+  const store = await readMainStore();
   const upload = store.uploads.find(
     (item) =>
       item.id === id &&
@@ -1802,7 +1902,7 @@ export async function getStoredConversations(
   viewerRole: UserRole,
   providerId?: string | null
 ) {
-  const store = await readStore();
+  const store = await readMainStore();
   const ownedConversations = store.conversations.filter((conversation) =>
     viewerRole === "parent"
       ? conversation.parentUserId === viewerUserId
@@ -1848,7 +1948,9 @@ export async function appendConversationMessage(input: {
   text: string;
   providerId?: string | null;
 }) {
-  return updateStore((store) => {
+  const outcome = await updateStore((store) => {
+    // Reset on every attempt: the updater re-runs if the commit conflicts.
+    const analyticsEvents: Array<{ userId: string; event: ProviderAnalyticsEvent }> = [];
     let startedProviderConversationUserId: string | undefined;
 
     if (input.viewerRole === "parent" && input.providerId) {
@@ -1889,7 +1991,7 @@ export async function appendConversationMessage(input: {
         item.providerId === input.providerId
       );
     });
-    if (!conversation) return { message, conversation: null };
+    if (!conversation) return { result: { message, conversation: null }, analyticsEvents };
 
     conversation.messages.push(message);
     conversation.lastMessage = input.text;
@@ -1900,9 +2002,9 @@ export async function appendConversationMessage(input: {
       conversation.unread = conversation.unreadForProvider;
       if (conversation.providerUserId) {
         if (startedProviderConversationUserId === conversation.providerUserId) {
-          bumpProviderAnalytics(store, conversation.providerUserId, "enquiry");
+          analyticsEvents.push({ userId: conversation.providerUserId, event: "enquiry" });
         }
-        bumpProviderAnalytics(store, conversation.providerUserId, "message-received");
+        analyticsEvents.push({ userId: conversation.providerUserId, event: "message-received" });
       }
     } else {
       conversation.unreadForProvider = 0;
@@ -1910,10 +2012,23 @@ export async function appendConversationMessage(input: {
       conversation.unread = conversation.unreadForParent;
     }
     return {
-      message,
-      conversation: conversationForViewer(conversation, input.viewerUserId),
+      result: {
+        message,
+        conversation: conversationForViewer(conversation, input.viewerUserId),
+      },
+      analyticsEvents,
     };
   });
+
+  if (outcome.analyticsEvents.length) {
+    await recordAnalyticsSafely((analytics) => {
+      outcome.analyticsEvents.forEach(({ userId, event }) =>
+        bumpProviderAnalytics(analytics, userId, event)
+      );
+    });
+  }
+
+  return outcome.result;
 }
 
 /**
@@ -1971,6 +2086,9 @@ export async function removeProviderAccount(userId: string) {
     await Promise.all(
       result.uploadPaths.map((storagePath) => deleteUploadFile(storagePath).catch(() => undefined))
     );
+    await recordAnalyticsSafely((analytics) => {
+      delete analytics.providerAnalytics[userId];
+    });
   }
 
   return result;
