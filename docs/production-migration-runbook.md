@@ -57,9 +57,15 @@ match.
 
    ```bash
    cd /Users/gaonemolefi/kidcel/kidcexcellence
-   netlify database status --branch <preview-branch-name> --show-credentials --json
-   netlify database status --show-credentials --json --branch <production-branch-name>
+   netlify database status --branch fix/postgres-persistence --show-credentials --json   # preview
+   netlify database status --branch production --show-credentials --json                 # production
    ```
+
+   Database branches are named after the git branch for previews and
+   `production` for production. `--branch main` is rejected ("No database branch
+   found"). Until the first production deploy is published, the production
+   branch has no tables (the migration shows as pending); the verification
+   script reports that as an empty database.
 
    Store both strings in shell variables. Never write them to files in the repo.
 2. Run the deployed verification. It writes synthetic records to the preview
@@ -143,7 +149,7 @@ with counts that match analyze. Every flag you used goes into the cutover log.
 6. Import into production:
 
    ```bash
-   PRODUCTION_DB="$(netlify database status --show-credentials --json --branch <production-branch-name> | ...)"
+   PRODUCTION_DB="$(netlify database status --show-credentials --json --branch production | ...)"
    npm run db:migrate -- import --source /secure/path/final-YYYY-MM-DD.json \
      --database-url "$PRODUCTION_DB" --expect-sha256 <sha256 from step 5> [flags]
    ```

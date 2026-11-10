@@ -77,6 +77,23 @@ const FINGERPRINT = `SELECT
   GREATEST((SELECT max(updated_at) FROM users), (SELECT max(updated_at) FROM sessions),
            (SELECT max(created_at) FROM messages), (SELECT max(updated_at) FROM platform_analytics)) AS newest_write`;
 
+/**
+ * Read-only snapshot of production. Before the first production deploy that
+ * applies the migration, the production branch has no tables at all: that is
+ * reported as an empty, schema-less database rather than failing the run.
+ */
+async function productionFingerprint() {
+  const [{ tables, has_users: hasUsers }] = await query(
+    productionUrl,
+    `SELECT (SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public')::int AS tables,
+            to_regclass('public.users') IS NOT NULL AS has_users`
+  );
+  if (!hasUsers) {
+    return { schema: false, tables, users: 0, sessions: 0, messages: 0, synthetic_users: 0, newest_write: null };
+  }
+  return { schema: true, tables, ...(await query(productionUrl, FINGERPRINT))[0] };
+}
+
 function call(pathname, { method = "GET", body, cookie } = {}) {
   const headers = { Origin: targetUrl.origin };
   if (cookie) headers.Cookie = cookie;
@@ -108,7 +125,7 @@ const check = (ok, label, detail = "") => {
 };
 
 // ---- Isolation and baseline (read-only) ----
-const productionBefore = (await query(productionUrl, FINGERPRINT))[0];
+const productionBefore = await productionFingerprint();
 console.log(`production before: ${JSON.stringify(productionBefore)}`);
 const live = await call("/api/providers");
 if (live.status !== 200) fail(`GET /api/providers returned ${live.status}`);
@@ -168,8 +185,13 @@ const retryCopies = (await query(previewUrl, "SELECT count(*)::int AS n FROM mes
 check(retryCopies === 1 && retries.every((r) => r.status === 200), "a retried send is stored exactly once", `statuses ${JSON.stringify(tally(retries))}`);
 
 // ---- Production untouched ----
-const productionAfter = (await query(productionUrl, FINGERPRINT))[0];
+const productionAfter = await productionFingerprint();
 console.log(`production after: ${JSON.stringify(productionAfter)}`);
+check(
+  productionAfter.schema === productionBefore.schema && productionAfter.tables === productionBefore.tables,
+  "production schema unchanged by the run",
+  `tables ${productionBefore.tables} -> ${productionAfter.tables}`
+);
 check(productionAfter.synthetic_users === 0, "no synthetic account reached production");
 check(
   productionAfter.messages >= productionBefore.messages && productionAfter.users >= productionBefore.users,
