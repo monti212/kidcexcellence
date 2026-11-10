@@ -19,27 +19,42 @@ what is easy to get wrong.
 
 ## Start here
 
-`lib/platform-store.ts` is the whole backend. Users, sessions, profiles,
-uploads, verifications, analytics, and conversations all live in one JSON
-document behind one module. There is no database and no auth library. Read this
-file before changing anything server-side — most questions are answered in it.
+`lib/platform-store.ts` is the whole backend: users, sessions, profiles,
+uploads, verifications, analytics and conversations, behind one module. The
+records live in Postgres (Netlify Database) through `lib/store-postgres.ts`;
+locally, without a database, they fall back to a JSON file. There is no auth
+library. Read `lib/platform-store.ts` and `docs/persistence-architecture.md`
+before changing anything server-side.
 
 ## Architecture invariants
 
-**All writes go through `updateStore()`.** It reads the latest version, runs
-your updater, and commits only if nothing changed in between, retrying
-otherwise (`lib/store-engine.ts`). Because the updater can run more than once,
-it must only mutate the store it is given: do side effects such as file
-deletes after it resolves. Throwing from the updater aborts without writing.
-Never write the store file directly, and never persist from inside a route
-handler.
+**All writes go through `updateStore()`.** With Postgres it runs one
+transaction that takes the store-wide advisory lock, loads the current state,
+runs your updater, writes only the changed rows and commits; it resolves only
+after COMMIT. The updater can run more than once (deadlock retry, and the
+local file store), so it must only mutate the store it is given: do side
+effects such as file deletes after it resolves. Throwing from the updater
+aborts without writing. Never write tables or the store file directly from a
+route, and never acknowledge a write before `updateStore` resolves.
+
+**Never answer 200 when nothing was saved.** Storage errors carry a `code`
+(`STORE_UNAVAILABLE`, `STORE_BUSY`, `STORE_INTEGRITY`, `STORE_CORRUPT`).
+Every route is wrapped with `withPersistenceErrors` and any catch block that
+turns errors into responses must first return `persistenceErrorResponse` for
+these (`lib/persistence-errors.ts`).
+
+**Schema changes are migrations.** Add a new numbered file under
+`netlify/database/migrations/`; never edit an applied one. Keep migrations
+backwards compatible (expand, then contract), because the previous release
+runs against the new schema during publish.
 
 **Reads never write.** `readStore()` returns a read-only view with live
 analytics merged in; changes to it are discarded.
 
-**Analytics are a separate document** (`platform-analytics.json`), written
-through `updateAnalytics` and best-effort: an analytics failure must never fail
-the request that triggered it. Do not move them back into the main store.
+**Analytics are stored apart from the main records.** Page views use their own
+row lock so they never queue behind account writes. Provider analytics caused
+by a write (messages, removals) commit in the same transaction through
+`updateStoreWithAnalytics`, so counts always match the records.
 
 **Invalid stored JSON fails closed.** Never catch `StoreCorruptError` and fall
 back to an empty store. That fallback is what used to wipe data.
@@ -141,9 +156,26 @@ redirect. Do not assume a verified payment signal exists.
 
 ## Testing
 
-`npm test` runs `scripts/integration-smoke.mjs`: it boots a real dev server on
-a temp port with isolated store and upload paths, then drives the API over
-HTTP. Add coverage there for any API change.
+`npm test` runs four suites:
+
+- `scripts/integration-smoke.mjs`: boots a real dev server on a temp port with
+  isolated (file) store and upload paths, then drives the API over HTTP. Add
+  coverage there for any API change.
+- `scripts/store-engine.test.mjs` and `scripts/store-concurrency.test.mjs`: the
+  local file store.
+- `scripts/postgres-store.test.mjs` and `scripts/db-migration.test.mjs`: the
+  store functions and the production import against a real PostgreSQL server
+  (`scripts/test-support/postgres.mjs`), including separate worker processes
+  standing in for separate instances. Run with
+  `--import ./scripts/test-support/register-alias.mjs` so `@/` imports resolve.
+- `scripts/postgres-e2e.test.mjs`: three `next start` processes of a fresh
+  production build share one database; every acknowledged write is checked
+  with SQL. Concurrency assertions must check a shared counter (for example
+  `unreadForProvider`), not only row counts: inserts of distinct rows survive
+  even without the lock, so row counts alone cannot detect lost updates.
+
+Only one `next dev` may run per project directory: stop your own dev server
+before `npm test`.
 
 Two traps that have already caused wrong assertions:
 

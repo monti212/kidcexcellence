@@ -11,10 +11,11 @@ import {
 } from "@/lib/platform-store";
 import { consumeRateLimit, requestIp } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import { isPersistenceError, persistenceErrorResponse, withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const auth = await getSessionFromRequest(request);
   if (!auth) {
     return NextResponse.json({ user: null, session: null }, { status: 401 });
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
   });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -110,6 +111,7 @@ export async function POST(request: Request) {
     });
     return response;
   } catch (error) {
+    if (isPersistenceError(error)) return persistenceErrorResponse(error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Could not authenticate." },
       { status: 400 }
@@ -117,7 +119,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+async function handleDELETE(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -133,3 +135,7 @@ export async function DELETE(request: Request) {
   });
   return response;
 }
+
+export const GET = withPersistenceErrors(handleGET);
+export const POST = withPersistenceErrors(handlePOST);
+export const DELETE = withPersistenceErrors(handleDELETE);

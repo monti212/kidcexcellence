@@ -7,8 +7,9 @@ import {
   type ProviderSort,
 } from "@/lib/platform-service";
 import { readStore } from "@/lib/platform-store";
+import { withPersistenceErrors } from "@/lib/persistence-errors";
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const { searchParams } = new URL(request.url);
   const categories = searchParams.getAll("category");
   const sortBy = searchParams.get("sort") as ProviderSort | null;
@@ -36,3 +37,5 @@ export async function GET(request: Request) {
     }),
   });
 }
+
+export const GET = withPersistenceErrors(handleGET);

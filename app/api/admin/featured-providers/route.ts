@@ -4,6 +4,7 @@ import {
   readStore,
 } from "@/lib/platform-store";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import { isPersistenceError, persistenceErrorResponse, withPersistenceErrors } from "@/lib/persistence-errors";
 
 interface RequestBody {
   action: "promote" | "demote";
@@ -27,7 +28,7 @@ async function requireAdmin(request: Request) {
   return auth?.session.role === "admin" ? auth : null;
 }
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   try {
     const auth = await requireAdmin(request);
     if (!auth) {
@@ -50,6 +51,7 @@ export async function GET(request: Request) {
 
     return Response.json({ providers });
   } catch (error) {
+    if (isPersistenceError(error)) return persistenceErrorResponse(error);
     console.error("Failed to load providers:", error);
     return Response.json(
       { error: "Failed to load providers" },
@@ -58,7 +60,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     if (!isSameOriginMutation(request)) {
       return Response.json({ error: "Cross-origin request rejected" }, { status: 403 });
@@ -107,6 +109,7 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
+    if (isPersistenceError(error)) return persistenceErrorResponse(error);
     console.error("Failed to update featured providers:", error);
     return Response.json(
       { error: "Failed to update featured providers" },
@@ -114,3 +117,6 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const GET = withPersistenceErrors(handleGET);
+export const POST = withPersistenceErrors(handlePOST);

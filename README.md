@@ -42,76 +42,53 @@ npm run build
 ```
 
 Use `npm run build` before deploying, then run `npm run start` for a production-like local server.
-The integration test starts a temporary Next dev server, uses isolated runtime data paths, and exercises the auth, profile, messaging, admin verification, and upload APIs.
+`npm test` runs four suites: the HTTP integration suite and the file-store regression suite (local development store), the Postgres store and migration suites against a disposable real PostgreSQL server, and an end-to-end suite that runs three `next start` instances of the production build against one database and verifies every acknowledged write with SQL.
 
 ## Runtime Data
 
-The app writes runtime data through the configured `PLATFORM_STORAGE_DRIVER`.
+Platform records (accounts, sessions, profiles, conversations, messages,
+uploads metadata, verifications, payments and analytics) are stored in
+**Postgres via Netlify Database**. Uploaded files are stored in Netlify Blobs.
+See [docs/persistence-architecture.md](docs/persistence-architecture.md) for
+the design and its guarantees, and
+[docs/production-migration-runbook.md](docs/production-migration-runbook.md)
+for moving production off the old Blobs document.
 
-Local development uses filesystem storage:
-
-```bash
-PLATFORM_STORAGE_DRIVER=filesystem
-./data/platform-store.json
-```
-
-Netlify production and deploy previews are configured in `netlify.toml` to use
-Netlify Blobs:
-
-```bash
-PLATFORM_STORAGE_DRIVER=netlify-blobs
-```
-
-That keeps signup, provider profiles, uploads, and the admin dashboard on the
-same durable backend across serverless function instances. If old
-`PLATFORM_STORE_PATH` or `PLATFORM_UPLOADS_DIR` values are still present in the
-Netlify UI, `netlify-blobs` still wins unless `PLATFORM_STORAGE_DRIVER` is
-explicitly set to `filesystem`.
-
-For non-Netlify production hosts, set `PLATFORM_STORAGE_DRIVER=filesystem` only
-when `PLATFORM_STORE_PATH` and `PLATFORM_UPLOADS_DIR` point to a durable mounted
-volume, for example:
-
-```bash
-PLATFORM_STORAGE_DRIVER=filesystem
-PLATFORM_STORE_PATH=/var/lib/kidcellence/platform-store.json
-PLATFORM_UPLOADS_DIR=/var/lib/kidcellence/uploads
-```
-
-Do not rely on the repository working directory or `/tmp` as durable storage on
-serverless platforms. Use Netlify Blobs, a mounted volume, or migrate
-`lib/platform-store.ts` to a real database and object storage.
-
-### Netlify Blobs store names
-
-Netlify shares site-wide Blobs stores across production, deploy previews and
-branch deploys, so the app never picks a store by default. Set these in the
-Netlify dashboard (Functions scope; `netlify.toml` values do not reach
-functions at runtime):
-
-| Variable | Production | Deploy previews and branch deploys |
+| Environment | Records | Uploaded files |
 | --- | --- | --- |
-| `PLATFORM_BLOB_STORE_NAME` | `kidcellence-platform` | `kidcellence-platform-preview` |
-| `PLATFORM_BLOB_STORE_ALLOW_PRODUCTION` | `true` | not set |
+| Netlify (production, previews) | Netlify Database (`NETLIFY_DB_URL`, provided by Netlify) | Netlify Blobs |
+| Local with `PLATFORM_DATABASE_URL` | That Postgres server | `PLATFORM_UPLOADS_DIR` or `./data/uploads` |
+| Local without a database | `./data/platform-store.json` (development only) | `./data/uploads` |
 
-If `PLATFORM_BLOB_STORE_NAME` is missing, store access fails instead of falling
-back to production. Uploads use `kidcellence-uploads` in production and
-`<store name>-uploads` elsewhere.
+On Netlify the app never falls back to files or Blobs for records: without a
+database every request answers 503.
 
-### Concurrency and recovery
+Schema changes live in `netlify/database/migrations/`. Netlify applies them to
+deploy-preview branches on every deploy and to production just before publish.
 
-The store is two JSON documents: the main store (accounts, sessions, profiles,
-messages, uploads, payments) and `platform-analytics.json`. Every write is
-conditional (an ETag on Blobs, a content hash under a lock file on disk) and
-retries on conflict, so overlapping requests cannot drop each other's changes.
-Reads never write. Local files are replaced atomically, and the previous
-version is kept as `<file>.bak`.
+### Environment variables
 
-If a document is not valid JSON, the app refuses requests that need it and
-leaves it untouched; it never resets to an empty store. Local stores also get a
-`<file>.corrupt-<hash>` copy. To recover, stop the app, inspect the damaged file
-and the `.bak` (or a backup export), and restore the last good copy. Analytics
-failures never block accounts or messaging.
+| Variable | Where | Purpose |
+| --- | --- | --- |
+| `PLATFORM_DATABASE_ALLOW_EMPTY_INIT` | Deploy previews and branch deploys only (Functions scope) | Lets a database with no imported data start empty. Never set in production: there the site answers 503 until the production import has run. |
+| `PLATFORM_DATABASE_URL` | Local development and tests only | Any Postgres connection string. Never set on Netlify. |
+| `PLATFORM_BLOB_STORE_NAME` | Every Netlify context (Functions scope) | Selects the uploads store: `kidcellence-platform` in production gives `kidcellence-uploads`; `kidcellence-platform-preview` gives `kidcellence-platform-preview-uploads`. |
+| `PLATFORM_BLOB_STORE_ALLOW_PRODUCTION` | Production only | Required for the production uploads store. |
+
+`netlify.toml` environment values do not reach functions at runtime; set these
+in the Netlify dashboard.
+
+### Failures and recovery
+
+- A request is acknowledged only after its transaction commits.
+- Storage failures are explicit: 503 `STORE_UNAVAILABLE` (database unreachable
+  or not yet migrated), 503 `STORE_BUSY` (could not get the write lock within
+  8 s), 409 `STORE_INTEGRITY` (a constraint rejected the change). Nothing is
+  partially saved.
+- Netlify Database takes a backup daily and on every production publish. Restoring
+  one requires the Team Owner role (Data & Storage → Database → Backups).
+- `npm run db:migrate -- export --database-url <url> --out <file>` writes the
+  database back into the legacy JSON format (see the runbook before using it).
 
 ## Admin Access
 

@@ -9,6 +9,7 @@ import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
 import { VERIFICATION_FEE } from "@/lib/verification-requirements";
 import { VETTING_PACKAGES } from "@/lib/vetting-packages";
+import { isPersistenceError, persistenceErrorResponse, withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
@@ -33,7 +34,7 @@ function stripeCheckoutUrl(link: string, reference: string, email: string) {
   }
 }
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const { searchParams } = new URL(request.url);
   const packageId = searchParams.get("packageId") ?? undefined;
   if (packageId) {
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ fee: VERIFICATION_FEE, packages: VETTING_PACKAGES });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -102,9 +103,13 @@ export async function POST(request: Request) {
       ),
     });
   } catch (error) {
+    if (isPersistenceError(error)) return persistenceErrorResponse(error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Could not open the payment page." },
       { status: 400 }
     );
   }
 }
+
+export const GET = withPersistenceErrors(handleGET);
+export const POST = withPersistenceErrors(handlePOST);

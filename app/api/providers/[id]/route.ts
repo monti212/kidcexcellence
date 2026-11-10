@@ -4,8 +4,9 @@ import {
   getCategoryById,
 } from "@/lib/platform-service";
 import { readStore } from "@/lib/platform-store";
+import { withPersistenceErrors } from "@/lib/persistence-errors";
 
-export async function GET(
+async function handleGET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -22,3 +23,5 @@ export async function GET(
     category: getCategoryById(provider.category),
   });
 }
+
+export const GET = withPersistenceErrors(handleGET);

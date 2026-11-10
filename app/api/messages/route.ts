@@ -6,10 +6,11 @@ import {
 } from "@/lib/platform-store";
 import { consumeRateLimit, requestIp } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import { withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const auth = await getSessionFromRequest(request);
   if (!auth || !["parent", "provider"].includes(auth.user.role)) {
     return NextResponse.json({ error: "Account authentication required" }, { status: 401 });
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
   });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -62,6 +63,12 @@ export async function POST(request: Request) {
   if (text.length > 2000) {
     return NextResponse.json({ error: "Messages must be 2,000 characters or fewer" }, { status: 400 });
   }
+  // Optional idempotency key: a retried send with the same id is stored once.
+  const clientMessageId =
+    typeof body?.clientMessageId === "string" ? body.clientMessageId.trim() : undefined;
+  if (clientMessageId !== undefined && (clientMessageId.length === 0 || clientMessageId.length > 100)) {
+    return NextResponse.json({ error: "clientMessageId must be 1 to 100 characters" }, { status: 400 });
+  }
 
   const result = await appendConversationMessage({
     viewerUserId: auth.session.userId,
@@ -69,6 +76,7 @@ export async function POST(request: Request) {
     conversationId,
     text,
     providerId,
+    clientMessageId,
   });
 
   if (!result.conversation) {
@@ -80,3 +88,6 @@ export async function POST(request: Request) {
     conversation: result.conversation,
   });
 }
+
+export const GET = withPersistenceErrors(handleGET);
+export const POST = withPersistenceErrors(handlePOST);

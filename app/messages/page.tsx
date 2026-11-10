@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useRef,
   Suspense,
   useCallback,
   useEffect,
@@ -51,6 +52,9 @@ function MessagesPageContent() {
     () => false
   );
   const [newMessage, setNewMessage] = useState("");
+  // The id of a send that has not succeeded yet. Retrying the same text reuses
+  // it, so a send whose response was lost cannot be stored twice.
+  const pendingSendRef = useRef<{ text: string; id: string } | null>(null);
   const [conversationSearch, setConversationSearch] = useState("");
   const [sendError, setSendError] = useState("");
   const [loadedProvider, setLoadedProvider] = useState<Provider | undefined>(() =>
@@ -129,6 +133,11 @@ function MessagesPageContent() {
       return;
     }
     const messageText = newMessage;
+    const clientMessageId =
+      pendingSendRef.current?.text === messageText
+        ? pendingSendRef.current.id
+        : crypto.randomUUID();
+    pendingSendRef.current = { text: messageText, id: clientMessageId };
     setNewMessage("");
     setSendError("");
     const response = await fetch("/api/messages", {
@@ -139,6 +148,7 @@ function MessagesPageContent() {
         conversationId: activeConversationId ?? undefined,
         providerId: provider?.id,
         text: messageText,
+        clientMessageId,
       }),
     }).catch(() => null);
     if (!response?.ok) {
@@ -148,6 +158,7 @@ function MessagesPageContent() {
       return;
     }
 
+    pendingSendRef.current = null;
     const payload = await response.json();
     setConversations((current) => [
       payload.conversation,

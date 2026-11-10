@@ -1,6 +1,7 @@
 // Regression tests for lib/store-engine.ts: compare-and-swap updates, atomic
-// file writes, corruption handling, recovery, and the Netlify Blobs backend
-// against the local Blobs server that ships with @netlify/blobs.
+// file writes (the local-development store), corruption handling, recovery, and
+// the upload-store naming rules. The Netlify Blobs document backend was removed
+// after it lost acknowledged writes on live Netlify; see docs/persistence-architecture.md.
 //
 // Node loads the TypeScript engine directly through type stripping.
 import assert from "node:assert/strict";
@@ -10,14 +11,11 @@ import os from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { pathToFileURL } from "node:url";
-import { getStore } from "@netlify/blobs";
-import { BlobsServer } from "@netlify/blobs/server";
 
 const engineUrl = pathToFileURL(path.join(process.cwd(), "lib", "store-engine.ts")).href;
 const {
   StoreBusyError,
   StoreCorruptError,
-  createBlobBackend,
   createFileBackend,
   readDocument,
   resolveBlobStoreNames,
@@ -270,100 +268,6 @@ describe("file backend", () => {
     );
     await rm(lockPath, { force: true });
     assert.equal((await readDocument(fileDocument(filePath))).count, 2);
-  });
-});
-
-describe("Netlify Blobs backend (local Blobs server)", () => {
-  let server;
-  let store;
-  const key = "platform-store.json";
-
-  before(async () => {
-    const directory = path.join(tmpRoot, "blobs");
-    server = new BlobsServer({ directory, token: "test-token", port: 0 });
-    const { port } = await server.start();
-    store = getStore({
-      name: "kidcellence-test",
-      siteID: "test-site",
-      token: "test-token",
-      edgeURL: `http://localhost:${port}`,
-      uncachedEdgeURL: `http://localhost:${port}`,
-      consistency: "strong",
-    });
-  });
-  after(async () => {
-    await server?.stop();
-  });
-
-  // The local Blobs server (unlike Netlify's service) sends no ETag on reads.
-  // This shim remembers the ETag each successful write returned and supplies
-  // it on read. The server still enforces If-Match / If-None-Match itself.
-  const knownEtags = new Map();
-  const setJSON = async (blobKey, value, condition) => {
-    const result = await store.setJSON(blobKey, value, condition);
-    if (result.modified) knownEtags.set(blobKey, result.etag);
-    return result;
-  };
-  const blobDocument = (blobKey = key) => ({
-    ...counterDocument(
-      createBlobBackend(`blob ${blobKey}`, {
-        getText: async () => {
-          const entry = await store.getWithMetadata(blobKey, { type: "text" });
-          return entry && { data: entry.data, etag: entry.etag ?? knownEtags.get(blobKey) };
-        },
-        setJSON: (value, condition) => setJSON(blobKey, value, condition),
-      })
-    ),
-  });
-
-  it("creates with onlyIfNew and never overwrites an existing blob that way", async () => {
-    const backend = blobDocument("create-only.json").backend;
-    assert.equal(await backend.write({ count: 7 }, null), true);
-    assert.equal(await backend.write({ count: 0 }, null), false);
-    assert.equal((await readDocument(blobDocument("create-only.json"))).count, 7);
-  });
-
-  it("rejects a write with a stale ETag", async () => {
-    const backend = blobDocument("stale.json").backend;
-    await backend.write({ count: 1 }, null);
-    const first = await backend.read();
-    assert.equal((await setJSON("stale.json", { count: 50 }, { onlyIfMatch: first.version })).modified, true);
-    assert.equal(await backend.write({ count: 2 }, first.version), false);
-    assert.equal((await backend.read()).value.count, 50);
-  });
-
-  it("retries a conflicting update so both changes land", async () => {
-    await blobDocument().backend.write({ count: 0, log: [] }, null);
-    let releaseA;
-    const aPaused = new Promise((resolve) => (releaseA = resolve));
-    let aRuns = 0;
-
-    const updateA = updateDocument(blobDocument(), async (value) => {
-      aRuns += 1;
-      if (aRuns === 1) await aPaused; // A read version 0, then waits
-      value.log.push("A");
-    });
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    await updateDocument(blobDocument(), (value) => {
-      value.log.push("B"); // B commits while A is paused
-    });
-    releaseA();
-    await updateA;
-
-    const saved = await readDocument(blobDocument());
-    assert.deepEqual(saved.log, ["B", "A"]);
-    assert.equal(aRuns, 2, "A re-ran on the newer version after its write was rejected");
-  });
-
-  it("fails closed on an unreadable blob and leaves it untouched", async () => {
-    await store.set("corrupt.json", "{ broken");
-    await assert.rejects(readDocument(blobDocument("corrupt.json")), StoreCorruptError);
-    await assert.rejects(increment(blobDocument("corrupt.json")), StoreCorruptError);
-    assert.equal(await store.get("corrupt.json", { type: "text" }), "{ broken");
-  });
-
-  it("refuses to issue a write with an empty ETag", async () => {
-    await assert.rejects(blobDocument("x.json").backend.write({ count: 1 }, ""), /unconditional/);
   });
 });
 

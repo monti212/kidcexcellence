@@ -302,9 +302,10 @@ describe("store concurrency and integrity", () => {
       200,
       "reads with corrupt analytics"
     );
+    // A page view that cannot be saved is reported (503), never answered "ok".
     const view = await pageView("while-analytics-corrupt");
-    assert.equal(view.status, 200);
-    assert.deepEqual(await view.json(), { ok: true });
+    assert.equal(view.status, 503);
+    assert.equal((await view.json()).code, "STORE_CORRUPT");
     assert.equal(await readFile(analyticsPath, "utf8"), "{ broken analytics", "analytics not overwritten");
     const dashboard = await request("/api/admin/verifications", { headers: { Cookie: state.adminCookie } });
     await expectStatuses([dashboard], 200, "admin dashboard with corrupt analytics");

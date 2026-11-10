@@ -40,7 +40,7 @@ export class StoreCorruptError extends Error {
   }
 }
 
-const STORE_BUSY_MESSAGE =
+export const STORE_BUSY_MESSAGE =
   "The platform is busy saving other changes. Nothing was lost; please try again.";
 
 export class StoreBusyError extends Error {
@@ -54,7 +54,7 @@ export class StoreBusyError extends Error {
 
 export interface DocumentSnapshot {
   value: unknown;
-  /** Opaque version: a content hash for files, the ETag for blobs. Never empty. */
+  /** Opaque version: a hash of the file content. Never empty. */
   version: string;
 }
 
@@ -278,54 +278,6 @@ export function createFileBackend(
     async exclusive(work) {
       await mkdir(path.dirname(filePath), { recursive: true });
       return withFileLock(lockPath, work, lockTimeoutMs, staleLockMs);
-    },
-  };
-}
-
-export interface BlobDocumentClient {
-  /** Must use strong consistency; return null only for a missing key. */
-  getText(): Promise<{ data: string; etag?: string } | null>;
-  setJSON(
-    value: unknown,
-    condition: { onlyIfMatch: string } | { onlyIfNew: true }
-  ): Promise<{ modified: boolean }>;
-}
-
-/**
- * Netlify Blobs backend. Every write is conditional: `onlyIfMatch` with the
- * ETag that was read, or `onlyIfNew` when creating. An unconditional write is
- * never issued, so a stale or empty value cannot overwrite newer data.
- */
-export function createBlobBackend(description: string, client: BlobDocumentClient): DocumentBackend {
-  return {
-    description,
-    async read() {
-      const entry = await client.getText();
-      if (entry === null) return null;
-      let value: unknown;
-      try {
-        value = JSON.parse(entry.data);
-      } catch (cause) {
-        throw new StoreCorruptError(description, null, cause);
-      }
-      assertJsonObject(value, description, null);
-      if (!entry.etag) {
-        throw new Error(
-          `Netlify Blobs returned ${description} without an ETag, so it cannot be ` +
-            "updated safely. Refusing to continue."
-        );
-      }
-      return { value, version: entry.etag };
-    },
-    async write(value, expectedVersion) {
-      if (expectedVersion === "") {
-        throw new Error("Refusing an unconditional blob write: the expected ETag is empty.");
-      }
-      const result = await client.setJSON(
-        value,
-        expectedVersion === null ? { onlyIfNew: true } : { onlyIfMatch: expectedVersion }
-      );
-      return result.modified;
     },
   };
 }

@@ -9,6 +9,7 @@ import {
   removeUpload,
 } from "@/lib/platform-store";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import { withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
@@ -26,7 +27,7 @@ async function requireUpload(request: Request, id: string) {
   return { upload };
 }
 
-export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+async function handleGET(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const gate = await requireUpload(request, id);
   if ("error" in gate) {
@@ -47,7 +48,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   });
 }
 
-export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+async function handleDELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -66,3 +67,6 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   await deleteUploadFile(upload.path);
   return NextResponse.json({ ok: true });
 }
+
+export const GET = withPersistenceErrors(handleGET);
+export const DELETE = withPersistenceErrors(handleDELETE);

@@ -1,6 +1,6 @@
 [context.production.environment]
-  PLATFORM_STORAGE_DRIVER = "netlify-blobs"
+  PLATFORM_STORAGE_DRIVER = "postgres"
 
 [context.deploy-preview.environment]
-  PLATFORM_STORAGE_DRIVER = "netlify-blobs"
+  PLATFORM_STORAGE_DRIVER = "postgres"
 
