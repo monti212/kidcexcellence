@@ -5,10 +5,11 @@ import {
 } from "@/lib/platform-store";
 import { consumeRateLimit, requestIp } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import { withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
-export async function POST(
+async function handlePOST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -39,3 +40,4 @@ export async function POST(
   return NextResponse.json({ ok: true });
 }
 
+export const POST = withPersistenceErrors(handlePOST);

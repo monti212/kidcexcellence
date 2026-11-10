@@ -49,3 +49,9 @@ next-env.d.ts
 # Local Netlify folder
 .netlify
 .gstack/
+
+# store engine side files (contain personal data, never commit)
+/data/*.bak
+/data/*.lock
+/data/*.corrupt-*
+/data/.*.tmp

@@ -7,10 +7,11 @@ import {
 } from "@/lib/platform-store";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import { withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const auth = await getSessionFromRequest(request);
   if (!auth || auth.user.role !== "parent") {
     return NextResponse.json({ error: "Parent authentication required" }, { status: 401 });
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
   });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -87,3 +88,6 @@ export async function POST(request: Request) {
   });
   return NextResponse.json(result);
 }
+
+export const GET = withPersistenceErrors(handleGET);
+export const POST = withPersistenceErrors(handlePOST);

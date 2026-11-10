@@ -14,6 +14,7 @@ import {
   missingVerificationDocuments,
   missingVerificationProfileFields,
 } from "@/lib/verification-requirements";
+import { withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
@@ -168,7 +169,7 @@ function dashboardPayload(
   };
 }
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const auth = await requireAdmin(request);
   if (!auth) {
     return NextResponse.json({ error: "Admin authentication required" }, { status: 401 });
@@ -190,7 +191,7 @@ export async function GET(request: Request) {
   return NextResponse.json(dashboardPayload(store, auth.user));
 }
 
-export async function PATCH(request: Request) {
+async function handlePATCH(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -224,7 +225,7 @@ export async function PATCH(request: Request) {
   return NextResponse.json(dashboardPayload(store, auth.user));
 }
 
-export async function DELETE(request: Request) {
+async function handleDELETE(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -265,3 +266,7 @@ export async function DELETE(request: Request) {
   const store = await readStore();
   return NextResponse.json(dashboardPayload(store, auth.user));
 }
+
+export const GET = withPersistenceErrors(handleGET);
+export const PATCH = withPersistenceErrors(handlePATCH);
+export const DELETE = withPersistenceErrors(handleDELETE);

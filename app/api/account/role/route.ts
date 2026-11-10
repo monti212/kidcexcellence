@@ -8,6 +8,7 @@ import {
 } from "@/lib/platform-store";
 import { consumeRateLimit, requestIp } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import { isPersistenceError, persistenceErrorResponse, withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,7 @@ export const runtime = "nodejs";
  */
 const SWITCHABLE_ROLES: UserRole[] = ["parent", "provider"];
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -74,9 +75,12 @@ export async function POST(request: Request) {
     });
     return response;
   } catch (error) {
+    if (isPersistenceError(error)) return persistenceErrorResponse(error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Could not change account type." },
       { status: 400 }
     );
   }
 }
+
+export const POST = withPersistenceErrors(handlePOST);

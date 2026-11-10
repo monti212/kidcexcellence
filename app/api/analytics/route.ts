@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { consumeRateLimit, requestIp } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
 import { recordPlatformPageView } from "@/lib/platform-store";
+import { withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -29,3 +30,5 @@ export async function POST(request: Request) {
   await recordPlatformPageView({ visitorId, pathname });
   return NextResponse.json({ ok: true });
 }
+
+export const POST = withPersistenceErrors(handlePOST);

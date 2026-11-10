@@ -16,10 +16,11 @@ import {
   missingVerificationProfileFields,
 } from "@/lib/verification-requirements";
 import { getVettingPackagesForCategory } from "@/lib/vetting-packages";
+import { isPersistenceError, persistenceErrorResponse, withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const auth = await getSessionFromRequest(request);
   if (!auth || auth.user.role !== "provider") {
     return NextResponse.json({ error: "Provider authentication required" }, { status: 401 });
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
   });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -91,9 +92,13 @@ export async function POST(request: Request) {
     const submission = await submitProviderVerification(auth.session.userId);
     return NextResponse.json({ submission, status: "pending" });
   } catch (error) {
+    if (isPersistenceError(error)) return persistenceErrorResponse(error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Could not submit verification." },
       { status: 400 }
     );
   }
 }
+
+export const GET = withPersistenceErrors(handleGET);
+export const POST = withPersistenceErrors(handlePOST);

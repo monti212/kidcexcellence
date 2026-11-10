@@ -4,12 +4,14 @@ import {
   getSessionFromRequest,
   listUploads,
   recordUpload,
+  deleteUploadFile,
   saveUploadFile,
   uploadStoragePath,
   type PlatformUploadRecord,
 } from "@/lib/platform-store";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import { withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
@@ -52,7 +54,7 @@ async function requireProvider(request: Request) {
   return { auth };
 }
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const gate = await requireProvider(request);
   if ("error" in gate) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
@@ -73,7 +75,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ uploads: uploads.map(uploadResponse) });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -139,18 +141,28 @@ export async function POST(request: Request) {
 
   await saveUploadFile(filePath, Buffer.from(await file.arrayBuffer()));
 
-  const upload = await recordUpload({
-    id,
-    userId: gate.auth.session.userId,
-    type,
-    documentKey,
-    label,
-    fileName,
-    contentType: file.type,
-    size: file.size,
-    path: filePath,
-    createdAt: new Date().toISOString(),
-  });
+  let upload;
+  try {
+    upload = await recordUpload({
+      id,
+      userId: gate.auth.session.userId,
+      type,
+      documentKey,
+      label,
+      fileName,
+      contentType: file.type,
+      size: file.size,
+      path: filePath,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    // The record was not committed, so nothing references the file: remove it.
+    await deleteUploadFile(filePath).catch(() => undefined);
+    throw error;
+  }
 
   return NextResponse.json({ upload: uploadResponse(upload) });
 }
+
+export const GET = withPersistenceErrors(handleGET);
+export const POST = withPersistenceErrors(handlePOST);

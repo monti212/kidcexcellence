@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { allProvidersFromStore } from "@/lib/platform-service";
 import { readStore } from "@/lib/platform-store";
+import { withPersistenceErrors } from "@/lib/persistence-errors";
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const { searchParams } = new URL(request.url);
   const ids = (searchParams.get("ids") ?? "")
     .split(",")
@@ -19,3 +20,5 @@ export async function GET(request: Request) {
       .filter(Boolean),
   });
 }
+
+export const GET = withPersistenceErrors(handleGET);

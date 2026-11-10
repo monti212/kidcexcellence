@@ -10,6 +10,7 @@ import {
 import { providerIsApproved } from "@/lib/platform-service";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isSameOriginMutation } from "@/lib/request-guard";
+import { withPersistenceErrors } from "@/lib/persistence-errors";
 
 export const runtime = "nodejs";
 
@@ -132,7 +133,7 @@ function publishCompletion(profile: {
   return Math.round((complete / checks.length) * 100);
 }
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const auth = await getSessionFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
@@ -158,7 +159,7 @@ export async function GET(request: Request) {
   });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
   }
@@ -287,3 +288,6 @@ export async function POST(request: Request) {
     publicId: `account-${userId}`,
   });
 }
+
+export const GET = withPersistenceErrors(handleGET);
+export const POST = withPersistenceErrors(handlePOST);
