@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState, Suspense, type CSSProperties } from "react";
+import { Fragment, useCallback, useEffect, useState, Suspense, type CSSProperties } from "react";
 import Link from "next/link";
 import { Icon, Star } from "@/components/kidcellence/Icon";
 import {
@@ -201,6 +201,10 @@ function AdminDashboard() {
   const [queueFilter, setQueueFilter] = useState<QueueFilter>("pending");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewUploadId, setPreviewUploadId] = useState<string | null>(null);
+  const [composeFor, setComposeFor] = useState<string | null>(null);
+  const [composeText, setComposeText] = useState("");
+  const [composeBusy, setComposeBusy] = useState(false);
+  const [composeError, setComposeError] = useState("");
   const filteredApprovedProviders = approvedProviders.filter((provider) =>
     provider.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -306,6 +310,44 @@ function AdminDashboard() {
     }
     const payload = await response?.json().catch(() => null);
     setActionError(payload?.error ?? "Could not remove provider. Please sign in again.");
+  };
+
+  const openCompose = (provider: AdminRegisteredProvider) => {
+    setComposeFor((current) => (current === provider.userId ? null : provider.userId));
+    setComposeText("");
+    setComposeError("");
+  };
+
+  // Admins write from the parent side of a conversation as "Kidcellence Team";
+  // the provider reads and answers it in their own Messages inbox.
+  const sendProviderMessage = async (provider: AdminRegisteredProvider) => {
+    const text = composeText.trim();
+    if (!text) {
+      setComposeError("Write a message first.");
+      return;
+    }
+    setComposeBusy(true);
+    setComposeError("");
+    setActionNotice("");
+    const response = await fetch("/api/messages", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        providerId: `account-${provider.userId}`,
+        text,
+        clientMessageId: crypto.randomUUID(),
+      }),
+    }).catch(() => null);
+    setComposeBusy(false);
+    if (response?.ok) {
+      setComposeFor(null);
+      setComposeText("");
+      setActionNotice(`Message sent to ${provider.name} as Kidcellence Team. Their replies appear in Messages.`);
+      return;
+    }
+    const payload = await response?.json().catch(() => null);
+    setComposeError(payload?.error ?? "The message was not sent. Please try again.");
   };
 
   const statusTone = (status: AdminRegisteredProvider["verificationStatus"]): PillTone =>
@@ -708,8 +750,10 @@ function AdminDashboard() {
                         provider.pendingId ? "" : "Click Submit for review on the provider Documents tab",
                       ].filter(Boolean);
 
+                      const composing = composeFor === provider.userId;
                       return (
-                        <tr key={provider.userId} style={{ verticalAlign: "top" }}>
+                        <Fragment key={provider.userId}>
+                        <tr style={{ verticalAlign: "top" }}>
                           <td style={{ maxWidth: 340 }}>
                             <span style={{ display: "flex", gap: 10 }}>
                               <Avatar id={provider.userId} name={provider.name} />
@@ -752,6 +796,17 @@ function AdminDashboard() {
                             </Pill>
                           </td>
                           <td>
+                            <span style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <button
+                              type="button"
+                              aria-expanded={composing}
+                              aria-controls={`compose-${provider.userId}`}
+                              onClick={() => openCompose(provider)}
+                              style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, padding: "9px 14px", minHeight: 40, borderRadius: 12, border: 0, background: "#ffcc2f", color: "#3f3e44", whiteSpace: "nowrap" }}
+                            >
+                              <Icon name="message" size={16} color="#3f3e44" strokeWidth={2.2} />
+                              Message
+                            </button>
                             <button
                               type="button"
                               onClick={() => removeProvider(provider)}
@@ -760,8 +815,51 @@ function AdminDashboard() {
                               <Icon name="trash" size={16} color="#ffffff" strokeWidth={2.2} />
                               Remove
                             </button>
+                            </span>
                           </td>
                         </tr>
+                        {composing && (
+                          <tr>
+                            <td colSpan={7} style={{ background: "#fff0b8" }}>
+                              <form
+                                id={`compose-${provider.userId}`}
+                                onSubmit={(event) => {
+                                  event.preventDefault();
+                                  void sendProviderMessage(provider);
+                                }}
+                                style={{ display: "flex", flexDirection: "column", gap: 10, padding: "6px 0" }}
+                              >
+                                <label htmlFor={`compose-text-${provider.userId}`} style={{ fontWeight: 800, fontSize: 14 }}>
+                                  Message to {provider.name}
+                                  <span style={{ display: "block", fontWeight: 500, fontSize: 13, color: "#686973" }}>
+                                    Sent as Kidcellence Team. It appears in their Messages inbox and they can reply.
+                                  </span>
+                                </label>
+                                <textarea
+                                  id={`compose-text-${provider.userId}`}
+                                  className="kc-input"
+                                  rows={3}
+                                  maxLength={2000}
+                                  value={composeText}
+                                  onChange={(event) => setComposeText(event.target.value)}
+                                  style={{ resize: "vertical", minHeight: 88 }}
+                                  autoFocus
+                                />
+                                {composeError && (
+                                  <p role="alert" style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#c2412a" }}>{composeError}</p>
+                                )}
+                                <span style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                                  <button type="submit" className="kc-btn" disabled={composeBusy}>
+                                    {composeBusy ? "Sending..." : "Send message"}
+                                  </button>
+                                  <button type="button" className="kc-btn-outline" onClick={() => setComposeFor(null)}>Cancel</button>
+                                  <Link href={routes.messages} style={{ fontWeight: 700, fontSize: 14, color: "#2a7b86" }}>Open Messages</Link>
+                                </span>
+                              </form>
+                            </td>
+                          </tr>
+                        )}
+                        </Fragment>
                       );
                     })}
                   </tbody>

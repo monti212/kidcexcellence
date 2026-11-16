@@ -1643,6 +1643,97 @@ describe("Kidcellence platform APIs", () => {
     );
   });
 
+  it("lets an admin message a provider who can reply", async () => {
+    const email = `messaged-provider-${Date.now()}@example.com`;
+    const signup = await request("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: baseUrl },
+      body: JSON.stringify({
+        mode: "signup",
+        role: "provider",
+        name: "Messaged Provider",
+        email,
+        password: "password123",
+        category: "kiddies-beauty",
+        location: "Gaborone",
+      }),
+    });
+    assert.equal(signup.status, 200);
+    const providerCookie = cookieFrom(signup);
+    const providerUserId = (await json(signup)).user.id;
+
+    const adminLogin = await request("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: baseUrl },
+      body: JSON.stringify({
+        mode: "login",
+        role: "admin",
+        email: "admin-test@example.com",
+        password: "password123",
+      }),
+    });
+    assert.equal(adminLogin.status, 200);
+    const adminCookie = cookieFrom(adminLogin);
+
+    const send = (cookie, body) =>
+      request("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Cookie: cookie, Origin: baseUrl },
+        body: JSON.stringify(body),
+      });
+
+    const sent = await send(adminCookie, {
+      providerId: `account-${providerUserId}`,
+      text: "Hello from the Kidcellence team",
+    });
+    assert.equal(sent.status, 200);
+    const sentPayload = await json(sent);
+    assert.equal(sentPayload.message.isOwn, true);
+
+    // An admin cannot start a conversation with a listing that has no account.
+    const noAccount = await send(adminCookie, { providerId: "1", text: "Hello" });
+    assert.equal(noAccount.status, 404);
+
+    const providerInbox = await json(
+      await request("/api/messages", { headers: { Cookie: providerCookie } })
+    );
+    const received = providerInbox.conversations.find(
+      (conversation) => conversation.id === sentPayload.conversation.id
+    );
+    assert.ok(received, "provider should see the admin conversation");
+    assert.equal(received.participant, "Kidcellence Team");
+    assert.equal(received.unread, 1);
+    assert.equal(received.messages[0].text, "Hello from the Kidcellence team");
+
+    const reply = await send(providerCookie, {
+      conversationId: received.id,
+      text: "Thanks, noted",
+    });
+    assert.equal(reply.status, 200);
+
+    const adminInbox = await json(
+      await request("/api/messages", { headers: { Cookie: adminCookie } })
+    );
+    const thread = adminInbox.conversations.find(
+      (conversation) => conversation.id === sentPayload.conversation.id
+    );
+    assert.ok(thread, "admin should see the conversation");
+    assert.deepEqual(
+      thread.messages.map((message) => [message.text, message.isOwn]),
+      [
+        ["Hello from the Kidcellence team", true],
+        ["Thanks, noted", false],
+      ]
+    );
+
+    // Admin messages are not parent enquiries.
+    const providerProfile = await json(
+      await request("/api/profiles/provider", { headers: { Cookie: providerCookie } })
+    );
+    assert.equal(providerProfile.analytics.enquiries, 0);
+    assert.equal(providerProfile.analytics.messagesReceived, 0);
+  });
+
   it("lets an admin remove a provider account and its listing", async () => {
     const email = `spam-provider-${Date.now()}@example.com`;
     const signup = await request("/api/auth", {

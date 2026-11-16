@@ -43,10 +43,8 @@ const TILE_STYLES: { bg: string; stroke: string; border?: boolean; size: number 
   { bg: "#f05a3c", stroke: "#ffffff", size: 44 },
   { bg: "#2a7b86", stroke: "#ffffff", size: 44 },
 ];
-const tileStyle = (index: number) =>
-  TILE_STYLES[index] ?? (index % 2 === 0
-    ? { bg: "#54b2bf", stroke: "#3f3e44", size: 40 }
-    : { bg: "#f05a3c", stroke: "#ffffff", size: 40 });
+// The four colours repeat in order: teal, gold, coral, deep teal.
+const tileStyle = (index: number) => TILE_STYLES[index % TILE_STYLES.length];
 
 function getVettingEnquiryHref(packageName: string, price: number) {
   const message = `Hi Kidcellence, I would like to enquire about the ${packageName} Vet With Us Package. The listed price is P${price}.`;
@@ -225,13 +223,14 @@ export default function HomePage() {
             {tiles.map((category, index) => {
               const style = tileStyle(index);
               const count = countFor(category.id);
-              const subcategories = category.subcategories?.map((item) => item.name).join(", ");
+              const subcategories = category.subcategories ?? [];
+              const popoverId = `kc-cat-${category.id}-includes`;
               return (
+                <div key={category.id} className="kc-cat" style={{ width: 148, maxWidth: "calc(50% - 8px)" }}>
                 <Link
-                  key={category.id}
                   href={routes.search({ category: category.id })}
-                  title={subcategories ? `Includes: ${subcategories}` : undefined}
-                  style={{ width: 148, maxWidth: "calc(50% - 8px)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center", textDecoration: "none", color: "#3f3e44" }}
+                  aria-describedby={subcategories.length > 0 ? popoverId : undefined}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center", textDecoration: "none", color: "#3f3e44" }}
                 >
                   <span style={{ width: 104, height: 104, borderRadius: "50%", background: style.bg, display: "flex", alignItems: "center", justifyContent: "center", ...(style.border ? { border: "1px solid #d7edf0" } : {}) }}>
                     <Icon name={categoryIcon(category.id)} size={style.size} color={style.stroke} strokeWidth={1.7} />
@@ -241,6 +240,19 @@ export default function HomePage() {
                     {loadState === "ready" ? `${count} ${count === 1 ? "provider" : "providers"}` : " "}
                   </span>
                 </Link>
+                {subcategories.length > 0 && (
+                  <div id={popoverId} role="tooltip" className="kc-cat-pop">
+                    <div className="kc-cat-pop-card">
+                      <strong style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: ".5px", color: "#686973" }}>Includes</strong>
+                      <ul>
+                        {subcategories.map((item) => (
+                          <li key={item.id}>{item.name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+                </div>
               );
             })}
           </div>

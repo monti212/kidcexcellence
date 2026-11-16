@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 
 async function handleGET(request: Request) {
   const auth = await getSessionFromRequest(request);
-  if (!auth || !["parent", "provider"].includes(auth.user.role)) {
+  if (!auth || !["parent", "provider", "admin"].includes(auth.user.role)) {
     return NextResponse.json({ error: "Account authentication required" }, { status: 401 });
   }
 
@@ -32,7 +32,7 @@ async function handlePOST(request: Request) {
   }
 
   const auth = await getSessionFromRequest(request);
-  if (!auth || !["parent", "provider"].includes(auth.user.role)) {
+  if (!auth || !["parent", "provider", "admin"].includes(auth.user.role)) {
     return NextResponse.json({ error: "Account authentication required" }, { status: 401 });
   }
 

@@ -241,6 +241,14 @@
   .kc-panel { background: var(--kc-pop-teal); border-radius: 24px; box-shadow: 0 6px 20px rgba(63,62,68,.06); border: 1px solid var(--kc-line); }
 
   /* Home has a separate phone design. These switch between the two at 640px. */
+  /* Home category circles: subcategories appear on hover or keyboard focus. */
+  .kc-cat { position: relative; }
+  .kc-cat-pop { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); z-index: 30; padding-top: 8px; width: max-content; max-width: min(300px, 86vw); visibility: hidden; opacity: 0; transition: opacity .15s ease, visibility .15s; }
+  .kc-cat:hover .kc-cat-pop, .kc-cat:focus-within .kc-cat-pop { visibility: visible; opacity: 1; }
+  .kc-cat-pop-card { background: var(--kc-pop-teal); border: 1px solid #b9e2e8; border-radius: 18px; padding: 14px; box-shadow: 0 14px 34px rgba(42,123,134,.2); display: flex; flex-direction: column; gap: 10px; text-align: left; }
+  .kc-cat-pop-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; max-height: 240px; overflow-y: auto; }
+  .kc-cat-pop-card li { font-size: 13px; font-weight: 700; color: var(--kc-ink); background: var(--kc-pop-gold); border-radius: 999px; padding: 5px 10px; }
+  @media (hover: none) { .kc-cat:hover .kc-cat-pop { visibility: hidden; opacity: 0; } }
   .kc-mobile-only { display: none; }
   @media (max-width: 640px) {
     .kc-desktop-only { display: none !important; }

@@ -1951,6 +1951,16 @@ function providerAccountUserId(provider: Provider) {
   return provider.id.startsWith("account-") ? provider.id.slice("account-".length) : undefined;
 }
 
+/**
+ * Admins message providers from the parent side of a conversation, under the
+ * team name, so providers see and answer it in their normal inbox.
+ */
+export const ADMIN_MESSAGE_SENDER_NAME = "Kidcellence Team";
+
+function isParentSide(role: UserRole) {
+  return role === "parent" || role === "admin";
+}
+
 function userAvatar(name: string) {
   return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`;
 }
@@ -2003,12 +2013,12 @@ export async function getStoredConversations(
 ) {
   const store = await readMainStore();
   const ownedConversations = store.conversations.filter((conversation) =>
-    viewerRole === "parent"
+    isParentSide(viewerRole)
       ? conversation.parentUserId === viewerUserId
       : viewerRole === "provider" && conversation.providerUserId === viewerUserId
   );
 
-  if (viewerRole !== "parent" || !providerId) {
+  if (!isParentSide(viewerRole) || !providerId) {
     return ownedConversations.map((conversation) =>
       conversationForViewer(conversation, viewerUserId)
     );
@@ -2030,8 +2040,18 @@ export async function getStoredConversations(
     );
   }
 
+  // Admins can only message providers with an account to receive it.
+  if (viewerRole === "admin" && !providerAccountUserId(provider)) {
+    return ownedConversations.map((conversation) =>
+      conversationForViewer(conversation, viewerUserId)
+    );
+  }
   const parent = store.users.find((user) => user.id === viewerUserId);
-  const draft = buildStoredConversation(provider, viewerUserId, parent?.name ?? "Parent");
+  const draft = buildStoredConversation(
+    provider,
+    viewerUserId,
+    viewerRole === "admin" ? ADMIN_MESSAGE_SENDER_NAME : parent?.name ?? "Parent"
+  );
   return [
     conversationForViewer(draft, viewerUserId),
     ...ownedConversations.map((conversation) =>
@@ -2064,7 +2084,7 @@ export async function appendConversationMessage(input: {
     if (clientMessageId) {
       for (const conversation of store.conversations) {
         const ownsConversation =
-          input.viewerRole === "parent"
+          isParentSide(input.viewerRole)
             ? conversation.parentUserId === input.viewerUserId
             : conversation.providerUserId === input.viewerUserId;
         if (!ownsConversation) continue;
@@ -2085,7 +2105,7 @@ export async function appendConversationMessage(input: {
       }
     }
 
-    if (input.viewerRole === "parent" && input.providerId) {
+    if (isParentSide(input.viewerRole) && input.providerId) {
       const existing = store.conversations.find(
         (conversation) =>
           conversation.parentUserId === input.viewerUserId &&
@@ -2095,8 +2115,14 @@ export async function appendConversationMessage(input: {
         (item) => item.id === input.providerId
       );
       const parent = store.users.find((user) => user.id === input.viewerUserId);
-      if (!existing && provider && parent) {
-        const conversation = buildStoredConversation(provider, input.viewerUserId, parent.name);
+      const canStart =
+        input.viewerRole === "admin" ? Boolean(provider && providerAccountUserId(provider)) : true;
+      if (!existing && provider && parent && canStart) {
+        const conversation = buildStoredConversation(
+          provider,
+          input.viewerUserId,
+          input.viewerRole === "admin" ? ADMIN_MESSAGE_SENDER_NAME : parent.name
+        );
         startedProviderConversationUserId = conversation.providerUserId;
         store.conversations.unshift(conversation);
       }
@@ -2113,13 +2139,13 @@ export async function appendConversationMessage(input: {
 
     const conversation = store.conversations.find((item) => {
       const ownsConversation =
-        input.viewerRole === "parent"
+        isParentSide(input.viewerRole)
           ? item.parentUserId === input.viewerUserId
           : input.viewerRole === "provider" && item.providerUserId === input.viewerUserId;
       if (!ownsConversation) return false;
       if (input.conversationId && item.id === input.conversationId) return true;
       return (
-        input.viewerRole === "parent" &&
+        isParentSide(input.viewerRole) &&
         Boolean(input.providerId) &&
         item.providerId === input.providerId
       );
@@ -2129,11 +2155,12 @@ export async function appendConversationMessage(input: {
     conversation.messages.push(message);
     conversation.lastMessage = input.text;
     conversation.timestamp = "now";
-    if (input.viewerRole === "parent") {
+    if (isParentSide(input.viewerRole)) {
       conversation.unreadForParent = 0;
       conversation.unreadForProvider = (conversation.unreadForProvider ?? 0) + 1;
       conversation.unread = conversation.unreadForProvider;
-      if (conversation.providerUserId) {
+      // Admin messages are not parent enquiries, so they stay out of provider analytics.
+      if (conversation.providerUserId && input.viewerRole === "parent") {
         if (startedProviderConversationUserId === conversation.providerUserId) {
           analyticsEvents.push({ userId: conversation.providerUserId, event: "enquiry" });
         }
