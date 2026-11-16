@@ -47,7 +47,7 @@ export interface VerificationUploadSummary {
   galleryCount: number;
 }
 
-const INDIVIDUAL_CATEGORIES = new Set(["nannies", "helpers", "babysitters", "tutors"]);
+const INDIVIDUAL_CATEGORIES = new Set(["nannies", "helpers", "babysitters", "tutors", "postpartum-nurse-aid"]);
 const CARE_WORKER_CATEGORIES = new Set(["nannies", "helpers", "babysitters"]);
 const SCHOOL_CATEGORIES = new Set(["schools", "nurseries"]);
 const PEDIATRIC_SPECIALIST_CATEGORIES = new Set([
@@ -149,6 +149,22 @@ export function getVerificationDocuments(category: string): VerificationDocument
         key: "company-profile",
         label: "Downloadable company profile",
         hint: "PDF company profile for parents to download from your listing",
+      },
+    ];
+  }
+
+  if (category === "kiddies-beauty") {
+    return [
+      {
+        key: "trading-license",
+        label: "Trading license or business registration",
+        hint: "Trading license, permit or business registration for the salon, barbershop or hairdresser",
+      },
+      {
+        key: "representative-id",
+        label: "Owner or hairdresser ID",
+        hint: "Valid ID for the owner or the independent hairdresser",
+        sensitive: true,
       },
     ];
   }

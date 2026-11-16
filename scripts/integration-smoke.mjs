@@ -120,8 +120,8 @@ describe("Kidcellence platform APIs", () => {
     assert.equal(homeMarkup.includes("500+"), false);
     assert.equal(homeMarkup.includes("reply tracking"), false);
     assert.equal(homeMarkup.includes("Live provider desk"), false);
-    assert.match(homeMarkup, />12<\/div><div[^>]*>\s*service categories/);
-    assert.equal(/>13<\/div><div[^>]*>\s*service categories/.test(homeMarkup), false);
+    assert.match(homeMarkup, />14<\/div><div[^>]*>\s*service categories/);
+    assert.equal(/>15<\/div><div[^>]*>\s*service categories/.test(homeMarkup), false);
     assert.match(homeMarkup, /href="\/privacy"/);
     assert.match(homeMarkup, /href="\/terms"/);
 
@@ -131,7 +131,7 @@ describe("Kidcellence platform APIs", () => {
 
     const providerIndex = await request("/api/providers");
     const providerIndexPayload = await json(providerIndex);
-    assert.equal(providerIndexPayload.categories.length, 12);
+    assert.equal(providerIndexPayload.categories.length, 14);
     assert.equal(providerIndexPayload.additionalCategories.length, 1);
     const listedCategoryCount = [
       ...providerIndexPayload.categories,

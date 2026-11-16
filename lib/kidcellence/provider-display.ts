@@ -17,6 +17,8 @@ export const CATEGORY_ICONS: Record<string, IconName> = {
   "kiddies-transport": "transport",
   "kiddies-parties": "parties",
   "kiddies-entertainment": "entertainment",
+  "kiddies-beauty": "beauty",
+  "postpartum-nurse-aid": "postpartum",
   agencies: "agency",
 };
 

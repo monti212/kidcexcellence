@@ -1,9 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { routes } from "@/lib/kidcellence/routes";
-import { Star } from "./Icon";
 
 // Footer from the design, with the live site's links.
 export function SiteFooter() {
@@ -15,10 +15,10 @@ export function SiteFooter() {
     <footer className="kc-foot" style={{ background: "#3f3e44", color: "#ffffff", marginTop: "auto" }}>
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "56px 24px 40px", display: "flex", flexWrap: "wrap", gap: 40, justifyContent: "space-between" }}>
         <div style={{ flex: "1 1 260px", display: "flex", flexDirection: "column", gap: 12 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Star size={26} color="#f05a3c" />
-            <strong style={{ fontSize: 20 }}>Kidcellence</strong>
-          </span>
+          <Link href={routes.home} aria-label="Kidcellence home" style={{ alignSelf: "flex-start", margin: "-36px 0 -6px -8px" }}>
+            {/* The brand logo; the PNG has transparent padding around the mark. */}
+            <Image src="/kidcellence-logo.png" alt="Kidcellence, child centered excellence" width={680} height={310} style={{ height: 110, width: "auto" }} />
+          </Link>
           <p style={{ margin: 0, color: "rgba(255,255,255,.78)", fontSize: 14, lineHeight: 1.6, maxWidth: 300 }}>
             Childcare and children&apos;s services for Botswana. Discover, compare, message and verify trusted providers.
           </p>

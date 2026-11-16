@@ -252,6 +252,25 @@ export const CATEGORIES: Category[] = [
   },
   { id: "kiddies-parties", name: "Kiddies Parties", label: "Kiddies Parties", icon: "🎉", count: 22 },
   {
+    id: "kiddies-beauty",
+    name: "Kiddies Beauty/UpKeep",
+    label: "Kiddies Beauty / UpKeep",
+    icon: "💇",
+    count: 0,
+    subcategories: [
+      { id: "salons", name: "Salons" },
+      { id: "barbershops", name: "Barbershops" },
+      { id: "independent-hair-dressers", name: "Hair Dressers (Independent)" },
+    ],
+  },
+  {
+    id: "postpartum-nurse-aid",
+    name: "Post Partum Nurse Aid",
+    label: "Post Partum Nurse Aid",
+    icon: "🤱",
+    count: 0,
+  },
+  {
     id: "agencies",
     name: "Independent Agencies",
     label: "Independent Agency",
