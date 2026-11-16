@@ -24,13 +24,11 @@ export const VETTING_PACKAGES: VettingPackage[] = [
     summary: "Core nanny/helper vetting for everyday household placements.",
     features: [
       "Traceable nanny/helper",
-      "Thorough vetting",
       "In-depth interview",
-      "Personalized matching",
       "1 month grace period for incompatibility",
       "Pre-employment orientation",
-      "Employment contract",
-      "No criminal record check, fingerprint clearance billed where applicable",
+      "Employment Contract",
+      "No Criminal Record (Fingerprint cleared at a fee)",
     ],
   },
   {

@@ -68,7 +68,7 @@ const vetWithUsPaymentPackages = [
     name: "Standard Package",
     price: 795,
     summary: "Core nanny/helper vetting for everyday household placements.",
-    features: ["Traceable nanny/helper", "Thorough vetting", "Personalized matching"],
+    features: ["Traceable nanny/helper", "Employment Contract", "No Criminal Record (Fingerprint cleared at a fee)"],
   },
   {
     id: "vip",
