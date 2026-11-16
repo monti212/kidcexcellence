@@ -354,8 +354,8 @@ function AdminDashboard() {
     padding: "9px 14px",
     minHeight: 40,
     borderRadius: 999,
-    border: `1px solid ${on ? "#3f3e44" : "#d7edf0"}`,
-    background: on ? "#3f3e44" : "#ffffff",
+    border: `1px solid ${on ? "#2a7b86" : "#ffe08a"}`,
+    background: on ? "#2a7b86" : "#fff0b8",
     color: on ? "#ffffff" : "#3f3e44",
   });
 
@@ -394,7 +394,7 @@ function AdminDashboard() {
         {dashboardError && <Notice tone="warning">{dashboardError}</Notice>}
         {actionError && <Notice tone="error">{actionError}</Notice>}
         {actionNotice && (
-          <div role="status" style={{ display: "flex", alignItems: "center", gap: 12, background: "#3f3e44", color: "#ffffff", borderRadius: 16, padding: "14px 18px" }}>
+          <div role="status" style={{ display: "flex", alignItems: "center", gap: 12, background: "#2a7b86", color: "#ffffff", borderRadius: 16, padding: "14px 18px" }}>
             <Icon name="check" size={20} color="#ffcc2f" strokeWidth={2.6} />
             <span style={{ flex: 1, fontWeight: 700 }}>{actionNotice}</span>
             <button

@@ -127,7 +127,7 @@ export function SiteHeader() {
             </>
           ) : (
             <>
-              <Link href={routes.login} aria-disabled={loading} style={{ padding: "12px 18px", borderRadius: 999, color: "#3f3e44", textDecoration: "none", fontWeight: 700, fontSize: 15 }}>Log in</Link>
+              <Link href={routes.login} aria-disabled={loading} style={{ padding: "12px 18px", borderRadius: 999, background: "#f05a3c", color: "#ffffff", textDecoration: "none", fontWeight: 800, fontSize: 15 }}>Log in</Link>
               <Link href={routes.auth} className="kc-btn">Sign up</Link>
             </>
           )}
@@ -180,7 +180,7 @@ export function SiteHeader() {
             ) : (
               <>
                 <Link href={routes.auth} className="kc-btn">Sign up</Link>
-                <Link href={routes.login} className="kc-btn-outline">Log in</Link>
+                <Link href={routes.login} className="kc-btn-outline" style={{ background: "#f05a3c", borderColor: "#f05a3c", color: "#ffffff" }}>Log in</Link>
               </>
             )}
           </div>

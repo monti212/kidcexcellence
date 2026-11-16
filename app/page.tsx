@@ -41,7 +41,7 @@ const TILE_STYLES: { bg: string; stroke: string; border?: boolean; size: number 
   { bg: "#54b2bf", stroke: "#ffffff", size: 44 },
   { bg: "#ffcc2f", stroke: "#3f3e44", size: 44 },
   { bg: "#f05a3c", stroke: "#ffffff", size: 44 },
-  { bg: "#3f3e44", stroke: "#ffffff", size: 44 },
+  { bg: "#2a7b86", stroke: "#ffffff", size: 44 },
 ];
 const tileStyle = (index: number) =>
   TILE_STYLES[index] ?? (index % 2 === 0
@@ -265,7 +265,7 @@ export default function HomePage() {
                       type="button"
                       aria-pressed={on}
                       onClick={() => setTab(item.label)}
-                      style={{ fontWeight: 700, fontSize: 14, padding: "10px 18px", minHeight: 44, borderRadius: 999, border: `1px solid ${on ? "#3f3e44" : "#d7edf0"}`, background: on ? "#3f3e44" : "#fff0b8", color: on ? "#ffffff" : "#3f3e44" }}
+                      style={{ fontWeight: 700, fontSize: 14, padding: "10px 18px", minHeight: 44, borderRadius: 999, border: `1px solid ${on ? "#2a7b86" : "#ffe08a"}`, background: on ? "#2a7b86" : "#fff0b8", color: on ? "#ffffff" : "#3f3e44" }}
                     >
                       {item.label}
                     </button>
@@ -330,8 +330,8 @@ export default function HomePage() {
         <div style={{ ...container, paddingTop: "clamp(56px, 9vw, 88px)", paddingBottom: "clamp(56px, 9vw, 88px)", display: "flex", flexWrap: "wrap", gap: 48, alignItems: "center" }}>
           <div style={{ flex: "1 1 400px", minWidth: 0, display: "flex", flexDirection: "column", gap: 18 }}>
             <span style={{ alignSelf: "flex-start", background: "#c2412a", color: "#ffffff", fontWeight: 800, fontSize: 13, padding: "6px 12px", borderRadius: 999, letterSpacing: ".4px" }}>VET WITH US</span>
-            <h2 style={{ ...sectionHeading, fontSize: "clamp(28px, 5vw, 40px)", lineHeight: 1.1 }}>Found someone you like? Let us vet them for you.</h2>
-            <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "#686973" }}>Already have a nanny or helper in mind? Our team runs the checks so you can hire with confidence. View the packages, then send an enquiry to Kidcellence on WhatsApp.</p>
+            <h2 style={{ ...sectionHeading, fontSize: "clamp(28px, 5vw, 40px)", lineHeight: 1.1 }}>Too Busy to vet nannies/helpers for yourself?</h2>
+            <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "#686973" }}>We have an array of helpers and nannies carefully selected and interviewed to choose from. View the packages we have and send an enquiry to our team on WhatsApp.</p>
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
               <Link href={routes.pricing} style={{ fontWeight: 700, color: "#2a7b86" }}>See what&apos;s included</Link>
               <Link href={routes.safety} style={{ fontWeight: 700, color: "#2a7b86" }}>How verification works</Link>
@@ -378,7 +378,7 @@ export default function HomePage() {
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Link href={routes.providerSignup} style={{ padding: "16px 28px", borderRadius: 999, background: "#ffcc2f", color: "#3f3e44", fontWeight: 800, fontSize: 16, textDecoration: "none", boxShadow: "0 10px 24px rgba(30,30,40,.15)" }}>List your service</Link>
-              <Link href={routes.pricing} style={{ padding: "16px 28px", borderRadius: 999, background: "#3f3e44", color: "#ffffff", fontWeight: 800, fontSize: 16, textDecoration: "none" }}>See pricing</Link>
+              <Link href={routes.pricing} style={{ padding: "16px 28px", borderRadius: 999, background: "#c2412a", color: "#ffffff", fontWeight: 800, fontSize: 16, textDecoration: "none" }}>See pricing</Link>
             </div>
           </div>
         </div>

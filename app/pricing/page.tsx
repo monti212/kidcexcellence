@@ -56,8 +56,8 @@ const monthlySubscriptions: Array<{
     verification: "Verification checkout waived during the free month",
     href: "/auth?role=provider",
     icon: "school",
-    iconBg: "#3f3e44",
-    iconColor: "#ffffff",
+    iconBg: "#ffcc2f",
+    iconColor: "#3f3e44",
     primary: true,
   },
 ];
@@ -182,7 +182,7 @@ export default function PricingPage() {
               return (
                 <div
                   key={pkg.name}
-                  style={{ background: vip ? "#3f3e44" : "#d4eff3", color: vip ? "#ffffff" : "#3f3e44", borderRadius: 24, padding: 28, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}
+                  style={{ background: vip ? "#2a7b86" : "#d4eff3", color: vip ? "#ffffff" : "#3f3e44", borderRadius: 24, padding: 28, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                     <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{pkg.name}</h3>
@@ -191,7 +191,7 @@ export default function PricingPage() {
                     )}
                   </div>
                   <span style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-1px" }}>P{pkg.price}</span>
-                  <p style={{ margin: 0, color: vip ? "#d7edf0" : "#686973", fontSize: 15, lineHeight: 1.5 }}>{pkg.summary}</p>
+                  <p style={{ margin: 0, color: vip ? "#ffffff" : "#686973", fontSize: 15, lineHeight: 1.5 }}>{pkg.summary}</p>
                   <Checklist items={pkg.features} color={vip ? "#ffcc2f" : "#2a7b86"} />
                   <a
                     href={paymentHref}

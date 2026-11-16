@@ -207,7 +207,7 @@
 
   /* Filter chips. */
   .kc-chip { font-weight: 700; font-size: 14px; padding: 10px 16px; border-radius: 999px; border: 1px solid #ffe08a; background: var(--kc-pop-gold); color: var(--kc-ink); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
-  .kc-chip[aria-pressed="true"], .kc-chip[aria-selected="true"] { background: var(--kc-ink); border-color: var(--kc-ink); color: #fff; }
+  .kc-chip[aria-pressed="true"], .kc-chip[aria-selected="true"] { background: var(--kc-teal-deep); border-color: var(--kc-teal-deep); color: #fff; }
 
   /* Dashboard side menu. */
   .kc-side a, .kc-side button { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; color: var(--kc-ink); text-decoration: none; font-weight: 600; font-size: 15px; min-height: 44px; background: transparent; border: 0; width: 100%; text-align: left; }

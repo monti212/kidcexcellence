@@ -186,7 +186,7 @@ function SearchPageContent() {
               >
                 <span
                   style={active
-                    ? { width: 68, height: 68, borderRadius: "50%", background: "#3f3e44", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 4px #ffffff, 0 0 0 6px #3f3e44" }
+                    ? { width: 68, height: 68, borderRadius: "50%", background: "#2a7b86", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 4px #ffffff, 0 0 0 6px #2a7b86" }
                     : { width: 68, height: 68, borderRadius: "50%", background: ["#54b2bf", "#ffcc2f", "#f05a3c"][index % 3], display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
                   <Icon name={categoryIcon(category.id)} size={28} color={active ? "#ffffff" : "#3f3e44"} strokeWidth={1.8} />
@@ -208,7 +208,7 @@ function SearchPageContent() {
               aria-expanded={showMoreFilters}
               aria-controls="kc-more-filters"
               onClick={() => setShowMoreFilters((open) => !open)}
-              style={{ background: "#3f3e44", color: "#ffffff", borderColor: "#3f3e44" }}
+              style={{ background: "#2a7b86", color: "#ffffff", borderColor: "#2a7b86" }}
             >
               <Icon name="filter" size={18} color="#ffffff" strokeWidth={2} />
               {showMoreFilters ? "Hide filters" : "More filters"}
@@ -305,9 +305,9 @@ function SearchPageContent() {
 
       {/* Compare tray */}
       {compareIds.length > 0 && (
-        <div style={{ position: "sticky", bottom: 0, background: "#3f3e44", color: "#ffffff", zIndex: 20 }}>
+        <div style={{ position: "sticky", bottom: 0, background: "#2a7b86", color: "#ffffff", zIndex: 20 }}>
           <div style={{ maxWidth: 1280, margin: "0 auto", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <Icon name="compare" size={22} color="#54b2bf" strokeWidth={2} />
+            <Icon name="compare" size={22} color="#ffcc2f" strokeWidth={2} />
             <strong style={{ fontSize: 15 }}>Compare ({compareIds.length} of {MAX_COMPARE})</strong>
             <span style={{ display: "flex", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
               {compareNames.map((item) => (
@@ -332,7 +332,7 @@ function SearchPageContent() {
                 Compare side by side
               </Link>
             ) : (
-              <span style={{ marginLeft: "auto", fontSize: 14, color: "#d7edf0" }}>Pick one more to compare</span>
+              <span style={{ marginLeft: "auto", fontSize: 14, color: "#ffffff" }}>Pick one more to compare</span>
             )}
           </div>
         </div>
