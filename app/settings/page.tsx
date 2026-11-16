@@ -33,7 +33,7 @@ const ROLE_BLURBS: Record<SwitchableRole, string> = {
 };
 
 // Design styles (SettingsScreen).
-const card: CSSProperties = { background: "#ffffff", borderRadius: 24, padding: 24, display: "flex", flexDirection: "column", boxShadow: "0 6px 20px rgba(63,62,68,.06)", minWidth: 0 };
+const card: CSSProperties = { background: "#d4eff3", borderRadius: 24, padding: 24, display: "flex", flexDirection: "column", boxShadow: "0 6px 20px rgba(63,62,68,.06)", minWidth: 0 };
 const sectionTitle: CSSProperties = { margin: 0, fontSize: 22, fontWeight: 800 };
 const sectionBody: CSSProperties = { margin: 0, fontSize: 15, color: "#686973", lineHeight: 1.5 };
 
@@ -99,7 +99,7 @@ export default function SettingsPage() {
   if (!session || !user) {
     return (
       <CenteredPanel>
-        <span style={{ margin: "0 auto", width: 56, height: 56, borderRadius: "50%", background: "#f4fbfc", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ margin: "0 auto", width: 56, height: 56, borderRadius: "50%", background: "#ffcc2f", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon name="gear" size={28} color="#2a7b86" />
         </span>
         <h1 style={{ margin: "20px 0 0", fontSize: 26, fontWeight: 800, letterSpacing: "-0.5px" }}>
@@ -218,7 +218,7 @@ export default function SettingsPage() {
             <Icon name="message" size={20} color="#2a7b86" />
             <strong style={{ fontSize: 15, overflowWrap: "anywhere", minWidth: 0 }}>{user.email}</strong>
             {user.emailVerifiedAt ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 999, background: "#ffffff", border: "1px solid #d7edf0", color: "#2a7b86", fontWeight: 800, fontSize: 12 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 999, background: "#ffcc2f", border: "1px solid #ffcc2f", color: "#3f3e44", fontWeight: 800, fontSize: 12 }}>
                 <Icon name="shieldCheck" size={14} color="#2a7b86" />Verified
               </span>
             ) : (
@@ -263,7 +263,7 @@ export default function SettingsPage() {
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
-              className="rounded-full border-[var(--brand-line)] bg-white font-extrabold text-[var(--brand-ink)]"
+              className="rounded-full border-[var(--brand-gold)] bg-[var(--brand-gold)] font-extrabold text-[var(--brand-ink)]"
               onClick={() => setPendingRole(null)}
               disabled={switching}
             >

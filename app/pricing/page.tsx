@@ -30,8 +30,8 @@ const monthlySubscriptions: Array<{
     verification: "Everything included for the first month",
     href: "/auth?role=parent",
     icon: "heart",
-    iconBg: "#f4fbfc",
-    iconColor: "#2a7b86",
+    iconBg: "#f05a3c",
+    iconColor: "#ffffff",
     primary: false,
   },
   {
@@ -83,8 +83,8 @@ function getVetWithUsPaymentHref(packageId: string) {
   return `/api/verifications/payment?packageId=${encodeURIComponent(packageId)}`;
 }
 
-const card: CSSProperties = { background: "#ffffff", borderRadius: 28, padding: 32, display: "flex", flexDirection: "column", gap: 18, boxShadow: "0 14px 40px rgba(63,62,68,.08)", minWidth: 0 };
-const outlineBtn: CSSProperties = { marginTop: "auto", textAlign: "center", padding: 15, borderRadius: 16, border: "2px solid #2a7b86", color: "#2a7b86", fontWeight: 800, textDecoration: "none" };
+const card: CSSProperties = { background: "#d4eff3", borderRadius: 28, padding: 32, display: "flex", flexDirection: "column", gap: 18, boxShadow: "0 14px 40px rgba(63,62,68,.08)", minWidth: 0 };
+const outlineBtn: CSSProperties = { marginTop: "auto", textAlign: "center", padding: 15, borderRadius: 16, border: "2px solid #ffcc2f", background: "#ffcc2f", color: "#3f3e44", fontWeight: 800, textDecoration: "none" };
 const solidBtn: CSSProperties = { marginTop: "auto", textAlign: "center", padding: 15, borderRadius: 16, background: "#2a7b86", color: "#ffffff", fontWeight: 800, textDecoration: "none" };
 
 function Checklist({ items, color = "#2a7b86" }: { items: string[]; color?: string }) {
@@ -102,7 +102,7 @@ function Checklist({ items, color = "#2a7b86" }: { items: string[]; color?: stri
 
 function Faq({ q, children }: { q: string; children: ReactNode }) {
   return (
-    <details style={{ background: "#ffffff", borderRadius: 20, padding: "20px 24px" }}>
+    <details style={{ background: "#fff0b8", borderRadius: 20, padding: "20px 24px" }}>
       <summary style={{ fontWeight: 800, fontSize: 17 }}>{q}</summary>
       <p style={{ margin: "12px 0 0", color: "#686973", lineHeight: 1.6 }}>{children}</p>
     </details>
@@ -114,7 +114,7 @@ export default function PricingPage() {
     <div style={{ color: "#3f3e44", background: "#fff5d3" }}>
       <div className="mx-auto flex max-w-[1280px] flex-col gap-14 px-4 pb-20 pt-14 sm:px-6 sm:pt-[72px]">
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 14, alignItems: "center" }}>
-          <span style={{ background: "#ffffff", padding: "8px 14px", borderRadius: 999, fontWeight: 800, fontSize: 14, color: "#2a7b86" }}>
+          <span style={{ background: "#ffcc2f", padding: "8px 14px", borderRadius: 999, fontWeight: 800, fontSize: 14, color: "#3f3e44" }}>
             Pricing
           </span>
           <h1 className="text-[40px] sm:text-[56px]" style={{ margin: 0, fontWeight: 800, letterSpacing: "-1.5px", lineHeight: 1.05, maxWidth: 800 }}>
@@ -139,7 +139,7 @@ export default function PricingPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 24 }}>
             {monthlySubscriptions.map((plan) => (
               <article key={plan.name} style={card}>
-                <span style={{ width: 60, height: 60, borderRadius: "50%", background: plan.iconBg, display: "flex", alignItems: "center", justifyContent: "center", ...(plan.iconBg === "#f4fbfc" ? { border: "1px solid #d7edf0" } : {}) }}>
+                <span style={{ width: 60, height: 60, borderRadius: "50%", background: plan.iconBg, display: "flex", alignItems: "center", justifyContent: "center", ...(plan.iconBg === "#ffffff" ? { border: "1px solid #d7edf0" } : {}) }}>
                   <Icon name={plan.icon} size={30} color={plan.iconColor} strokeWidth={1.8} />
                 </span>
                 <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>{plan.name}</h3>
@@ -162,10 +162,10 @@ export default function PricingPage() {
         <section
           aria-labelledby="vetting-heading"
           className="p-6 sm:p-12"
-          style={{ background: "#ffffff", borderRadius: 32, display: "flex", flexWrap: "wrap", gap: 40, alignItems: "center" }}
+          style={{ background: "#fff0b8", borderRadius: 32, display: "flex", flexWrap: "wrap", gap: 40, alignItems: "center" }}
         >
           <div style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-            <span style={{ alignSelf: "flex-start", background: "#fff5d3", color: "#c2412a", fontWeight: 800, fontSize: 13, padding: "6px 12px", borderRadius: 999 }}>
+            <span style={{ alignSelf: "flex-start", background: "#c2412a", color: "#ffffff", fontWeight: 800, fontSize: 13, padding: "6px 12px", borderRadius: 999 }}>
               VET WITH US
             </span>
             <h2 id="vetting-heading" className="text-[28px] sm:text-[36px]" style={{ margin: 0, fontWeight: 800, letterSpacing: "-1px", lineHeight: 1.1 }}>
@@ -182,7 +182,7 @@ export default function PricingPage() {
               return (
                 <div
                   key={pkg.name}
-                  style={{ background: vip ? "#3f3e44" : "#f4fbfc", color: vip ? "#ffffff" : "#3f3e44", borderRadius: 24, padding: 28, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}
+                  style={{ background: vip ? "#3f3e44" : "#d4eff3", color: vip ? "#ffffff" : "#3f3e44", borderRadius: 24, padding: 28, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                     <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{pkg.name}</h3>
@@ -199,7 +199,7 @@ export default function PricingPage() {
                     rel="noreferrer"
                     style={vip
                       ? { marginTop: "auto", textAlign: "center", padding: 14, borderRadius: 14, background: "#ffcc2f", color: "#3f3e44", fontWeight: 800, textDecoration: "none" }
-                      : { marginTop: "auto", textAlign: "center", padding: 14, borderRadius: 14, border: "2px solid #2a7b86", color: "#2a7b86", fontWeight: 800, textDecoration: "none", background: "#ffffff" }}
+                      : { marginTop: "auto", textAlign: "center", padding: 14, borderRadius: 14, border: "2px solid #ffcc2f", color: "#3f3e44", fontWeight: 800, textDecoration: "none", background: "#ffcc2f" }}
                   >
                     Pay P{pkg.price}
                   </a>

@@ -117,7 +117,7 @@ export function VerificationBanner({ stage }: { stage: Stage }) {
     <section aria-labelledby="kc-verification-title" style={{ padding: 28, borderRadius: 24, background: tone.bg, color: tone.fg, display: "flex", flexDirection: "column", gap: 22 }}>
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
         <div style={{ display: "flex", gap: 16, alignItems: "flex-start", maxWidth: 760, minWidth: 0 }}>
-          <span style={{ width: 56, height: 56, borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+          <span style={{ width: 56, height: 56, borderRadius: "50%", background: "#ffcc2f", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
             <Icon name="shieldCheck" size={28} color="#2a7b86" />
           </span>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>

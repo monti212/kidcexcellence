@@ -175,7 +175,7 @@ function AuthPageContent() {
           </p>
         </div>
 
-        <div className="rounded-3xl border border-[var(--brand-line)] bg-white p-6 shadow-[0_6px_20px_rgba(63,62,68,.06)] sm:p-8">
+        <div className="rounded-3xl border border-[var(--brand-line)] bg-[var(--kc-pop-teal)] p-6 shadow-[0_6px_20px_rgba(63,62,68,.06)] sm:p-8">
           {/* Auth Mode Toggle */}
           <div role="group" aria-label="Account access" className="mb-6 flex rounded-full border border-[var(--brand-line)] bg-[var(--brand-ivory)] p-1">
             <button

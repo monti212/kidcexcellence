@@ -207,7 +207,7 @@ function ProviderProfileLoading() {
 function DashboardMessage({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ background: "#f4fbfc", minHeight: "60vh", padding: "48px 16px" }}>
-      <div role="status" style={{ maxWidth: 560, margin: "0 auto", background: "#ffffff", borderRadius: 24, padding: 24, textAlign: "center", fontSize: 15, fontWeight: 700, color: "#686973", boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
+      <div role="status" style={{ maxWidth: 560, margin: "0 auto", background: "#d4eff3", borderRadius: 24, padding: 24, textAlign: "center", fontSize: 15, fontWeight: 700, color: "#686973", boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
         {children}
       </div>
     </div>
@@ -799,8 +799,8 @@ function ProviderProfileContent() {
   if (!session || user?.role !== "provider") {
     return (
       <div style={{ background: "#f4fbfc", padding: "48px 16px 80px" }}>
-        <div style={{ maxWidth: 560, margin: "0 auto", background: "#ffffff", borderRadius: 24, padding: "32px 24px", textAlign: "center", boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
-          <span style={{ width: 64, height: 64, margin: "0 auto", borderRadius: "50%", background: "#f4fbfc", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto", background: "#d4eff3", borderRadius: 24, padding: "32px 24px", textAlign: "center", boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
+          <span style={{ width: 64, height: 64, margin: "0 auto", borderRadius: "50%", background: "#ffcc2f", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Icon name="lock" size={28} color="#2a7b86" />
           </span>
           <h1 style={{ margin: "20px 0 0", fontSize: 26, fontWeight: 800, letterSpacing: "-0.5px" }}>
@@ -836,7 +836,7 @@ function ProviderProfileContent() {
     { tab: "documents", label: "Verification", icon: "shieldCheck" },
   ];
   const tabTriggerClass =
-    "min-h-11 flex-none rounded-full border border-[var(--kc-line)] bg-white px-4 text-[15px] font-bold text-[var(--kc-ink)] data-active:border-[var(--kc-teal-deep)] data-active:bg-[var(--kc-teal-deep)] data-active:text-white";
+    "min-h-11 flex-none rounded-full border border-[#ffe08a] bg-[var(--kc-pop-gold)] px-4 text-[15px] font-bold text-[var(--kc-ink)] data-active:border-[var(--kc-teal-deep)] data-active:bg-[var(--kc-teal-deep)] data-active:text-white";
   const sectionLabel = { margin: 0, fontSize: 16, fontWeight: 800 } as const;
 
   return (
@@ -847,7 +847,7 @@ function ProviderProfileContent() {
           <nav
             className="kc-side flex flex-row gap-1 overflow-x-auto lg:flex-col"
             aria-label="Provider dashboard"
-            style={{ background: "#ffffff", borderRadius: 24, padding: 10, boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}
+            style={{ background: "#d4eff3", borderRadius: 24, padding: 10, boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}
           >
             <a href="#top" className="w-auto shrink-0 whitespace-nowrap lg:w-full">
               <Icon name="chart" size={20} color="#686973" />Overview
@@ -895,7 +895,7 @@ function ProviderProfileContent() {
               <h1 style={{ margin: "4px 0 0", fontSize: 36, fontWeight: 800, letterSpacing: "-1px" }}>Your listing</h1>
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, background: "#ffffff", border: "1px solid #d7edf0", borderRadius: 14, padding: "8px 14px", minHeight: 44 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, background: "#fff0b8", border: "1px solid #ffe08a", borderRadius: 14, padding: "8px 14px", minHeight: 44 }}>
                 <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: "50%", background: published ? "#2a7b86" : "#9fb9bd" }} />
                 {published ? "Listing visible to parents" : "Listing private (draft)"}
               </span>
@@ -1305,7 +1305,7 @@ function ProviderProfileContent() {
                     </Panel>
                   </div>
 
-                  <section style={{ background: "#ffffff", borderRadius: 24, padding: 26, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between", boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
+                  <section style={{ background: "#fff0b8", borderRadius: 24, padding: 26, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between", boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
                     <div style={{ flex: "1 1 280px", minWidth: 0 }}>
                       <p style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>
                         {verificationStatus === "approved" && "Verification approved"}
@@ -1490,7 +1490,7 @@ function ProviderProfileContent() {
                             type="button"
                             onClick={() => deleteUpload(upload.id)}
                             aria-label={`Remove ${upload.fileName}`}
-                            style={{ position: "absolute", top: 8, right: 8, width: 36, height: 36, borderRadius: "50%", border: 0, background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,.15)" }}
+                            style={{ position: "absolute", top: 8, right: 8, width: 36, height: 36, borderRadius: "50%", border: 0, background: "#ffcc2f", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,.15)" }}
                           >
                             <Icon name="x" size={14} color="#3f3e44" strokeWidth={2.4} />
                           </button>
@@ -1521,7 +1521,7 @@ function ProviderProfileContent() {
           </div>
 
           {/* Save / publish */}
-          <section style={{ background: "#ffffff", borderRadius: 24, padding: 20, display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
+          <section style={{ background: "#d4eff3", borderRadius: 24, padding: 20, display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
               <p style={{ margin: 0, fontSize: 14, color: "#686973", flex: "1 1 240px" }}>
                 {published ? "Your listing is visible in provider search." : "Your listing is private."}{" "}

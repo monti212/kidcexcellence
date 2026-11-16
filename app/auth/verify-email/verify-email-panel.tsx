@@ -85,7 +85,7 @@ export function VerifyEmailPanel({ token }: { token: string }) {
         <Link href="/" className="mb-6 flex justify-center" aria-label="Kidcellence home">
           <BrandMark />
         </Link>
-        <div className="rounded-3xl border border-[var(--brand-line)] bg-white p-6 text-center shadow-[0_6px_20px_rgba(63,62,68,.06)] sm:p-8">
+        <div className="rounded-3xl border border-[var(--brand-line)] bg-[var(--kc-pop-teal)] p-6 text-center shadow-[0_6px_20px_rgba(63,62,68,.06)] sm:p-8">
           <Icon
             className={`mx-auto h-10 w-10 text-[var(--brand-teal)] ${
               state === "loading" ? "animate-spin" : ""

@@ -31,9 +31,9 @@ export function HeroIllustration() {
         <path d="M398 175 L410 175 L404 182 Z" fill="#f4fbfc" />
       </svg>
 
-      <div style={{ position: "absolute", left: 0, top: 56, background: "#ffffff", borderRadius: 18, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 14px 34px rgba(30,30,40,.14)" }}>
-        <span style={{ width: 40, height: 40, borderRadius: "50%", background: "#f4fbfc", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon name="shieldCheck" size={22} color="#2a7b86" strokeWidth={2.2} />
+      <div style={{ position: "absolute", left: 0, top: 56, background: "#fff0b8", borderRadius: 18, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 14px 34px rgba(30,30,40,.14)" }}>
+        <span style={{ width: 40, height: 40, borderRadius: "50%", background: "#54b2bf", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Icon name="shieldCheck" size={22} color="#3f3e44" strokeWidth={2.2} />
         </span>
         <span style={{ display: "flex", flexDirection: "column" }}>
           <strong style={{ fontSize: 14 }}>Documents reviewed</strong>
@@ -41,8 +41,8 @@ export function HeroIllustration() {
         </span>
       </div>
 
-      <div style={{ position: "absolute", right: 0, bottom: 70, background: "#ffffff", borderRadius: 18, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 14px 34px rgba(30,30,40,.14)" }}>
-        <span style={{ width: 40, height: 40, borderRadius: "50%", background: "#fff5d3", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "absolute", right: 0, bottom: 70, background: "#d4eff3", borderRadius: 18, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 14px 34px rgba(30,30,40,.14)" }}>
+        <span style={{ width: 40, height: 40, borderRadius: "50%", background: "#ffcc2f", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon name="message" size={22} color="#3f3e44" strokeWidth={2} />
         </span>
         <span style={{ display: "flex", flexDirection: "column" }}>

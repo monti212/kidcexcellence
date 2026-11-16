@@ -34,6 +34,18 @@ export function providerTint(id: string) {
   return TINTS[Math.abs(hash) % TINTS.length];
 }
 
+// Card body and initials-circle colours that pair with each header tint.
+const CARD_THEMES: Record<(typeof TINTS)[number], { body: string; circle: string }> = {
+  "#54b2bf": { body: "#d4eff3", circle: "#ffcc2f" },
+  "#ffcc2f": { body: "#fff0b8", circle: "#f05a3c" },
+  "#f05a3c": { body: "#fee6de", circle: "#ffcc2f" },
+  "#d7edf0": { body: "#d4eff3", circle: "#f05a3c" },
+};
+
+export function providerCardTheme(id: string) {
+  return CARD_THEMES[providerTint(id)];
+}
+
 export function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";

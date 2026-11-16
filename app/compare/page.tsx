@@ -168,7 +168,7 @@ function ComparePageContent() {
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "36px 16px 96px", display: "flex", flexDirection: "column", gap: 24 }}>
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 16 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <span style={{ alignSelf: "flex-start", background: "#ffffff", color: "#2a7b86", border: "1px solid #d7edf0", fontWeight: 800, fontSize: 13, padding: "6px 12px", borderRadius: 999, letterSpacing: ".4px" }}>
+            <span style={{ alignSelf: "flex-start", background: "#ffcc2f", color: "#3f3e44", border: "1px solid #ffcc2f", fontWeight: 800, fontSize: 13, padding: "6px 12px", borderRadius: 999, letterSpacing: ".4px" }}>
               SIDE-BY-SIDE DECISIONS
             </span>
             <h1 style={{ margin: 0, fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-1px" }}>
@@ -188,8 +188,8 @@ function ComparePageContent() {
         </div>
 
         {providers.length < 2 ? (
-          <div style={{ background: "#ffffff", borderRadius: 24, padding: "56px 24px", textAlign: "center", display: "flex", flexDirection: "column", gap: 12, alignItems: "center", boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
-            <span style={{ width: 72, height: 72, borderRadius: "50%", background: "#f4fbfc", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#d4eff3", borderRadius: 24, padding: "56px 24px", textAlign: "center", display: "flex", flexDirection: "column", gap: 12, alignItems: "center", boxShadow: "0 6px 20px rgba(63,62,68,.06)" }}>
+            <span style={{ width: 72, height: 72, borderRadius: "50%", background: "#ffcc2f", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon name="compare" size={32} color="#2a7b86" />
             </span>
             <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Select at least 2 providers to compare</h2>
@@ -214,7 +214,7 @@ function ComparePageContent() {
                           type="button"
                           onClick={() => removeProvider(p.id)}
                           aria-label={`Remove ${p.name} from comparison`}
-                          style={{ position: "absolute", top: 12, right: 12, width: 36, height: 36, borderRadius: "50%", border: "1px solid #d7edf0", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}
+                          style={{ position: "absolute", top: 12, right: 12, width: 36, height: 36, borderRadius: "50%", border: "1px solid #f05a3c", background: "#fee6de", display: "flex", alignItems: "center", justifyContent: "center" }}
                         >
                           <Icon name="x" size={14} color="#3f3e44" strokeWidth={2.4} />
                         </button>
@@ -265,7 +265,7 @@ function ComparePageContent() {
                       <Link href={`${routes.messages}?provider=${encodeURIComponent(p.id)}`} style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 46, borderRadius: 14, background: "#2a7b86", color: "#ffffff", textDecoration: "none", fontWeight: 800 }}>
                         Message
                       </Link>
-                      <Link href={routes.provider(p.id)} style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 44, borderRadius: 14, border: "2px solid #2a7b86", background: "#ffffff", color: "#2a7b86", textDecoration: "none", fontWeight: 800 }}>
+                      <Link href={routes.provider(p.id)} style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 44, borderRadius: 14, border: "2px solid #ffcc2f", background: "#ffcc2f", color: "#3f3e44", textDecoration: "none", fontWeight: 800 }}>
                         View profile
                       </Link>
                     </div>
@@ -281,7 +281,7 @@ function ComparePageContent() {
                   Add another provider
                 </Link>
               )}
-              <button type="button" className="kc-btn-outline" style={{ borderColor: "#d7edf0", color: "#686973" }} onClick={() => setCompareIds([])}>
+              <button type="button" className="kc-btn-outline" style={{ borderColor: "#f05a3c", background: "#fee6de", color: "#3f3e44" }} onClick={() => setCompareIds([])}>
                 <Icon name="trash" size={18} />
                 Clear comparison
               </button>

@@ -75,7 +75,7 @@ export default function HelpPage() {
         </div>
 
         <section style={{ background: "#fff5d3", borderRadius: 24, padding: 28, display: "flex", flexDirection: "column", gap: 12 }}>
-          <span style={{ alignSelf: "flex-start", background: "#ffffff", color: "#c2412a", fontWeight: 800, fontSize: 12, padding: "5px 10px", borderRadius: 999, letterSpacing: ".4px" }}>SAFETY</span>
+          <span style={{ alignSelf: "flex-start", background: "#c2412a", color: "#ffffff", fontWeight: 800, fontSize: 12, padding: "5px 10px", borderRadius: 999, letterSpacing: ".4px" }}>SAFETY</span>
           <h2 style={{ margin: 0, fontSize: 26, fontWeight: 800 }}>Safety concern</h2>
           <p style={{ margin: 0, maxWidth: 760, fontSize: 16, lineHeight: 1.7, color: "#686973" }}>
             For immediate danger or suspected harm, contact Botswana emergency services or the

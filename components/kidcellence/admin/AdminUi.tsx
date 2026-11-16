@@ -6,7 +6,7 @@ import { initialsOf, providerTint } from "@/lib/kidcellence/provider-display";
 export const cardShadow = "0 6px 20px rgba(63,62,68,.06)";
 
 export const panelStyle: CSSProperties = {
-  background: "#ffffff",
+  background: "#d4eff3",
   borderRadius: 24,
   padding: 22,
   boxShadow: cardShadow,

@@ -140,7 +140,7 @@ export function SiteHeader() {
           aria-expanded={menuOpen}
           aria-controls="kc-mobile-menu"
           onClick={() => setMenuOpen((open) => !open)}
-          style={{ marginLeft: "auto", width: 44, height: 44, borderRadius: "50%", border: "1px solid #d7edf0", background: "#ffffff" }}
+          style={{ marginLeft: "auto", width: 44, height: 44, borderRadius: "50%", border: "1px solid #ffcc2f", background: "#ffcc2f" }}
         >
           <Icon name={menuOpen ? "x" : "menu"} size={20} color="#3f3e44" />
         </button>

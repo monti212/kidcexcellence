@@ -566,7 +566,7 @@ function AdminDashboard() {
             {queueFilter === "pending" && (
               <aside
                 aria-label="Selected submission"
-                style={{ flex: "1 1 380px", minWidth: 0, background: "#ffffff", borderRadius: 24, padding: 24, boxShadow: "0 14px 40px rgba(42,123,134,.14)", border: "2px solid #54b2bf", display: "flex", flexDirection: "column", gap: 16 }}
+                style={{ flex: "1 1 380px", minWidth: 0, background: "#d4eff3", borderRadius: 24, padding: 24, boxShadow: "0 14px 40px rgba(42,123,134,.14)", border: "2px solid #54b2bf", display: "flex", flexDirection: "column", gap: 16 }}
               >
                 {selected ? (
                   <>
@@ -647,7 +647,7 @@ function AdminDashboard() {
                         type="button"
                         disabled={actionBusy}
                         onClick={() => decide(selected, "reject")}
-                        style={{ flex: "1 1 140px", fontWeight: 800, fontSize: 15, padding: 14, minHeight: 48, borderRadius: 14, border: "2px solid #3f3e44", background: "#ffffff", color: "#3f3e44" }}
+                        style={{ flex: "1 1 140px", fontWeight: 800, fontSize: 15, padding: 14, minHeight: 48, borderRadius: 14, border: "2px solid #ffcc2f", background: "#ffcc2f", color: "#3f3e44" }}
                       >
                         Reject
                       </button>
@@ -792,8 +792,8 @@ function AdminDashboard() {
                 { label: "Total page views", value: platformAnalytics.totalPageViews },
                 { label: "Visitors today", value: platformAnalytics.todayVisitors },
                 { label: "Page views today", value: platformAnalytics.todayPageViews },
-              ].map((stat) => (
-                <div key={stat.label} style={{ background: "#f4fbfc", border: "1px solid #d7edf0", borderRadius: 18, padding: 16 }}>
+              ].map((stat, index) => (
+                <div key={stat.label} style={{ background: ["#d4eff3", "#fff0b8", "#fee6de"][index % 3], borderRadius: 18, padding: 16 }}>
                   <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(stat.value)}</div>
                   <div style={{ fontSize: 14, color: "#686973" }}>{stat.label}</div>
                 </div>
@@ -900,7 +900,7 @@ function AdminGate() {
 
   return (
     <div style={{ minHeight: "70vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px", background: "#f4fbfc" }}>
-      <div style={{ width: "100%", maxWidth: 400, background: "#ffffff", borderRadius: 24, padding: 32, boxShadow: "0 14px 40px rgba(42,123,134,.14)", border: "1px solid #d7edf0", textAlign: "center" }}>
+      <div style={{ width: "100%", maxWidth: 400, background: "#d4eff3", borderRadius: 24, padding: 32, boxShadow: "0 14px 40px rgba(42,123,134,.14)", border: "1px solid #d7edf0", textAlign: "center" }}>
         <div style={{ width: 64, height: 64, borderRadius: 20, margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(120deg, #54b2bf 0%, #2a7b86 100%)" }}>
           <Icon name="shieldCheck" size={32} color="#ffffff" strokeWidth={2} />
         </div>

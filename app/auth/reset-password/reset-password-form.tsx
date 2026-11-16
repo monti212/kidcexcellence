@@ -51,7 +51,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         <Link href="/" className="mb-6 flex justify-center" aria-label="Kidcellence home">
           <BrandMark />
         </Link>
-        <div className="rounded-3xl border border-[var(--brand-line)] bg-white p-6 shadow-[0_6px_20px_rgba(63,62,68,.06)] sm:p-8">
+        <div className="rounded-3xl border border-[var(--brand-line)] bg-[var(--kc-pop-teal)] p-6 shadow-[0_6px_20px_rgba(63,62,68,.06)] sm:p-8">
           <KeyRound className="mb-4 h-7 w-7 text-[var(--brand-teal)]" aria-hidden="true" />
           <h1 className="text-3xl font-extrabold tracking-tight text-[var(--brand-ink)]">Choose a new password</h1>
           <p className="mt-2 text-sm text-[var(--brand-muted)]">

@@ -30,7 +30,7 @@ const MAX_PRICE = 10000;
 const MAX_COMPARE = 3;
 
 function chipStyle(on: boolean): CSSProperties {
-  return { background: on ? "#f4fbfc" : "#ffffff", borderColor: on ? "#54b2bf" : "#d7edf0", color: on ? "#2a7b86" : "#3f3e44" };
+  return { background: on ? "#54b2bf" : "#fff0b8", borderColor: on ? "#54b2bf" : "#ffe08a", color: "#3f3e44" };
 }
 
 const selectStyle: CSSProperties = { fontWeight: 700, color: "#3f3e44", padding: "10px 14px", borderRadius: 12, border: "1px solid #d7edf0", background: "#ffffff", minHeight: 44 };
@@ -174,7 +174,7 @@ function SearchPageContent() {
 
         {/* Category circles */}
         <div role="group" aria-label="Categories" style={{ display: "flex", gap: 14, overflowX: "auto", padding: "4px 2px 8px" }}>
-          {ALL_CATEGORIES.map((category) => {
+          {ALL_CATEGORIES.map((category, index) => {
             const active = selectedCategories.includes(category.id);
             return (
               <button
@@ -186,10 +186,10 @@ function SearchPageContent() {
               >
                 <span
                   style={active
-                    ? { width: 68, height: 68, borderRadius: "50%", background: "#2a7b86", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 4px #ffffff, 0 0 0 6px #54b2bf" }
-                    : { width: 68, height: 68, borderRadius: "50%", background: "#ffffff", border: "1px solid #d7edf0", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    ? { width: 68, height: 68, borderRadius: "50%", background: "#3f3e44", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 4px #ffffff, 0 0 0 6px #3f3e44" }
+                    : { width: 68, height: 68, borderRadius: "50%", background: ["#54b2bf", "#ffcc2f", "#f05a3c"][index % 3], display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
-                  <Icon name={categoryIcon(category.id)} size={28} color={active ? "#ffffff" : "#2a7b86"} strokeWidth={1.8} />
+                  <Icon name={categoryIcon(category.id)} size={28} color={active ? "#ffffff" : "#3f3e44"} strokeWidth={1.8} />
                 </span>
                 <span style={{ fontSize: 13, fontWeight: active ? 800 : 600, lineHeight: 1.25, textAlign: "center" }}>
                   {category.label ?? category.name}
@@ -200,7 +200,7 @@ function SearchPageContent() {
         </div>
 
         {/* Filters */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, background: "#ffffff", padding: 14, borderRadius: 20, boxShadow: "0 4px 14px rgba(63,62,68,.05)" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, background: "#d4eff3", padding: 14, borderRadius: 20, boxShadow: "0 4px 14px rgba(63,62,68,.05)" }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
             <button
               type="button"
@@ -220,7 +220,7 @@ function SearchPageContent() {
               onClick={() => setVerifiedOnly((value) => !value)}
               style={chipStyle(verifiedOnly)}
             >
-              <Icon name={verifiedOnly ? "check" : "shieldCheck"} size={16} color="#2a7b86" strokeWidth={2.2} />
+              <Icon name={verifiedOnly ? "check" : "shieldCheck"} size={16} color="#3f3e44" strokeWidth={2.2} />
               Verified only
             </button>
             {maxPrice < MAX_PRICE && (
@@ -271,7 +271,7 @@ function SearchPageContent() {
         )}
 
         {loadState !== "loading" && filteredProviders.length === 0 ? (
-          <div style={{ background: "#ffffff", borderRadius: 24, padding: "48px 24px", textAlign: "center", display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
+          <div style={{ background: "#fff0b8", borderRadius: 24, padding: "48px 24px", textAlign: "center", display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
             <strong style={{ fontSize: 20 }}>No providers found</strong>
             <span style={{ color: "#686973" }}>Try another town, a different search, or clear a filter.</span>
             <button

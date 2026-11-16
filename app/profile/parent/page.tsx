@@ -43,7 +43,7 @@ const LOCATIONS = [
 ];
 
 // Design styles (ParentProfileScreen).
-const card: CSSProperties = { background: "#ffffff", borderRadius: 24, display: "flex", flexDirection: "column", boxShadow: "0 6px 20px rgba(63,62,68,.06)" };
+const card: CSSProperties = { background: "#d4eff3", borderRadius: 24, display: "flex", flexDirection: "column", boxShadow: "0 6px 20px rgba(63,62,68,.06)" };
 const fieldLabel: CSSProperties = { display: "flex", flexDirection: "column", gap: 6, fontSize: 14, fontWeight: 700, minWidth: 0 };
 const field: CSSProperties = { minHeight: 48, padding: "0 14px", borderRadius: 14, border: "1px solid #d7edf0", background: "#f4fbfc", fontSize: 16, fontWeight: 500, color: "#3f3e44", width: "100%", minWidth: 0 };
 const childField: CSSProperties = { ...field, background: "#ffffff" };
@@ -178,7 +178,7 @@ export default function ParentProfilePage() {
   if (!loading && (!session || user?.role !== "parent")) {
     return (
       <SignedOutShell>
-        <span style={{ margin: "0 auto", width: 56, height: 56, borderRadius: "50%", background: "#f4fbfc", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ margin: "0 auto", width: 56, height: 56, borderRadius: "50%", background: "#ffcc2f", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon name="nanny" size={28} color="#2a7b86" />
         </span>
         <h1 style={{ margin: "20px 0 0", fontSize: 26, fontWeight: 800, letterSpacing: "-0.5px" }}>
@@ -213,7 +213,7 @@ export default function ParentProfilePage() {
             <section aria-labelledby="kids-h" style={{ ...card, padding: 24, gap: 18 }}>
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                 <h2 id="kids-h" style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Children</h2>
-                <button type="button" onClick={addChild} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 16px", borderRadius: 14, border: "2px solid #2a7b86", background: "#ffffff", color: "#2a7b86", fontWeight: 800, fontSize: 14 }}>
+                <button type="button" onClick={addChild} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 16px", borderRadius: 14, border: "2px solid #ffcc2f", background: "#ffcc2f", color: "#3f7b86", fontWeight: 800, fontSize: 14 }}>
                   <Icon name="plus" size={16} color="#2a7b86" strokeWidth={2.4} />Add child
                 </button>
               </div>
@@ -243,7 +243,7 @@ export default function ParentProfilePage() {
                             type="button"
                             onClick={() => removeChild(child.id)}
                             aria-label={`Remove ${child.name || `child ${idx + 1}`}`}
-                            style={{ flex: "0 0 auto", width: 44, height: 44, borderRadius: 12, border: "1px solid #d7edf0", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            style={{ flex: "0 0 auto", width: 44, height: 44, borderRadius: 12, border: "1px solid #f05a3c", background: "#fee6de", display: "flex", alignItems: "center", justifyContent: "center" }}
                           >
                             <Icon name="trash" size={18} color="#c2412a" />
                           </button>
@@ -325,7 +325,7 @@ export default function ParentProfilePage() {
             </section>
 
             <section style={{ background: "#fff5d3", borderRadius: 24, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-              <span style={{ alignSelf: "flex-start", background: "#ffffff", color: "#c2412a", fontWeight: 800, fontSize: 12, padding: "5px 10px", borderRadius: 999, letterSpacing: ".4px" }}>ALSO A PROVIDER?</span>
+              <span style={{ alignSelf: "flex-start", background: "#c2412a", color: "#ffffff", fontWeight: 800, fontSize: 12, padding: "5px 10px", borderRadius: 999, letterSpacing: ".4px" }}>ALSO A PROVIDER?</span>
               <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5 }}>One account can hold both roles. You can switch to a provider account in Settings.</p>
               <Link href={routes.settings} style={{ fontWeight: 800, color: "#2a7b86" }}>Go to settings</Link>
             </section>

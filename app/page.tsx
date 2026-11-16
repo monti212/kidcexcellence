@@ -45,8 +45,8 @@ const TILE_STYLES: { bg: string; stroke: string; border?: boolean; size: number 
 ];
 const tileStyle = (index: number) =>
   TILE_STYLES[index] ?? (index % 2 === 0
-    ? { bg: "#f4fbfc", stroke: "#2a7b86", border: true, size: 40 }
-    : { bg: "#fff5d3", stroke: "#3f3e44", size: 40 });
+    ? { bg: "#54b2bf", stroke: "#3f3e44", size: 40 }
+    : { bg: "#f05a3c", stroke: "#ffffff", size: 40 });
 
 function getVettingEnquiryHref(packageName: string, price: number) {
   const message = `Hi Kidcellence, I would like to enquire about the ${packageName} Vet With Us Package. The listed price is P${price}.`;
@@ -54,15 +54,15 @@ function getVettingEnquiryHref(packageName: string, price: number) {
 }
 
 const STEPS = [
-  { n: "1", bg: "#f4fbfc", badgeBg: "#54b2bf", badgeFg: "#ffffff", title: "Search and compare", body: "Filter by category, town and verification. Add up to three providers to Compare and see them side by side." },
-  { n: "2", bg: "#fff5d3", badgeBg: "#ffcc2f", badgeFg: "#3f3e44", title: "Check the badge", body: "Verified means our team reviewed that category's documents. For a nanny: certified ID, CV, proof of residence and police clearance." },
-  { n: "3", bg: "#f4fbfc", badgeBg: "#54b2bf", badgeFg: "#ffffff", title: "Message and meet", body: "Chat in Kidcellence Messages, share your children's details from your profile when you are ready, and arrange to meet." },
+  { n: "1", bg: "#d4eff3", badgeBg: "#54b2bf", badgeFg: "#ffffff", title: "Search and compare", body: "Filter by category, town and verification. Add up to three providers to Compare and see them side by side." },
+  { n: "2", bg: "#fff0b8", badgeBg: "#ffcc2f", badgeFg: "#3f3e44", title: "Check the badge", body: "Verified means our team reviewed that category's documents. For a nanny: certified ID, CV, proof of residence and police clearance." },
+  { n: "3", bg: "#fee6de", badgeBg: "#f05a3c", badgeFg: "#ffffff", title: "Message and meet", body: "Chat in Kidcellence Messages, share your children's details from your profile when you are ready, and arrange to meet." },
 ];
 
 const container: CSSProperties = { maxWidth: 1280, margin: "0 auto", paddingLeft: 24, paddingRight: 24 };
 const sectionHeading: CSSProperties = { margin: 0, fontSize: "clamp(28px, 5vw, 36px)", fontWeight: 800, letterSpacing: "-1px", lineHeight: 1.15 };
 const fieldLabel: CSSProperties = { fontSize: 12, fontWeight: 700, color: "#686973", textTransform: "uppercase", letterSpacing: ".6px" };
-const chipLink: CSSProperties = { padding: "8px 14px", borderRadius: 999, background: "#ffffff", border: "1px solid #d7edf0", fontSize: 14, fontWeight: 600, color: "#3f3e44", textDecoration: "none" };
+const chipLink: CSSProperties = { padding: "8px 14px", borderRadius: 999, background: "#fff0b8", border: "1px solid #ffe08a", fontSize: 14, fontWeight: 600, color: "#3f3e44", textDecoration: "none" };
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -201,8 +201,8 @@ export default function HomePage() {
             [String(marketplaceProviders.length), "listed providers"],
             [String(verifiedProviderCount), "verified profiles"],
             [String(CORE_SERVICE_CATEGORY_COUNT), "service categories"],
-          ].map(([value, label]) => (
-            <div key={label} style={{ background: "#f4fbfc", borderRadius: 20, padding: "16px 20px" }}>
+          ].map(([value, label], index) => (
+            <div key={label} style={{ background: ["#d4eff3", "#fff0b8", "#fee6de"][index % 3], borderRadius: 20, padding: "16px 20px" }}>
               <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.5px" }}>{loadState === "loading" && label !== "service categories" ? "…" : value}</div>
               <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".6px", color: "#686973" }}>{label}</div>
             </div>
@@ -265,7 +265,7 @@ export default function HomePage() {
                       type="button"
                       aria-pressed={on}
                       onClick={() => setTab(item.label)}
-                      style={{ fontWeight: 700, fontSize: 14, padding: "10px 18px", minHeight: 44, borderRadius: 999, border: `1px solid ${on ? "#3f3e44" : "#d7edf0"}`, background: on ? "#3f3e44" : "#ffffff", color: on ? "#ffffff" : "#3f3e44" }}
+                      style={{ fontWeight: 700, fontSize: 14, padding: "10px 18px", minHeight: 44, borderRadius: 999, border: `1px solid ${on ? "#3f3e44" : "#d7edf0"}`, background: on ? "#3f3e44" : "#fff0b8", color: on ? "#ffffff" : "#3f3e44" }}
                     >
                       {item.label}
                     </button>
@@ -276,16 +276,16 @@ export default function HomePage() {
           </div>
 
           {loadState === "loading" ? (
-            <p role="status" style={{ margin: 0, padding: "40px 24px", textAlign: "center", color: "#686973", fontWeight: 700, background: "#ffffff", borderRadius: 24 }}>
+            <p role="status" style={{ margin: 0, padding: "40px 24px", textAlign: "center", color: "#686973", fontWeight: 700, background: "#d4eff3", borderRadius: 24 }}>
               Loading providers…
             </p>
           ) : loadState === "error" ? (
-            <div role="alert" style={{ padding: "40px 24px", textAlign: "center", background: "#ffffff", borderRadius: 24, border: "1px dashed #d7edf0" }}>
+            <div role="alert" style={{ padding: "40px 24px", textAlign: "center", background: "#fee6de", borderRadius: 24 }}>
               <h3 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>Listings could not load right now</h3>
               <p style={{ margin: "8px auto 0", maxWidth: 480, fontSize: 15, color: "#686973" }}>Please refresh the page in a moment, or <Link href={routes.browse}>browse all providers</Link>.</p>
             </div>
           ) : shown.length === 0 ? (
-            <div style={{ padding: "40px 24px", textAlign: "center", background: "#ffffff", borderRadius: 24, border: "1px dashed #d7edf0" }}>
+            <div style={{ padding: "40px 24px", textAlign: "center", background: "#fff0b8", borderRadius: 24 }}>
               <Icon name="shieldCheck" size={32} color="#2a7b86" />
               <h3 style={{ margin: "12px 0 0", fontSize: 19, fontWeight: 800 }}>
                 {featuredProviders.length === 0 ? "Verified listings are being prepared" : `No verified ${activeTab.label.toLowerCase()} yet`}
@@ -329,7 +329,7 @@ export default function HomePage() {
       <section id="vet-with-us" style={{ background: "#fff5d3" }}>
         <div style={{ ...container, paddingTop: "clamp(56px, 9vw, 88px)", paddingBottom: "clamp(56px, 9vw, 88px)", display: "flex", flexWrap: "wrap", gap: 48, alignItems: "center" }}>
           <div style={{ flex: "1 1 400px", minWidth: 0, display: "flex", flexDirection: "column", gap: 18 }}>
-            <span style={{ alignSelf: "flex-start", background: "#ffffff", color: "#c2412a", fontWeight: 800, fontSize: 13, padding: "6px 12px", borderRadius: 999, letterSpacing: ".4px" }}>VET WITH US</span>
+            <span style={{ alignSelf: "flex-start", background: "#c2412a", color: "#ffffff", fontWeight: 800, fontSize: 13, padding: "6px 12px", borderRadius: 999, letterSpacing: ".4px" }}>VET WITH US</span>
             <h2 style={{ ...sectionHeading, fontSize: "clamp(28px, 5vw, 40px)", lineHeight: 1.1 }}>Found someone you like? Let us vet them for you.</h2>
             <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "#686973" }}>Already have a nanny or helper in mind? Our team runs the checks so you can hire with confidence. View the packages, then send an enquiry to Kidcellence on WhatsApp.</p>
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
@@ -341,7 +341,7 @@ export default function HomePage() {
             {VETTING_PACKAGES.map((pkg) => {
               const premium = pkg.id === "vip";
               return (
-                <div key={pkg.id} style={{ background: "#ffffff", borderRadius: 24, padding: 28, display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 10px 30px rgba(30,30,40,.08)", outline: premium ? "3px solid #ffcc2f" : undefined }}>
+                <div key={pkg.id} style={{ background: premium ? "#fee6de" : "#d4eff3", borderRadius: 24, padding: 28, display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 10px 30px rgba(30,30,40,.08)", outline: premium ? "3px solid #ffcc2f" : undefined }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                     <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{pkg.name}</h3>
                     {premium && <span style={{ background: "#ffcc2f", color: "#3f3e44", fontSize: 12, fontWeight: 800, padding: "5px 10px", borderRadius: 999 }}>Priority</span>}
@@ -377,7 +377,7 @@ export default function HomePage() {
               <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "#3f3e44" }}>First month free. Then P60/month for nannies, helpers and babysitters, P150/month for schools, therapists and other providers.</p>
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <Link href={routes.providerSignup} style={{ padding: "16px 28px", borderRadius: 999, background: "#ffffff", color: "#2a7b86", fontWeight: 800, fontSize: 16, textDecoration: "none", boxShadow: "0 10px 24px rgba(30,30,40,.15)" }}>List your service</Link>
+              <Link href={routes.providerSignup} style={{ padding: "16px 28px", borderRadius: 999, background: "#ffcc2f", color: "#3f3e44", fontWeight: 800, fontSize: 16, textDecoration: "none", boxShadow: "0 10px 24px rgba(30,30,40,.15)" }}>List your service</Link>
               <Link href={routes.pricing} style={{ padding: "16px 28px", borderRadius: 999, background: "#3f3e44", color: "#ffffff", fontWeight: 800, fontSize: 16, textDecoration: "none" }}>See pricing</Link>
             </div>
           </div>

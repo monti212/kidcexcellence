@@ -25,7 +25,7 @@ import { getVerificationDocuments } from "@/lib/verification-requirements";
 
 const h2Style: CSSProperties = { margin: 0, fontSize: 24, fontWeight: 800 };
 const detailTile: CSSProperties = { borderRadius: 18, padding: 18, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 };
-const outlineAction: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 12, minHeight: 44, borderRadius: 14, border: "1px solid #d7edf0", background: "#ffffff", color: "#3f3e44", fontWeight: 700, fontSize: 14, textDecoration: "none", overflowWrap: "anywhere" };
+const outlineAction: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 12, minHeight: 44, borderRadius: 14, border: "1px solid #ffcc2f", background: "#ffcc2f", color: "#3f3e44", fontWeight: 700, fontSize: 14, textDecoration: "none", overflowWrap: "anywhere" };
 
 export default async function ProviderProfilePage({
   params,
@@ -121,7 +121,7 @@ export default async function ProviderProfilePage({
                 className="object-cover"
               />
             ) : (
-              <span aria-hidden="true" style={{ width: 140, height: 140, borderRadius: "50%", background: "#ffffff", color: "#2a7b86", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, fontWeight: 800, boxShadow: "0 8px 20px rgba(63,62,68,.12)" }}>
+              <span aria-hidden="true" style={{ width: 140, height: 140, borderRadius: "50%", background: "#ffcc2f", color: "#2a7b86", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, fontWeight: 800, boxShadow: "0 8px 20px rgba(63,62,68,.12)" }}>
                 {initialsOf(provider.name)}
               </span>
             )}
@@ -208,7 +208,7 @@ export default async function ProviderProfilePage({
                 <h2 style={h2Style}>Details</h2>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 220px), 1fr))", gap: 12 }}>
                   {profileDetails.map(([icon, title, body]) => (
-                    <div key={title} style={{ ...detailTile, background: "#ffffff", border: "1px solid #d7edf0" }}>
+                    <div key={title} style={{ ...detailTile, background: "#d4eff3" }}>
                       <Icon name={icon} size={20} color="#2a7b86" style={{ marginBottom: 6 }} />
                       <strong style={{ fontSize: 14 }}>{title}</strong>
                       <span style={{ color: "#686973", fontSize: 14, lineHeight: 1.5, overflowWrap: "anywhere" }}>{body}</span>
@@ -282,8 +282,8 @@ export default async function ProviderProfilePage({
             {provider.verified && verifiedDocuments.length > 0 && (
               <section className="p-5 sm:p-7" style={{ background: "#fff5d3", borderRadius: 24, display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ width: 48, height: 48, flexShrink: 0, borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon name="shieldCheck" size={26} color="#2a7b86" />
+                  <span style={{ width: 48, height: 48, flexShrink: 0, borderRadius: "50%", background: "#54b2bf", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon name="shieldCheck" size={26} color="#3f3e44" />
                   </span>
                   <div>
                     <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>What Kidcellence verified</h2>
@@ -292,7 +292,7 @@ export default async function ProviderProfilePage({
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 230px), 1fr))", gap: 10 }}>
                   {verifiedDocuments.map((document) => (
-                    <div key={document.key} style={{ background: "#ffffff", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, fontWeight: 700 }}>
+                    <div key={document.key} style={{ background: "#ffe08a", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, fontWeight: 700 }}>
                       <Icon name="check" size={20} color="#2a7b86" strokeWidth={2.4} style={{ flexShrink: 0 }} />
                       {document.label}
                     </div>
@@ -303,7 +303,7 @@ export default async function ProviderProfilePage({
           </div>
 
           {/* Contact card */}
-          <aside className="p-5 sm:p-7" style={{ flex: "1 1 340px", minWidth: 0, background: "#ffffff", borderRadius: 28, boxShadow: "0 18px 48px rgba(42,123,134,.14)", border: "1px solid #d7edf0", display: "flex", flexDirection: "column", gap: 16 }}>
+          <aside className="p-5 sm:p-7" style={{ flex: "1 1 340px", minWidth: 0, background: "#d4eff3", borderRadius: 28, boxShadow: "0 18px 48px rgba(42,123,134,.14)", border: "1px solid #d7edf0", display: "flex", flexDirection: "column", gap: 16 }}>
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, overflowWrap: "anywhere" }}>Interested in {provider.name}?</h2>
             <div>
               <span style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".6px", color: "#686973" }}>Pricing</span>

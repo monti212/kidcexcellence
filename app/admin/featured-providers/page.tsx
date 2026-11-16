@@ -255,7 +255,7 @@ export default function FeaturedProvidersPage() {
   if (user?.role !== "admin") {
     return (
       <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px", background: "#f4fbfc" }}>
-        <div style={{ maxWidth: 420, background: "#ffffff", borderRadius: 24, padding: 32, border: "1px solid #d7edf0", textAlign: "center", display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
+        <div style={{ maxWidth: 420, background: "#d4eff3", borderRadius: 24, padding: 32, border: "1px solid #d7edf0", textAlign: "center", display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
           <Icon name="lock" size={36} color="#2a7b86" />
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Admin access required</h1>
           <p style={{ margin: 0, color: "#686973", fontSize: 14 }}>Sign in with an admin account to manage featured providers.</p>

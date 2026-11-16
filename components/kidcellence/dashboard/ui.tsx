@@ -5,7 +5,7 @@ import { Icon, type IconName } from "@/components/kidcellence/Icon";
 // language (components/kidcellence/screens/ProviderDashboardScreen.tsx).
 
 export const panelStyle: CSSProperties = {
-  background: "#ffffff",
+  background: "#d4eff3",
   borderRadius: 24,
   padding: 26,
   display: "flex",
@@ -92,7 +92,7 @@ export function Toggle({
   onToggle: () => void;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 16px", borderRadius: 16, background: "#ffffff", border: "1px solid #d7edf0" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 16px", borderRadius: 16, background: "#fff0b8", border: "1px solid #ffe08a" }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700 }}>{label}</div>
         {description && <div style={{ fontSize: 13, color: "#686973" }}>{description}</div>}
@@ -247,7 +247,7 @@ export function DocumentRow({
           <Icon name="check" size={20} color="#ffffff" strokeWidth={2.6} />
         </span>
       ) : (
-        <span style={{ width: 40, height: 40, borderRadius: "50%", background: "#ffffff", border: "2px solid #d7edf0", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", fontWeight: 800, color: "#686973" }}>
+        <span style={{ width: 40, height: 40, borderRadius: "50%", background: "#ffcc2f", border: "2px solid #ffcc2f", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", fontWeight: 800, color: "#686973" }}>
           {index + 1}
         </span>
       )}

@@ -63,6 +63,9 @@
 
 :root {
   --background: #ffffff;
+  --kc-pop-teal: #d4eff3;
+  --kc-pop-gold: #fff0b8;
+  --kc-pop-coral: #fee6de;
   --foreground: #3f3e44;
   --card: #ffffff;
   --card-foreground: #3f3e44;
@@ -161,7 +164,7 @@
   }
 
   .brand-card {
-    @apply border bg-white shadow-sm;
+    @apply border bg-[var(--kc-pop-teal)] shadow-sm;
     border-color: var(--brand-line);
     border-radius: 24px;
     box-shadow: 0 18px 50px rgba(63, 62, 68, 0.07);
@@ -172,7 +175,7 @@
   }
 
   .brand-button-secondary {
-    @apply inline-flex items-center justify-center rounded-full border bg-white px-5 py-2.5 text-sm font-extrabold text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-cream)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)] focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center rounded-full border bg-[var(--brand-gold)] px-5 py-2.5 text-sm font-extrabold text-[var(--brand-ink)] transition-colors hover:bg-[var(--kc-pop-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)] focus-visible:ring-offset-2;
     border-color: var(--brand-line);
   }
 
@@ -203,7 +206,7 @@
   .kc-nav a[aria-current="page"] { color: var(--kc-teal-deep); font-weight: 800; }
 
   /* Filter chips. */
-  .kc-chip { font-weight: 700; font-size: 14px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--kc-line); background: #fff; color: var(--kc-ink); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+  .kc-chip { font-weight: 700; font-size: 14px; padding: 10px 16px; border-radius: 999px; border: 1px solid #ffe08a; background: var(--kc-pop-gold); color: var(--kc-ink); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
   .kc-chip[aria-pressed="true"], .kc-chip[aria-selected="true"] { background: var(--kc-ink); border-color: var(--kc-ink); color: #fff; }
 
   /* Dashboard side menu. */
@@ -228,14 +231,14 @@
   .kc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 12px 22px; border-radius: 999px; font-weight: 800; font-size: 15px; text-decoration: none; border: 0; background: var(--kc-teal-deep); color: #fff; box-shadow: 0 6px 16px rgba(42,123,134,.28); transition: background-color .15s ease; }
   .kc-btn:hover { background: var(--kc-teal-hover); color: #fff; }
   .kc-btn:disabled { background: var(--brand-disabled); box-shadow: none; cursor: not-allowed; }
-  .kc-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 12px 22px; border-radius: 999px; font-weight: 800; font-size: 15px; text-decoration: none; border: 2px solid var(--kc-teal-deep); background: #fff; color: var(--kc-teal-deep); }
-  .kc-btn-outline:hover { background: var(--kc-ivory); color: var(--kc-teal-hover); }
+  .kc-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 12px 22px; border-radius: 999px; font-weight: 800; font-size: 15px; text-decoration: none; border: 2px solid var(--kc-gold); background: var(--kc-gold); color: var(--kc-ink); }
+  .kc-btn-outline:hover { background: var(--kc-pop-gold); color: var(--kc-ink); }
   .kc-btn-outline:disabled { opacity: .5; cursor: not-allowed; }
   .kc-btn-danger { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 12px 22px; border-radius: 999px; font-weight: 800; font-size: 15px; border: 0; background: var(--kc-coral-deep); color: #fff; }
   .kc-btn-danger:disabled { opacity: .5; cursor: not-allowed; }
 
   /* Panels. */
-  .kc-panel { background: #fff; border-radius: 24px; box-shadow: 0 6px 20px rgba(63,62,68,.06); border: 1px solid var(--kc-line); }
+  .kc-panel { background: var(--kc-pop-teal); border-radius: 24px; box-shadow: 0 6px 20px rgba(63,62,68,.06); border: 1px solid var(--kc-line); }
 
   /* Home has a separate phone design. These switch between the two at 640px. */
   .kc-mobile-only { display: none; }

@@ -297,7 +297,7 @@ function MessagesPageContent() {
                   className="flex items-center justify-center sm:hidden"
                   onClick={() => setActiveConversationId(null)}
                   aria-label="Back to conversations"
-                  style={{ width: 40, height: 40, borderRadius: "50%", border: "1px solid #d7edf0", background: "#ffffff", flexShrink: 0 }}
+                  style={{ width: 40, height: 40, borderRadius: "50%", border: "1px solid #ffcc2f", background: "#ffcc2f", flexShrink: 0 }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3f3e44" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
                 </button>
@@ -385,8 +385,8 @@ function MessagesPageContent() {
             </>
           ) : (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "32px 24px", gap: 10, background: "#f4fbfc" }}>
-              <span style={{ width: 80, height: 80, borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(63,62,68,.06)", marginBottom: 6 }}>
-                <Icon name="message" size={36} color="#2a7b86" />
+              <span style={{ width: 80, height: 80, borderRadius: "50%", background: "#ffcc2f", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(63,62,68,.06)", marginBottom: 6 }}>
+                <Icon name="message" size={36} color="#3f3e44" />
               </span>
               <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>
                 {showSignInPrompt

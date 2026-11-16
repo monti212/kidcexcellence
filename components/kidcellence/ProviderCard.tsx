@@ -5,6 +5,7 @@ import {
   formatPrice,
   initialsOf,
   providerBadgeLine,
+  providerCardTheme,
   providerPhoto,
   providerTint,
 } from "@/lib/kidcellence/provider-display";
@@ -31,10 +32,11 @@ export function ProviderCard({
 }: Props) {
   const photo = providerPhoto(p);
   const href = routes.provider(p.id);
+  const theme = providerCardTheme(p.id);
   return (
     <article
       className="kc-card"
-      style={{ background: "#ffffff", borderRadius: 24, overflow: "hidden", boxShadow: "0 6px 20px rgba(63,62,68,.07)", display: "flex", flexDirection: "column", minWidth: 0 }}
+      style={{ background: theme.body, borderRadius: 24, overflow: "hidden", boxShadow: "0 6px 20px rgba(63,62,68,.07)", display: "flex", flexDirection: "column", minWidth: 0 }}
     >
       <div
         className="kc-dots"
@@ -44,7 +46,7 @@ export function ProviderCard({
           // eslint-disable-next-line @next/next/no-img-element -- uploaded files are served by our own API route
           <img src={photo} alt="" style={{ width: 96, height: 96, borderRadius: "50%", objectFit: "cover", border: "4px solid #ffffff", boxShadow: "0 8px 20px rgba(63,62,68,.12)" }} />
         ) : (
-          <span aria-hidden="true" style={{ width: 84, height: 84, borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 26, color: "#2a7b86", boxShadow: "0 8px 20px rgba(63,62,68,.12)" }}>
+          <span aria-hidden="true" style={{ width: 84, height: 84, borderRadius: "50%", background: theme.circle, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 26, color: "#3f3e44", border: "4px solid #ffffff", boxShadow: "0 8px 20px rgba(63,62,68,.12)" }}>
             {initialsOf(p.name)}
           </span>
         )}
@@ -53,7 +55,7 @@ export function ProviderCard({
         )}
       </div>
       <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: p.verified ? "#2a7b86" : "#686973" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: p.verified ? "#3f3e44" : "#686973" }}>
           {p.verified && <Icon name="shieldCheck" size={16} color="#2a7b86" strokeWidth={2.2} />}
           {providerBadgeLine(p)}
         </div>
@@ -84,7 +86,7 @@ export function ProviderCard({
           </span>
           <strong style={{ color: "#3f3e44", fontSize: 13, whiteSpace: "nowrap" }}>{formatPrice(p)}</strong>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", paddingTop: 6, borderTop: "1px solid #d7edf0", marginTop: 4 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", paddingTop: 6, borderTop: "1px solid rgba(63,62,68,.12)", marginTop: 4 }}>
           {onToggleCompare ? (
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, flex: 1, minHeight: 44, cursor: compareDisabled && !inCompare ? "not-allowed" : "pointer" }}>
               <input
