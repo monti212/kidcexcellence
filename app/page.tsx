@@ -46,8 +46,8 @@ const TILE_STYLES: { bg: string; stroke: string; border?: boolean; size: number 
 // The four colours repeat in order: teal, gold, coral, deep teal.
 const tileStyle = (index: number) => TILE_STYLES[index % TILE_STYLES.length];
 
-function getVettingEnquiryHref(packageName: string, price: number) {
-  const message = `Hi Kidcellence, I would like to enquire about the ${packageName} Vet With Us Package. The listed price is P${price}.`;
+function getVettingEnquiryHref(packageName: string) {
+  const message = `Hi Kidcellence, I would like to enquire about the ${packageName} Vet With Us Package.`;
   return `https://wa.me/26775378699?text=${encodeURIComponent(message)}`;
 }
 
@@ -358,13 +358,9 @@ export default function HomePage() {
                     <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{pkg.name}</h3>
                     {premium && <span style={{ background: "#ffcc2f", color: "#3f3e44", fontSize: 12, fontWeight: 800, padding: "5px 10px", borderRadius: 999 }}>Priority</span>}
                   </div>
-                  <p style={{ margin: 0, display: "flex", alignItems: "baseline", gap: 4 }}>
-                    <span style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-1px" }}>P{pkg.price}</span>
-                    <span style={{ color: "#686973", fontSize: 15 }}>once-off</span>
-                  </p>
                   <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: "#686973" }}>{pkg.summary}</p>
                   <a
-                    href={getVettingEnquiryHref(pkg.name, pkg.price)}
+                    href={getVettingEnquiryHref(pkg.name)}
                     target="_blank"
                     rel="noreferrer"
                     className={premium ? "kc-btn" : "kc-btn-outline"}
@@ -386,7 +382,7 @@ export default function HomePage() {
           <div style={{ background: "#54b2bf", borderRadius: 32, padding: "clamp(28px, 6vw, 56px)", display: "flex", flexWrap: "wrap", gap: 32, alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ flex: "1 1 420px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
               <h2 style={{ ...sectionHeading, fontSize: "clamp(26px, 5vw, 38px)", lineHeight: 1.1, color: "#3f3e44" }}>Care for children? Get found by Botswana&apos;s parents.</h2>
-              <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "#3f3e44" }}>First month free. Then P60/month for nannies, helpers and babysitters, P150/month for schools, therapists and other providers.</p>
+              <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "#3f3e44" }}>Create your profile, get verified and let parents near you find your service.</p>
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Link href={routes.providerSignup} style={{ padding: "16px 28px", borderRadius: 999, background: "#ffcc2f", color: "#3f3e44", fontWeight: 800, fontSize: 16, textDecoration: "none", boxShadow: "0 10px 24px rgba(30,30,40,.15)" }}>List your service</Link>
